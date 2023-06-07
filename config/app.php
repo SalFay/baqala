@@ -18,6 +18,10 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'root_users' => [
+      'haroonyousaf80@gmail.com'
+    ],
+    
     /*
     |--------------------------------------------------------------------------
     | Application Environment
@@ -168,6 +172,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+
     ])->toArray(),
 
     /*
