@@ -24,7 +24,7 @@
         <div class="flex">
             <div @class([
                 'relative rounded-full w-8 h-4 transition duration-200 ease-linear',
-                'bg-pg-secondary-600 dark:pg-secondary-500' => $value === 1,
+                'bg-pg-secondary-600' => $value === 1,
                 'bg-pg-primary-200' => $value === 0,
             ])>
                 <label

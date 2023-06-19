@@ -29,7 +29,7 @@
         style="{{ $theme->baseStyle }}"
     >
         @if (!$inline)
-            <label class="block text-sm font-medium text-pg-primary-700 dark:text-pg-primary-300">
+            <label class="block text-sm font-medium text-pg-primary-700">
                 {{ $title }}
             </label>
         @endif
@@ -50,7 +50,7 @@
                 @endforeach
             </select>
             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-pg-primary-700">
-                <x-livewire-powergrid::icons.down class="w-4 h-4 dark:text-gray-300" />
+                <x-livewire-powergrid::icons.down class="w-4 h-4" />
             </div>
         </div>
     </div>

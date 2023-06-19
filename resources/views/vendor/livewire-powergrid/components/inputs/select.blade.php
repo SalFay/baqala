@@ -53,7 +53,7 @@
             style="{{ $theme->baseStyle }}"
         >
             @if (!$inline)
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                <label class="block text-sm font-medium text-gray-700">
                     {{ data_get($filter, 'title') }}
                 </label>
             @endif

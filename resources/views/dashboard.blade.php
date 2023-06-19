@@ -1,24 +1,17 @@
-@extends('layouts.app')
-@section('page-title', 'Dashboard')
-@section('content')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Dashboard') }}
+        </h2>
+    </x-slot>
 
-
-<div class="card card-info">
-	<div class="card-header">
-		<h3 class="card-title">Default Card Example</h3>
-		<div class="card-tools">
-			<!-- Buttons, labels, and many other things can be placed here! -->
-			<!-- Here is a label for example -->
-			<span class="badge badge-primary">Add New User</span>
-		</div>
-		<!-- /.card-tools -->
-	</div>
-	<!-- /.card-header -->
-	<div class="card-body">
-		<livewire:user-table/>
-	</div>
-	<!-- /.card-body -->
-
-</div>
-<!-- /.card -->
-@endsection
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+	                <livewire:user-table/>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
