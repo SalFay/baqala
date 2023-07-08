@@ -3455,8 +3455,9 @@ var shouldAutoEvaluateFunctions = true;
 function dontAutoEvaluateFunctions(callback) {
   let cache = shouldAutoEvaluateFunctions;
   shouldAutoEvaluateFunctions = false;
-  callback();
+  let result = callback();
   shouldAutoEvaluateFunctions = cache;
+  return result;
 }
 function evaluate(el, expression, extras = {}) {
   let result;
@@ -3624,15 +3625,15 @@ function getElementBoundUtilities(el) {
 function getDirectiveHandler(el, directive2) {
   let noop = () => {
   };
-  let handler3 = directiveHandlers[directive2.type] || noop;
+  let handler4 = directiveHandlers[directive2.type] || noop;
   let [utilities, cleanup2] = getElementBoundUtilities(el);
   onAttributeRemoved(el, directive2.original, cleanup2);
   let fullHandler = () => {
     if (el._x_ignore || el._x_ignoreSelf)
       return;
-    handler3.inline && handler3.inline(el, directive2, utilities);
-    handler3 = handler3.bind(handler3, el, directive2, utilities);
-    isDeferringHandlers ? directiveHandlerStacks.get(currentHandlerStackKey).push(handler3) : handler3();
+    handler4.inline && handler4.inline(el, directive2, utilities);
+    handler4 = handler4.bind(handler4, el, directive2, utilities);
+    isDeferringHandlers ? directiveHandlerStacks.get(currentHandlerStackKey).push(handler4) : handler4();
   };
   fullHandler.runCleanups = cleanup2;
   return fullHandler;
@@ -4386,6 +4387,21 @@ function attributeShouldntBePreservedIfFalsy(name) {
 function getBinding(el, name, fallback) {
   if (el._x_bindings && el._x_bindings[name] !== void 0)
     return el._x_bindings[name];
+  return getAttributeBinding(el, name, fallback);
+}
+function extractProp(el, name, fallback, extract = true) {
+  if (el._x_bindings && el._x_bindings[name] !== void 0)
+    return el._x_bindings[name];
+  if (el._x_inlineBindings && el._x_inlineBindings[name] !== void 0) {
+    let binding = el._x_inlineBindings[name];
+    binding.extract = extract;
+    return dontAutoEvaluateFunctions(() => {
+      return evaluate(el, binding.expression);
+    });
+  }
+  return getAttributeBinding(el, name, fallback);
+}
+function getAttributeBinding(el, name, fallback) {
   let attr = el.getAttribute(name);
   if (attr === null)
     return typeof fallback === "function" ? fallback() : fallback;
@@ -4527,7 +4543,7 @@ var Alpine = {
   get raw() {
     return raw;
   },
-  version: "3.12.2",
+  version: "3.12.3",
   flushAndStopDeferringMutations,
   dontAutoEvaluateFunctions,
   disableEffectScheduling,
@@ -4546,6 +4562,7 @@ var Alpine = {
   interceptInit,
   setEvaluator,
   mergeProxies,
+  extractProp,
   findClosest,
   closestRoot,
   destroyTree,
@@ -5469,7 +5486,7 @@ directive("effect", (el, {expression}, {effect: effect3}) => effect3(evaluateLat
 // packages/alpinejs/src/utils/on.js
 function on(el, event, modifiers, callback) {
   let listenerTarget = el;
-  let handler3 = (e) => callback(e);
+  let handler4 = (e) => callback(e);
   let options = {};
   let wrapHandler = (callback2, wrapper) => (e) => wrapper(callback2, e);
   if (modifiers.includes("dot"))
@@ -5487,30 +5504,30 @@ function on(el, event, modifiers, callback) {
   if (modifiers.includes("debounce")) {
     let nextModifier = modifiers[modifiers.indexOf("debounce") + 1] || "invalid-wait";
     let wait = isNumeric(nextModifier.split("ms")[0]) ? Number(nextModifier.split("ms")[0]) : 250;
-    handler3 = debounce(handler3, wait);
+    handler4 = debounce(handler4, wait);
   }
   if (modifiers.includes("throttle")) {
     let nextModifier = modifiers[modifiers.indexOf("throttle") + 1] || "invalid-wait";
     let wait = isNumeric(nextModifier.split("ms")[0]) ? Number(nextModifier.split("ms")[0]) : 250;
-    handler3 = throttle(handler3, wait);
+    handler4 = throttle(handler4, wait);
   }
   if (modifiers.includes("prevent"))
-    handler3 = wrapHandler(handler3, (next, e) => {
+    handler4 = wrapHandler(handler4, (next, e) => {
       e.preventDefault();
       next(e);
     });
   if (modifiers.includes("stop"))
-    handler3 = wrapHandler(handler3, (next, e) => {
+    handler4 = wrapHandler(handler4, (next, e) => {
       e.stopPropagation();
       next(e);
     });
   if (modifiers.includes("self"))
-    handler3 = wrapHandler(handler3, (next, e) => {
+    handler4 = wrapHandler(handler4, (next, e) => {
       e.target === el && next(e);
     });
   if (modifiers.includes("away") || modifiers.includes("outside")) {
     listenerTarget = document;
-    handler3 = wrapHandler(handler3, (next, e) => {
+    handler4 = wrapHandler(handler4, (next, e) => {
       if (el.contains(e.target))
         return;
       if (e.target.isConnected === false)
@@ -5523,12 +5540,12 @@ function on(el, event, modifiers, callback) {
     });
   }
   if (modifiers.includes("once")) {
-    handler3 = wrapHandler(handler3, (next, e) => {
+    handler4 = wrapHandler(handler4, (next, e) => {
       next(e);
-      listenerTarget.removeEventListener(event, handler3, options);
+      listenerTarget.removeEventListener(event, handler4, options);
     });
   }
-  handler3 = wrapHandler(handler3, (next, e) => {
+  handler4 = wrapHandler(handler4, (next, e) => {
     if (isKeyEvent(event)) {
       if (isListeningForASpecificKeyThatHasntBeenPressed(e, modifiers)) {
         return;
@@ -5536,9 +5553,9 @@ function on(el, event, modifiers, callback) {
     }
     next(e);
   });
-  listenerTarget.addEventListener(event, handler3, options);
+  listenerTarget.addEventListener(event, handler4, options);
   return () => {
-    listenerTarget.removeEventListener(event, handler3, options);
+    listenerTarget.removeEventListener(event, handler4, options);
   };
 }
 function dotSyntax(subject) {
@@ -5776,7 +5793,7 @@ directive("html", (el, {expression}, {effect: effect3, evaluateLater: evaluateLa
 
 // packages/alpinejs/src/directives/x-bind.js
 mapAttributes(startingWith(":", into(prefix("bind:"))));
-directive("bind", (el, {value, modifiers, expression, original}, {effect: effect3}) => {
+var handler2 = (el, {value, modifiers, expression, original}, {effect: effect3}) => {
   if (!value) {
     let bindingProviders = {};
     injectBindingProviders(bindingProviders);
@@ -5788,6 +5805,9 @@ directive("bind", (el, {value, modifiers, expression, original}, {effect: effect
   }
   if (value === "key")
     return storeKeyForXFor(el, expression);
+  if (el._x_inlineBindings && el._x_inlineBindings[value] && el._x_inlineBindings[value].extract) {
+    return;
+  }
   let evaluate2 = evaluateLater(el, expression);
   effect3(() => evaluate2((result) => {
     if (result === void 0 && typeof expression === "string" && expression.match(/\./)) {
@@ -5795,7 +5815,15 @@ directive("bind", (el, {value, modifiers, expression, original}, {effect: effect
     }
     mutateDom(() => bind(el, value, result, modifiers));
   }));
-});
+};
+handler2.inline = (el, {value, modifiers, expression}) => {
+  if (!value)
+    return;
+  if (!el._x_inlineBindings)
+    el._x_inlineBindings = {};
+  el._x_inlineBindings[value] = {expression, extract: false};
+};
+directive("bind", handler2);
 function storeKeyForXFor(el, expression) {
   el._x_keyExpression = expression;
 }
@@ -6042,16 +6070,16 @@ function isNumeric3(subject) {
 }
 
 // packages/alpinejs/src/directives/x-ref.js
-function handler2() {
+function handler3() {
 }
-handler2.inline = (el, {expression}, {cleanup: cleanup2}) => {
+handler3.inline = (el, {expression}, {cleanup: cleanup2}) => {
   let root = closestRoot(el);
   if (!root._x_refs)
     root._x_refs = {};
   root._x_refs[expression] = el;
   cleanup2(() => delete root._x_refs[expression]);
 };
-directive("ref", handler2);
+directive("ref", handler3);
 
 // packages/alpinejs/src/directives/x-if.js
 directive("if", (el, {expression}, {effect: effect3, cleanup: cleanup2}) => {
@@ -12717,19 +12745,6 @@ defineJQueryPlugin(Toast);
 
 /***/ }),
 
-/***/ "./resources/sass/app.scss":
-/*!*********************************!*\
-  !*** ./resources/sass/app.scss ***!
-  \*********************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-// extracted by mini-css-extract-plugin
-
-
-/***/ }),
-
 /***/ "./resources/css/app.css":
 /*!*******************************!*\
   !*** ./resources/css/app.css ***!
@@ -13110,7 +13125,6 @@ module.exports = JSON.parse('{"name":"axios","version":"0.21.4","description":"P
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
 /******/ 	__webpack_require__.O(undefined, ["css/app"], () => (__webpack_require__("./resources/js/app.js")))
-/******/ 	__webpack_require__.O(undefined, ["css/app"], () => (__webpack_require__("./resources/sass/app.scss")))
 /******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["css/app"], () => (__webpack_require__("./resources/css/app.css")))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
