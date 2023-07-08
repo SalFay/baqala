@@ -15,6 +15,9 @@ mix.js('resources/js/app.js', 'public/js')
  .postCss('resources/css/app.css', 'public/css', [
 	 require('postcss-import'),
 	 require('tailwindcss'),
-	 require('autoprefixer'),
  ])
+ .js('resources/themes/front-end/front.js', 'public/js')
+ .sass('resources/themes/front-end/front.scss', 'public/css').options({
+	 processCssUrls: false
+ })
  .webpackConfig(require('./webpack.config'))
