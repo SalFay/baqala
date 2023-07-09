@@ -12,5 +12,3 @@ require('./js/bootstrap-notify.min')
 require('./js/fly-cart')
 require('./js/theme-setting')
 require('./js/script')
-
-require('./../../js/adminApp')

@@ -1,11 +1,11 @@
 .slick-loading .slick-list {
-    background: #fff asset("themes/front-end/images/ajax-loader.gif") center center no-repeat
+    background: #fff asset("themes/front/images/ajax-loader.gif") center center no-repeat
 }
 
 @font-face {
     font-family: "slick";
-    src: asset("themes/front-end/fonts/slick.eot");
-    src: asset("themes/front-end/fonts/slick.eot?#iefix") format("embedded-opentype"), asset("themes/front-end/fonts/slick.woff") format("woff"), asset("themes/front-end/fonts/slick.ttf") format("truetype"), asset("themes/front-end/fonts/slick.svg#slick") format("svg");
+    src: asset("themes/front/fonts/slick.eot");
+    src: asset("themes/front/fonts/slick.eot?#iefix") format("embedded-opentype"), asset("themes/front/fonts/slick.woff") format("woff"), asset("themes/front/fonts/slick.ttf") format("truetype"), asset("themes/front/fonts/slick.svg#slick") format("svg");
     font-weight: normal;
     font-style: normal
 }
