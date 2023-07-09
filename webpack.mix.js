@@ -16,8 +16,11 @@ mix.js('resources/js/app.js', 'public/js')
 	 require('postcss-import'),
 	 require('tailwindcss'),
  ])
- .js('resources/themes/front-end/front.js', 'public/js')
- .sass('resources/themes/front-end/front.scss', 'public/css').options({
+ .js('resources/themes/front/front.js', 'public/js')
+ .sass('resources/themes/front/front.scss', 'public/css').options({
+	 processCssUrls: false
+ }) .js('resources/themes/admin/admin.js', 'public/js')
+ .sass('resources/themes/admin/admin.scss', 'public/css').options({
 	 processCssUrls: false
  })
  .webpackConfig(require('./webpack.config'))

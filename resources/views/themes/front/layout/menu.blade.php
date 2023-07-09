@@ -37,7 +37,7 @@
 								</a>
 							</div>
 							<div class="brand-logo">
-								<a href="index.html"><img src="{{asset('themes/front-end/images/icon/logo.png')}}"
+								<a href="index.html"><img src="{{asset('themes/front/images/icon/logo.png')}}"
 								                          class="img-fluid blur-up lazyload" alt=""></a>
 							</div>
 						</div>
@@ -74,17 +74,17 @@
 								<div class="icon-nav d-none d-sm-block">
 									<ul>
 										<li class="onhover-div mobile-search">
-											<div><img src="{{asset('themes/front-end/images/icon/search.png')}}" onclick="openSearch()"
+											<div><img src="{{asset('themes/front/images/icon/search.png')}}" onclick="openSearch()"
 											          class="img-fluid blur-up lazyload" alt=""> <i class="ti-search"
 											                                                        onclick="openSearch()"></i></div>
 										</li>
 										<li class="onhover-div mobile-setting">
-											<div><img src="{{asset('themes/front-end/images/icon/setting.png')}}"
+											<div><img src="{{asset('themes/front/images/icon/setting.png')}}"
 											          class="img-fluid blur-up lazyload" alt=""> <i
 													class="ti-settings"></i></div>
 										</li>
 										<li class="onhover-div mobile-cart">
-											<div><img src="{{asset('themes/front-end/images/icon/cart.png')}}"
+											<div><img src="{{asset('themes/front/images/icon/cart.png')}}"
 											          class="img-fluid blur-up lazyload" alt=""> <i
 													class="ti-shopping-cart"></i></div>
 										</li>
@@ -308,7 +308,7 @@
 														</div>
 														<div class="col-xl-4">
 															<a href="#" class="mega-menu-banner"><img
-																	src="{{asset('themes/front-end/images/mega-menu/fashion.jpg')}}"
+																	src="{{asset('themes/front/images/mega-menu/fashion.jpg')}}"
 																	alt="" class="img-fluid blur-up lazyload"></a>
 														</div>
 													</div>
@@ -427,7 +427,7 @@
 							</div>
 						</div>
 						<div class="brand-logo">
-							<a href="index.html"><img src="{{asset('themes/front-end/images/icon/logo.png')}}"
+							<a href="index.html"><img src="{{asset('themes/front/images/icon/logo.png')}}"
 							                          class="img-fluid blur-up lazyload" alt=""></a>
 						</div>
 					</div>
@@ -627,7 +627,7 @@
 													</div>
 													<div class="row">
 														<div class="col-12">
-															<img src="{{asset('themes/front-end/images/menu-banner.jpg')}}"
+															<img src="{{asset('themes/front/images/menu-banner.jpg')}}"
 															     class="img-fluid mega-img">
 														</div>
 													</div>
@@ -795,7 +795,7 @@
 							<div class="icon-nav">
 								<ul>
 									<li class="onhover-div mobile-search">
-										<div><img src="{{asset('themes/front-end/images/icon/search.png')}}" onclick="openSearch()"
+										<div><img src="{{asset('themes/front/images/icon/search.png')}}" onclick="openSearch()"
 										          class="img-fluid blur-up lazyload" alt=""> <i class="ti-search"
 										                                                        onclick="openSearch()"></i></div>
 										<div id="search-overlay" class="search-overlay">
@@ -822,7 +822,7 @@
 										</div>
 									</li>
 									<li class="onhover-div mobile-setting">
-										<div><img src="{{asset('themes/front-end/images/icon/setting.png')}}"
+										<div><img src="{{asset('themes/front/images/icon/setting.png')}}"
 										          class="img-fluid blur-up lazyload" alt=""> <i
 												class="ti-settings"></i></div>
 										<div class="show-div setting">
@@ -841,7 +841,7 @@
 										</div>
 									</li>
 									<li class="onhover-div mobile-cart">
-										<div><img src="{{asset('themes/front-end/images/icon/cart.png')}}"
+										<div><img src="{{asset('themes/front/images/icon/cart.png')}}"
 										          class="img-fluid blur-up lazyload" alt=""> <i
 												class="ti-shopping-cart"></i></div>
 										<span class="cart_qty_cls">2</span>
@@ -849,7 +849,7 @@
 											<li>
 												<div class="media">
 													<a href="#"><img alt="" class="me-3"
-													                 src="{{asset('themes/front-end/images/fashion/product/1.jpg')}}"></a>
+													                 src="{{asset('themes/front/images/fashion/product/1.jpg')}}"></a>
 													<div class="media-body">
 														<a href="#">
 															<h4>item name</h4>
@@ -863,7 +863,7 @@
 											<li>
 												<div class="media">
 													<a href="#"><img alt="" class="me-3"
-													                 src="{{asset('themes/front-end/images/fashion/product/2.jpg')}}"></a>
+													                 src="{{asset('themes/front/images/fashion/product/2.jpg')}}"></a>
 													<div class="media-body">
 														<a href="#">
 															<h4>item name</h4>

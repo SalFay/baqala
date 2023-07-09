@@ -1,11 +1,11 @@
-@extends('themes.front-end.layout.main')
+@extends('themes.front.layout.main')
 @section('content')
 	<!-- Home slider -->
 	<section class="p-0">
 		<div class="slide-1 home-slider">
 			<div>
 				<div class="home  text-center">
-					<img src="{{asset('themes/front-end/images/home-banner/1.jpg')}}" alt="" class="bg-img blur-up lazyload">
+					<img src="{{asset('themes/front/images/home-banner/1.jpg')}}" alt="" class="bg-img blur-up lazyload">
 					<div class="container">
 						<div class="row">
 							<div class="col">
@@ -23,7 +23,7 @@
 			</div>
 			<div>
 				<div class="home text-center">
-					<img src="{{asset('themes/front-end/images/home-banner/2.jpg')}}" alt="" class="bg-img blur-up lazyload">
+					<img src="{{asset('themes/front/images/home-banner/2.jpg')}}" alt="" class="bg-img blur-up lazyload">
 					<div class="container">
 						<div class="row">
 							<div class="col">
@@ -52,7 +52,7 @@
 					<a href="#">
 						<div class="collection-banner p-right text-center">
 							<div class="img-part">
-								<img src="{{asset('themes/front-end/images/sub-banner1.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+								<img src="{{asset('themes/front/images/sub-banner1.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 								     alt="">
 							</div>
 							<div class="contain-banner">
@@ -68,7 +68,7 @@
 					<a href="#">
 						<div class="collection-banner p-right text-center">
 							<div class="img-part">
-								<img src="{{asset('themes/front-end/images/sub-banner2.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+								<img src="{{asset('themes/front/images/sub-banner2.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 								     alt="">
 							</div>
 							<div class="contain-banner">
@@ -113,11 +113,11 @@
 						<div class="product-box">
 							<div class="img-wrapper">
 								<div class="front">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/27.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="back">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/28.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="cart-info cart-wrap">
@@ -156,11 +156,11 @@
                                         sale</span></div>
 								<div class="front">
 									<a href="product-page(no-sidebar).html">
-										<img src="{{asset('themes/front-end/images/pro3/1.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+										<img src="{{asset('themes/front/images/pro3/1.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 										     alt=""></a>
 								</div>
 								<div class="back">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/2.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="cart-info cart-wrap">
@@ -196,11 +196,11 @@
 								<div class="lable-block"><span class="lable3">new</span> <span class="lable4">on
                                         sale</span></div>
 								<div class="front">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/33.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="back">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/34.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="cart-info cart-wrap">
@@ -232,11 +232,11 @@
 						<div class="product-box">
 							<div class="img-wrapper">
 								<div class="front">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/35.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="back">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/36.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="cart-info cart-wrap">
@@ -270,11 +270,11 @@
 								<div class="lable-block"><span class="lable3">new</span> <span class="lable4">on
                                         sale</span></div>
 								<div class="front">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/33.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="back">
-									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+									<a href="product-page(no-sidebar).html"><img src="{{asset('themes/front/images/pro3/34.jpg')}}"
 									                                             class="img-fluid blur-up lazyload bg-img" alt=""></a>
 								</div>
 								<div class="cart-info cart-wrap">
@@ -314,7 +314,7 @@
 	<!-- Parallax banner -->
 	<section class="p-0">
 		<div class="full-banner parallax text-center p-left">
-			<img src="{{asset('themes/front-end/images/parallax/1.jpg')}}" alt="" class="bg-img blur-up lazyload">
+			<img src="{{asset('themes/front/images/parallax/1.jpg')}}" alt="" class="bg-img blur-up lazyload">
 			<div class="container">
 				<div class="row">
 					<div class="col">
@@ -353,12 +353,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+														src="{{asset('themes/front/images/pro3/27.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+														src="{{asset('themes/front/images/pro3/28.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -396,12 +396,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/1.jpg')}}"
+														src="{{asset('themes/front/images/pro3/1.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+														src="{{asset('themes/front/images/pro3/2.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -437,12 +437,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+														src="{{asset('themes/front/images/pro3/33.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+														src="{{asset('themes/front/images/pro3/34.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -480,12 +480,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+														src="{{asset('themes/front/images/pro3/35.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+														src="{{asset('themes/front/images/pro3/36.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -523,12 +523,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+														src="{{asset('themes/front/images/pro3/33.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+														src="{{asset('themes/front/images/pro3/34.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -564,12 +564,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+														src="{{asset('themes/front/images/pro3/35.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+														src="{{asset('themes/front/images/pro3/36.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -607,12 +607,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/1.jpg')}}"
+														src="{{asset('themes/front/images/pro3/1.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+														src="{{asset('themes/front/images/pro3/2.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -648,12 +648,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+														src="{{asset('themes/front/images/pro3/27.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+														src="{{asset('themes/front/images/pro3/28.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -695,12 +695,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+														src="{{asset('themes/front/images/pro3/33.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+														src="{{asset('themes/front/images/pro3/34.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -736,12 +736,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+														src="{{asset('themes/front/images/pro3/35.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+														src="{{asset('themes/front/images/pro3/36.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -779,12 +779,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/1.jpg')}}"
+														src="{{asset('themes/front/images/pro3/1.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+														src="{{asset('themes/front/images/pro3/2.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -820,12 +820,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+														src="{{asset('themes/front/images/pro3/27.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+														src="{{asset('themes/front/images/pro3/28.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -861,12 +861,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+														src="{{asset('themes/front/images/pro3/27.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+														src="{{asset('themes/front/images/pro3/28.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -904,12 +904,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/1.jpg')}}"
+														src="{{asset('themes/front/images/pro3/1.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+														src="{{asset('themes/front/images/pro3/2.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -945,12 +945,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+														src="{{asset('themes/front/images/pro3/33.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+														src="{{asset('themes/front/images/pro3/34.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -988,12 +988,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+														src="{{asset('themes/front/images/pro3/35.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+														src="{{asset('themes/front/images/pro3/36.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1035,12 +1035,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+														src="{{asset('themes/front/images/pro3/33.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+														src="{{asset('themes/front/images/pro3/34.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1076,12 +1076,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+														src="{{asset('themes/front/images/pro3/27.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+														src="{{asset('themes/front/images/pro3/28.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1117,12 +1117,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/33.jpg')}}"
+														src="{{asset('themes/front/images/pro3/33.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/34.jpg')}}"
+														src="{{asset('themes/front/images/pro3/34.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1160,12 +1160,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/1.jpg')}}"
+														src="{{asset('themes/front/images/pro3/1.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+														src="{{asset('themes/front/images/pro3/2.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1203,12 +1203,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+														src="{{asset('themes/front/images/pro3/35.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+														src="{{asset('themes/front/images/pro3/36.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1244,12 +1244,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/35.jpg')}}"
+														src="{{asset('themes/front/images/pro3/35.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/36.jpg')}}"
+														src="{{asset('themes/front/images/pro3/36.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1287,12 +1287,12 @@
 													class="lable4">on sale</span></div>
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/1.jpg')}}"
+														src="{{asset('themes/front/images/pro3/1.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/2.jpg')}}"
+														src="{{asset('themes/front/images/pro3/2.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1328,12 +1328,12 @@
 										<div class="img-wrapper">
 											<div class="front">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/27.jpg')}}"
+														src="{{asset('themes/front/images/pro3/27.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="back">
 												<a href="product-page(no-sidebar).html"><img
-														src="{{asset('themes/front-end/images/pro3/28.jpg')}}"
+														src="{{asset('themes/front/images/pro3/28.jpg')}}"
 														class="img-fluid blur-up lazyload bg-img" alt=""></a>
 											</div>
 											<div class="cart-info cart-wrap">
@@ -1477,7 +1477,7 @@
 							<a href="#">
 								<div class="classic-effect">
 									<div>
-										<img src="{{asset('themes/front-end/images/blog/1.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+										<img src="{{asset('themes/front/images/blog/1.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 										     alt="">
 									</div>
 									<span></span>
@@ -1496,7 +1496,7 @@
 							<a href="#">
 								<div class="classic-effect">
 									<div>
-										<img src="{{asset('themes/front-end/images/blog/2.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+										<img src="{{asset('themes/front/images/blog/2.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 										     alt="">
 									</div>
 									<span></span>
@@ -1515,7 +1515,7 @@
 							<a href="#">
 								<div class="classic-effect">
 									<div>
-										<img src="{{asset('themes/front-end/images/blog/3.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+										<img src="{{asset('themes/front/images/blog/3.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 										     alt="">
 									</div>
 									<span></span>
@@ -1534,7 +1534,7 @@
 							<a href="#">
 								<div class="classic-effect">
 									<div>
-										<img src="{{asset('themes/front-end/images/blog/4.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+										<img src="{{asset('themes/front/images/blog/4.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 										     alt="">
 									</div>
 									<span></span>
@@ -1553,7 +1553,7 @@
 							<a href="#">
 								<div class="classic-effect">
 									<div>
-										<img src="{{asset('themes/front-end/images/blog/5.jpg')}}" class="img-fluid blur-up lazyload bg-img"
+										<img src="{{asset('themes/front/images/blog/5.jpg')}}" class="img-fluid blur-up lazyload bg-img"
 										     alt="">
 									</div>
 									<span></span>
@@ -1585,7 +1585,7 @@
 					<div class="slide-7 no-arrow slick-instagram">
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/2.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/2.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1593,7 +1593,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/3.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/3.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1601,7 +1601,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/4.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/4.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1609,7 +1609,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/9.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/9.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1617,7 +1617,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/6.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/6.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1625,7 +1625,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/7.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/7.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1633,7 +1633,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/8.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/8.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1641,7 +1641,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/9.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/9.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1649,7 +1649,7 @@
 						</div>
 						<div>
 							<a href="#">
-								<div class="instagram-box"><img src="{{asset('themes/front-end/images/slider/2.jpg')}}" class="bg-img"
+								<div class="instagram-box"><img src="{{asset('themes/front/images/slider/2.jpg')}}" class="bg-img"
 								                                alt="img">
 									<div class="overlay"><i class="fa fa-instagram"></i></div>
 								</div>
@@ -1671,42 +1671,42 @@
 					<div class="slide-6 no-arrow">
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/1.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/1.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/2.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/2.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/3.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/3.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/4.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/4.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/5.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/5.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/6.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/6.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/7.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/7.png')}}" alt=""></a>
 							</div>
 						</div>
 						<div>
 							<div class="logo-block">
-								<a href="#"><img src="{{asset('themes/front-end/images/logos/8.png')}}" alt=""></a>
+								<a href="#"><img src="{{asset('themes/front/images/logos/8.png')}}" alt=""></a>
 							</div>
 						</div>
 					</div>

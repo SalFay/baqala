@@ -192,10 +192,10 @@ window.AdminApp = {
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/bootstrap-notify.min.js":
-/*!***************************************************************!*\
-  !*** ./resources/themes/front-end/js/bootstrap-notify.min.js ***!
-  \***************************************************************/
+/***/ "./resources/themes/front/js/bootstrap-notify.min.js":
+/*!***********************************************************!*\
+  !*** ./resources/themes/front/js/bootstrap-notify.min.js ***!
+  \***********************************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -418,10 +418,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/bootstrap.bundle.min.js":
-/*!***************************************************************!*\
-  !*** ./resources/themes/front-end/js/bootstrap.bundle.min.js ***!
-  \***************************************************************/
+/***/ "./resources/themes/front/js/bootstrap.bundle.min.js":
+/*!***********************************************************!*\
+  !*** ./resources/themes/front/js/bootstrap.bundle.min.js ***!
+  \***********************************************************/
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -3392,10 +3392,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;function _type
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/exit.js":
-/*!***********************************************!*\
-  !*** ./resources/themes/front-end/js/exit.js ***!
-  \***********************************************/
+/***/ "./resources/themes/front/js/exit.js":
+/*!*******************************************!*\
+  !*** ./resources/themes/front/js/exit.js ***!
+  \*******************************************/
 /***/ (() => {
 
 /*=====================
@@ -3423,10 +3423,10 @@ $(function () {
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/fly-cart.js":
-/*!***************************************************!*\
-  !*** ./resources/themes/front-end/js/fly-cart.js ***!
-  \***************************************************/
+/***/ "./resources/themes/front/js/fly-cart.js":
+/*!***********************************************!*\
+  !*** ./resources/themes/front/js/fly-cart.js ***!
+  \***********************************************/
 /***/ (() => {
 
 $('.cart-info button').on('click', function () {
@@ -3468,10 +3468,10 @@ $('.cart-info button').on('click', function () {
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/jquery-3.3.1.min.js":
-/*!***********************************************************!*\
-  !*** ./resources/themes/front-end/js/jquery-3.3.1.min.js ***!
-  \***********************************************************/
+/***/ "./resources/themes/front/js/jquery-3.3.1.min.js":
+/*!*******************************************************!*\
+  !*** ./resources/themes/front/js/jquery-3.3.1.min.js ***!
+  \*******************************************************/
 /***/ (function(module, exports, __webpack_require__) {
 
 /* module decorator */ module = __webpack_require__.nmd(module);
@@ -6649,10 +6649,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/jquery-ui.min.js":
-/*!********************************************************!*\
-  !*** ./resources/themes/front-end/js/jquery-ui.min.js ***!
-  \********************************************************/
+/***/ "./resources/themes/front/js/jquery-ui.min.js":
+/*!****************************************************!*\
+  !*** ./resources/themes/front/js/jquery-ui.min.js ***!
+  \****************************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -13246,10 +13246,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/jquery.exitintent.js":
-/*!************************************************************!*\
-  !*** ./resources/themes/front-end/js/jquery.exitintent.js ***!
-  \************************************************************/
+/***/ "./resources/themes/front/js/jquery.exitintent.js":
+/*!********************************************************!*\
+  !*** ./resources/themes/front/js/jquery.exitintent.js ***!
+  \********************************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -13671,10 +13671,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/lazysizes.min.js":
-/*!********************************************************!*\
-  !*** ./resources/themes/front-end/js/lazysizes.min.js ***!
-  \********************************************************/
+/***/ "./resources/themes/front/js/lazysizes.min.js":
+/*!****************************************************!*\
+  !*** ./resources/themes/front/js/lazysizes.min.js ***!
+  \****************************************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /* module decorator */ module = __webpack_require__.nmd(module);
@@ -13982,10 +13982,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/menu.js":
-/*!***********************************************!*\
-  !*** ./resources/themes/front-end/js/menu.js ***!
-  \***********************************************/
+/***/ "./resources/themes/front/js/menu.js":
+/*!*******************************************!*\
+  !*** ./resources/themes/front/js/menu.js ***!
+  \*******************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -15286,10 +15286,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/script.js":
-/*!*************************************************!*\
-  !*** ./resources/themes/front-end/js/script.js ***!
-  \*************************************************/
+/***/ "./resources/themes/front/js/script.js":
+/*!*********************************************!*\
+  !*** ./resources/themes/front/js/script.js ***!
+  \*********************************************/
 /***/ (() => {
 
 /*-----------------------------------------------------------------------------------
@@ -17144,10 +17144,10 @@ $('.add-extent .animated-btn').on('click', function (e) {
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/slick.js":
-/*!************************************************!*\
-  !*** ./resources/themes/front-end/js/slick.js ***!
-  \************************************************/
+/***/ "./resources/themes/front/js/slick.js":
+/*!********************************************!*\
+  !*** ./resources/themes/front/js/slick.js ***!
+  \********************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
@@ -19280,10 +19280,10 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 /***/ }),
 
-/***/ "./resources/themes/front-end/js/theme-setting.js":
-/*!********************************************************!*\
-  !*** ./resources/themes/front-end/js/theme-setting.js ***!
-  \********************************************************/
+/***/ "./resources/themes/front/js/theme-setting.js":
+/*!****************************************************!*\
+  !*** ./resources/themes/front/js/theme-setting.js ***!
+  \****************************************************/
 /***/ (() => {
 
 /*=====================
@@ -30085,22 +30085,22 @@ return jQuery;
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-/*!*********************************************!*\
-  !*** ./resources/themes/front-end/front.js ***!
-  \*********************************************/
+/*!*****************************************!*\
+  !*** ./resources/themes/front/front.js ***!
+  \*****************************************/
 window.$ = window.jQuery = __webpack_require__(/*! jquery */ "./node_modules/jquery/dist/jquery.js");
-__webpack_require__(/*! ./js/jquery-3.3.1.min */ "./resources/themes/front-end/js/jquery-3.3.1.min.js");
-__webpack_require__(/*! ./js/jquery-ui.min */ "./resources/themes/front-end/js/jquery-ui.min.js");
-__webpack_require__(/*! ./js/jquery.exitintent */ "./resources/themes/front-end/js/jquery.exitintent.js");
-__webpack_require__(/*! ./js/exit */ "./resources/themes/front-end/js/exit.js");
-__webpack_require__(/*! ./js/slick */ "./resources/themes/front-end/js/slick.js");
-__webpack_require__(/*! ./js/menu */ "./resources/themes/front-end/js/menu.js");
-__webpack_require__(/*! ./js/lazysizes.min */ "./resources/themes/front-end/js/lazysizes.min.js");
-__webpack_require__(/*! ./js/bootstrap.bundle.min */ "./resources/themes/front-end/js/bootstrap.bundle.min.js");
-__webpack_require__(/*! ./js/bootstrap-notify.min */ "./resources/themes/front-end/js/bootstrap-notify.min.js");
-__webpack_require__(/*! ./js/fly-cart */ "./resources/themes/front-end/js/fly-cart.js");
-__webpack_require__(/*! ./js/theme-setting */ "./resources/themes/front-end/js/theme-setting.js");
-__webpack_require__(/*! ./js/script */ "./resources/themes/front-end/js/script.js");
+__webpack_require__(/*! ./js/jquery-3.3.1.min */ "./resources/themes/front/js/jquery-3.3.1.min.js");
+__webpack_require__(/*! ./js/jquery-ui.min */ "./resources/themes/front/js/jquery-ui.min.js");
+__webpack_require__(/*! ./js/jquery.exitintent */ "./resources/themes/front/js/jquery.exitintent.js");
+__webpack_require__(/*! ./js/exit */ "./resources/themes/front/js/exit.js");
+__webpack_require__(/*! ./js/slick */ "./resources/themes/front/js/slick.js");
+__webpack_require__(/*! ./js/menu */ "./resources/themes/front/js/menu.js");
+__webpack_require__(/*! ./js/lazysizes.min */ "./resources/themes/front/js/lazysizes.min.js");
+__webpack_require__(/*! ./js/bootstrap.bundle.min */ "./resources/themes/front/js/bootstrap.bundle.min.js");
+__webpack_require__(/*! ./js/bootstrap-notify.min */ "./resources/themes/front/js/bootstrap-notify.min.js");
+__webpack_require__(/*! ./js/fly-cart */ "./resources/themes/front/js/fly-cart.js");
+__webpack_require__(/*! ./js/theme-setting */ "./resources/themes/front/js/theme-setting.js");
+__webpack_require__(/*! ./js/script */ "./resources/themes/front/js/script.js");
 __webpack_require__(/*! ./../../js/adminApp */ "./resources/js/adminApp.js");
 })();
 
