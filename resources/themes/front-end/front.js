@@ -1,9 +1,10 @@
 window.$ = window.jQuery = require('jquery')
 require('./js/jquery-3.3.1.min')
 require('./js/jquery-ui.min')
-require('./js/slick')
 require('./js/jquery.exitintent')
 require('./js/exit')
+require('./js/slick')
+
 require('./js/menu')
 require('./js/lazysizes.min')
 require('./js/bootstrap.bundle.min')

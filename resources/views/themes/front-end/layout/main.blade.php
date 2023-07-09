@@ -17,7 +17,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com">
 	<link href="https://fonts.googleapis.com/css2?family=Yellowtail&display=swap" rel="stylesheet">
 
-
+	<!-- Icons -->
 	<link rel="stylesheet" type="text/css" href="{{asset('css/front.css')}}"/>
 
 
