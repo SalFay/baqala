@@ -18,6 +18,10 @@ Route::get('/', function () {
     return view('themes.front.index');
 });
 
+Route::get('/admin', function () {
+  return view('themes.admin.index');
+});
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
