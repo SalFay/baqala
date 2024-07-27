@@ -1,0 +1,2 @@
+[27-Feb-2022 12:31:11 UTC] PHP Parse error:  syntax error, unexpected 'Class' (T_CLASS), expecting identifier (T_STRING) or '{' in /home/xpertdev/dgs.xpertzdev.com/app/Helpers/common.php on line 10
+[27-Feb-2022 12:31:22 UTC] PHP Parse error:  syntax error, unexpected 'Class' (T_CLASS), expecting identifier (T_STRING) or '{' in /home/xpertdev/dgs.xpertzdev.com/app/Helpers/common.php on line 10

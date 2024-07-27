@@ -1,0 +1,103 @@
+
+.timeline {
+    padding: 0;
+    margin-bottom: 0;
+    margin-left: 1rem;
+    list-style: none
+}
+
+.timeline .timeline-item {
+    position: relative;
+    padding-left: 2.5rem;
+    border-left: 1px solid #EBE9F1
+}
+
+.timeline-point-danger{
+    background-color: red !important;
+}
+
+.timeline-point-success{
+    background-color: green !important;
+}
+
+.timeline .timeline-item:not(:last-child) {
+    padding-bottom: 1.8rem
+}
+
+.timeline .timeline-item .timeline-point {
+    position: absolute;
+    left: -.85rem;
+    top: 0;
+    z-index: 2;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    align-items: center;
+    height: 1.75rem;
+    width: 1.75rem;
+    text-align: center;
+    border-radius: 50%;
+    border: 1px solid #7367F0;
+    background-color: #FFF
+}
+
+.timeline .timeline-item .timeline-point.timeline-point-indicator {
+    left: -.412rem;
+    top: .07rem;
+    height: 12px;
+    width: 12px;
+    border: 0;
+    background-color: #7367F0
+}
+
+.timeline .timeline-item .timeline-point.timeline-point-indicator:before {
+    content: '';
+    background: rgba(115, 103, 240, .12);
+    height: 20px;
+    width: 20px;
+    display: block;
+    position: absolute;
+    top: -.285rem;
+    left: -.285rem;
+    border-radius: 50%
+}
+
+.timeline .timeline-item .timeline-point i, .timeline .timeline-item .timeline-point svg {
+    color: #7367F0;
+    font-size: .85rem;
+    vertical-align: baseline
+}
+
+.timeline .timeline-item .timeline-event {
+    position: relative;
+    width: 100%;
+    min-height: 4rem
+}
+
+.timeline .timeline-item .timeline-event .timeline-event-time {
+    font-size: .85rem;
+    color: #B9B9C3
+}
+
+.timeline .timeline-item:last-of-type {
+    border-left-color: transparent !important
+}
+
+.timeline .timeline-item:last-of-type:after {
+    content: '';
+    position: absolute;
+    left: -1px;
+    bottom: 0;
+    width: 1px;
+    height: 100%;
+    background: -webkit-linear-gradient(#EBE9F1, transparent);
+    background: linear-gradient(#EBE9F1, transparent)
+}

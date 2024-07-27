@@ -1,0 +1,99 @@
+.flot {
+    height: 300px;
+    width: 400px;
+    position: absolute;
+    left: 25%;
+}
+
+.legend {
+    display: none;
+}
+
+.flotTip {
+    padding: 3px 5px;
+    background-color: #000;
+    z-index: 100;
+    color: #fff;
+    opacity: .80;
+    filter: alpha(opacity=85);
+}
+
+
+.chart_titlecolor {
+    border-radius: 10px;
+    height: 30px;
+    width: 7%;
+    margin-top: 5px;
+}
+
+.chart_value {
+    text-align: center | left;
+    width: 13%;
+    padding: 10px;
+}
+
+.chart_title {
+    text-align: center | left;
+    width: 80%;
+    padding: 10px;
+}
+
+.chart_row {
+    margin: 20px;
+}
+
+@media only screen and (max-width: 700px) {
+    .flot {
+        height: 300px;
+        width: 400px;
+        position: absolute;
+        left: 10%;
+    }
+
+    .flot-chart {
+        height: 230px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .flot {
+        height: 150px;
+        width: 200px;
+        position: absolute;
+        left: 20%;
+    }
+
+    .flot-chart {
+        height: 150px;
+    }
+
+    .chart_titlecolor {
+        border-radius: 10px;
+        height: 30px;
+        width: 7%;
+        margin-top: 5px;
+    }
+
+    .chart_value {
+        text-align: center | left;
+        width: 13%;
+        font-size: 11px;
+        padding: 5px;
+    }
+
+    .chart_title {
+        text-align: center | left;
+        width: 80%;
+        font-size: 13px;
+        padding: 5px;
+    }
+
+    .chart_row {
+        margin: 5px;
+    }
+
+    .row {
+        --bs-gutter-x: 0px;
+    }
+
+}

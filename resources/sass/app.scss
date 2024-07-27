@@ -1,0 +1,25 @@
+// Fonts
+@import url("https://fonts.googleapis.com/css?family=Nunito");
+// Variables
+@import "./variables";
+/* --------------------------------------------------------------
+ *  Plugins
+ * --------------------------------------------------------------
+ */
+@import "~select2";
+@import "~jquery-confirm/dist/jquery-confirm.min.css";
+@import "~jquery-toast-plugin";
+//@import "~@ttskch/select2-bootstrap4-theme/dist/select2-bootstrap4.min.css";
+@import "./admin/layouts/layout_1/default/compile/bootstrap";
+@import "./admin/layouts/layout_1/default/compile/bootstrap_limitless";
+@import "./admin/layouts/layout_1/default/compile/colors";
+@import "./admin/layouts/layout_1/default/compile/components";
+@import "./admin/layouts/layout_1/default/compile/layout";
+@import "./admin/icons/icomoon/styles.min.css";
+@import "./admin/icons/fontawesome/styles.min.css";
+@import "./admin/icons/material/styles.min.css";
+
+// @import "admin/layouts/layout_1/default/compile/ckeditor/editor";
+// @import "admin/layouts/layout_1/default/compile/ckeditor/contents";
+// @import "admin/layouts/layout_1/default/compile/ckeditor/dialog";
+

@@ -1,0 +1,326 @@
+body{
+    font-family: Times, "Times New Roman", serif;
+}
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 0.25rem;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    outline: 0;
+}
+
+
+.page-item.active .page-link {
+    z-index: 1;
+    color: black;
+    background-color: darkgrey;
+    border-color: grey;
+}
+
+c-article-tile__body
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #444;
+    line-height: 24px !important;
+}
+
+.select2-search--dropdown:after {
+    content: "";
+    font-family: "icomoon";
+    position: absolute;
+    top: 50%;
+    left: 18rem !important;
+    color: inherit;
+    display: block;
+    font-size: 0.8125rem;
+    margin-top: -0.40625rem;
+    line-height: 1;
+    opacity: 0.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.select2-container .select2-selection--single {
+    box-sizing: border-box;
+    cursor: pointer;
+    display: block;
+    height: 40px !important;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 34px !important;
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 20px;
+}
+
+.action-buttons > div {
+    display: inline-block;
+}
+
+input {
+    padding: 0.75em 0.5em;
+    font-size: 100%;
+    border: 1px solid #ccc;
+    width: 100%;
+}
+
+.bg-teal-400 {
+    color: black !important;
+    background-color: lightgrey !important;
+}
+
+.card-title {
+    font: 600 13px / 20px "Source Sans Pro", sans-serif;
+    color: rgb(38, 41, 44);
+    word-break: break-word;
+}
+
+
+.card-body {
+
+    width: auto !important;
+}
+
+/* -------------------------------------------------------------------------- *\
+ * .c-tile-list
+ * -------------------------------------------------------------------------- */
+
+/**
+ * 1. Reset default list styles
+ * 2. Flexbox used for a grid-like layout for the tiles.
+ */
+.c-tile-list {
+    list-style: none;
+    /* 1 */
+    margin: 0;
+    /* 1 */
+    padding: 0;
+    /* 1 */
+    display: flex;
+    /* 2 */
+    flex-wrap: wrap;
+    /* 2 */
+}
+
+/**
+ * 1. Flexbox used for equal-height tiles on a same line.
+ * 2. Make sure a time never looks distorded.
+ * 3. Spacing between tiles.
+ */
+.c-tile-list__item {
+    display: block;
+    flex-direction: column;
+    /* flex: 0 0 300px; */
+    margin: 5px;
+}
+
+
+/* -------------------------------------------------------------------------- *\
+ * .c-article-tile
+ * -------------------------------------------------------------------------- */
+
+/**
+ * 1. Make it possible to bottom align the footer in a tile that has a minimum
+ *    height.
+ * 2. Make sure the tile spread across the full height of the parent if inside
+ *    a flex container.
+ */
+.c-article-tile {
+    display: flex;
+    /* 1 */
+    flex-direction: column;
+    /* 1 */
+    flex: 1 0 auto;
+    /* 2 */
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgb(255, 255, 255);
+}
+
+.c-article-tile a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.c-article-tile__header,
+.c-article-tile__body,
+.c-article-tile__footer {
+    display: flex;
+    padding: 2px;
+    flex-flow: nowrap;
+    font: 500 11px / 16px "Source Sans Pro", sans-serif;
+    color: rgb(116, 118, 120);
+}
+
+.c-article-tile__header,
+.c-article-tile__footer {
+    font-size: 80%;
+}
+
+.c-article-tile__header {
+    padding-top: 7px;
+    /* margin-left: -3px; */
+    padding-bottom: 7px;
+    /* background: dimgray; */
+    /* color: dimgray; */
+    /* text-align: center; */
+
+    border-bottom: 2px solid lightcoral;
+    font-size: 12px;
+    text-transform: capitalize;
+
+}
+
+.c-article-tile__category {
+    font-weight: bold;
+}
+
+/**
+ * 1. Right align the comment count container in the header.
+ */
+.c-article-tile__comment-count {
+    margin-left: auto;
+    font-size: xx-small !important;
+    font-weight: bold !important;
+    color: cadetblue !important;
+    /* 1 */
+}
+
+
+.c-article-tile__title {
+    margin: 0;
+    color: #000;
+    font-size: 150%;
+}
+
+/**
+ * 1. Make the title link inherit the color only when not active / hovered,
+ *    effectively making it themed when active / hovered.
+ */
+.c-article-tile__title:not(:hover):not(:active) > a {
+    color: inherit;
+    /* 1 */
+}
+
+/**
+ * 1. Bottom align the footer in the tile.
+ * 2. Prevent any content from the footer from wrapping, effectively forcing it
+ *    on a single line at all time.
+ */
+.c-article-tile__footer {
+    padding-top: 5px;
+    margin-top: auto;
+    white-space: nowrap;
+    font-weight: 700;
+    color: cadetblue;
+}
+
+/**
+ * 1. Prevent the author and the date from overlapping in case they both don’t
+ *    fit on the line; add an ellipsis to the author name.
+ * 2. Visually no effect when both the author and the date fit; however make
+ *    sure they are slightly spaced from each other if they meet on the line.
+ */
+.c-article-tile__author {
+    text-overflow: ellipsis;
+    /* 1 */
+    overflow: hidden;
+    /* 1 */
+    margin-right: 5px;
+    /* 2 */
+}
+
+/**
+ * 1. Right align the date container in the footer.
+ */
+.c-article-tile__date {
+    margin-left: auto;
+    /* 1 */
+}
+
+
+/* -------------------------------------------------------------------------- *\
+ * [Theming] .c-article-tile
+ * -------------------------------------------------------------------------- */
+
+.c-article-tile.t-sass,
+.c-article-tile.t-sass a {
+    color: black;
+}
+
+.c-article-tile.t-svg,
+.c-article-tile.t-svg a {
+    color: #2abc67;
+}
+
+.c-article-tile.t-web,
+.c-article-tile.t-web a {
+    color: #2980b9;
+}
+
+.list-group {
+
+    border: 0px solid rgba(0, 0, 0, 0.125);
+   padding: 0.5rem 15px;
+    background-clip: border-box;
+}
+
+.list-group-item {
+    display: flex;
+    align-items: inherit !important;
+    margin-bottom: 0;
+    padding: 5px;
+    border-width: 0;
+    background-color: transparent !important;
+}
+
+
+.header-elements-inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.card-header {
+    padding: 0.4375rem 1.2rem !important;
+}
+
+.card-title {
+    margin-bottom: -0.0625rem !important;
+}
+
+.content {
+    min-height: calc(100vh - 96px);
+}
+
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+    padding-right: 50px !important
+}
+
+/*
+.nav-item-submenu:hover{
+    cursor: pointer !important;
+}*/
+
+

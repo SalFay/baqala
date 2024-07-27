@@ -1,0 +1,216 @@
+// Body
+// Body
+$body-bg: #f8fafc;
+
+// Typography
+$font-family-sans-serif: 'Nunito',
+sans-serif;
+$font-size-base: 0.9rem;
+$line-height-base: 1.6;
+
+// Colors
+$blue: #3490dc;
+$indigo: #6574cd;
+$purple: #9561e2;
+$pink: #f66d9b;
+$red: #e3342f;
+$orange: #f6993f;
+$yellow: #ffed4a;
+$green: #38c172;
+$teal: #4dc0b5;
+$cyan: #6cb2eb;
+$lightorange: #cc5500;
+$pink-red: #b6162e;
+$dark-orange: #a84708;
+
+.dark-orange {
+  color: $dark-orange;
+}
+
+.pink-red {
+  color: $pink-red;
+}
+
+.lightorange {
+  color: $lightorange;
+}
+
+.blue {
+  color: $blue;
+}
+
+.indigo {
+  color: $indigo;
+}
+
+.purple {
+  color: $purple;
+}
+
+.pink {
+  color: $pink;
+}
+
+.red {
+  color: $red;
+}
+
+.orange {
+  color: $orange;
+}
+
+.yellow {
+  color: $yellow;
+}
+
+.green {
+  color: $green;
+}
+
+.teal {
+  color: $teal;
+}
+
+.cyan {
+  color: $cyan;
+}
+
+
+$accordion-padding-y: 1rem;
+$accordion-padding-x: 1.25rem;
+$accordion-color: var(--#{$prefix}body-color);
+$accordion-bg: $body-bg;
+$accordion-border-width: $border-width;
+$accordion-border-color: var(--#{$prefix}border-color);
+$accordion-border-radius: $border-radius;
+$accordion-inner-border-radius: subtract($accordion-border-radius, $accordion-border-width);
+
+$accordion-body-padding-y: $accordion-padding-y;
+$accordion-body-padding-x: $accordion-padding-x;
+
+$accordion-button-padding-y: $accordion-padding-y;
+$accordion-button-padding-x: $accordion-padding-x;
+$accordion-button-color: $accordion-color;
+$accordion-button-bg: var(--#{$prefix}accordion-bg);
+$accordion-transition: $btn-transition, border-radius .15s ease;
+$accordion-button-active-bg: tint-color($component-active-bg, 90%);
+$accordion-button-active-color: shade-color($primary, 10%);
+
+$accordion-button-focus-border-color: $input-focus-border-color;
+$accordion-button-focus-box-shadow: $btn-focus-box-shadow;
+
+$accordion-icon-width: 1.25rem;
+$accordion-icon-color: $accordion-button-color;
+$accordion-icon-active-color: $accordion-button-active-color;
+$accordion-icon-transition: transform .2s ease-in-out;
+$accordion-icon-transform: rotate(-180deg);
+
+$accordion-button-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='#{$accordion-icon-color}'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>");
+$accordion-button-active-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='#{$accordion-icon-active-color}'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>");
+
+
+.accordion-bg {
+  $accordion-bg;
+}
+
+
+.accordion-transition {
+  $accordion-transition;
+}
+
+
+.accordion-border-color {
+  $accordion-border-color;
+}
+
+
+.accordion-border-width {
+  $accordion-border-width;
+}
+
+
+.accordion-border-radius {
+  $accordion-border-radius;
+}
+
+
+.accordion-inner-border-radius {
+  $accordion-inner-border-radius;
+}
+
+
+.accordion-btn-padding-x {
+  $accordion-button-padding-x;
+}
+
+
+.accordion-btn-padding-y {
+  $accordion-button-padding-y;
+}
+
+
+.accordion-btn-color {
+  $accordion-color;
+}
+
+
+.accordion-btn-bg {
+  $accordion-button-bg;
+}
+
+
+.accordion-btn-icon {
+escape-svg($accordion-button-icon);
+}
+
+
+.accordion-btn-icon-width {
+  $accordion-icon-width;
+}
+
+
+.accordion-btn-icon-transform {
+  $accordion-icon-transform;
+}
+
+
+.accordion-btn-icon-transition {
+  $accordion-icon-transition;
+}
+
+
+.accordion-btn-active-icon {
+escape-svg($accordion-button-active-icon);
+}
+
+
+.accordion-btn-focus-border-color {
+  $accordion-button-focus-border-color;
+}
+
+
+.accordion-btn-focus-box-shadow {
+  $accordion-button-focus-box-shadow;
+}
+
+
+.accordion-body-padding-x {
+  $accordion-body-padding-x;
+}
+
+
+.accordion-body-padding-y {
+  $accordion-body-padding-y;
+}
+
+
+.accordion-active-color {
+  $accordion-button-active-color;
+}
+
+
+.accordion-active-bg {
+  $accordion-button-active-bg;
+}
+
+
