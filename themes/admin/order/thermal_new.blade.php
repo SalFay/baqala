@@ -89,10 +89,9 @@
 		</div>--}}
 		<div class="col-xs-12">
 			<p class="text-center" style="font-size: 16px; font-weight: 600; margin: 2px;">
-				<strong style="font-size: 20px"> فاتورة ضریبة مبسطة</strong><br>
 				{{option('title')}} <br>
 				{{option('address')}} <br>
-				{{option('vat_number')}} <br>
+		{{--		{{option('vat_number')}} <br>--}}
 				{{option('mobile')}}
 			</p>
 

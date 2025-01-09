@@ -4,8 +4,13 @@
 /public/build
 /public/hot
 /public/storage
+/public/themes/default/*
 /storage/*.key
 /storage/crm
+/storage/framework/sessions
+/storage/framework/views
+/storage/framework/cache
+/storage/framework/testing
 /vendor
 .env
 .env.backup
@@ -19,3 +24,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+.codiumai
+*~
+.htaccess
+
+
+

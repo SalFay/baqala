@@ -89,10 +89,11 @@
 		</div>--}}
 		<div class="col-xs-12">
 			<p class="text-center" style="font-size: 16px; font-weight: 600; margin: 2px;">
-				<strong style="font-size: 20px"> فاتورة ضریبة مبسطة</strong><br>
 				{{option('title')}} <br>
 				{{option('address')}} <br>
+{{--
 				{{option('vat_number')}} <br>
+--}}
 				{{option('mobile')}}
 			</p>
 
@@ -123,12 +124,25 @@
 			Customer :
 		</div>
 		<div class="col-xs-8">
-			{{($order->customer && $order->customer->id !== 1) ? $order->customer->full_name : $order->customer_name}}
+			{{($order->customer && $order->customer->id !== 1) ? $order->customer->full_name : ($order->customer_name ?? 'Walking Customer')}}
 		</div>
 
 
 
 	</div>
+
+    <div class="row" style="font-weight: 600;
+    font-size: 11px; margin: 0px 2px;">
+        <div class="col-xs-4">
+            Cashier :
+        </div>
+        <div class="col-xs-8">
+            {{$order->cashier_name}}
+        </div>
+
+
+
+    </div>
 
 
 	<div class="row" style="font-size: 13px; line-height: 1.7; font-weight: 600; margin: 0px 3px;">
@@ -167,53 +181,37 @@
 		</table>
 		<br>
 		<div class="row" style="font-weight: 600; font-size: 12px; text-align: center">
-			<div class="col-xs-4">
+			<div class="col-xs-7">
 				Total
 			</div>
-
-			<div class="col-xs-4">
-				الاجمالی
-			</div>
-			<div class="col-xs-4">
+			<div class="col-xs-5">
 				{{sprintf('%0.2f',$order->sub_total)}}
 			</div>
-			<div class="col-xs-4">
+            <div class="col-xs-7">
 				Discount
 			</div>
 
-			<div class="col-xs-4">
-				الخصم
-			</div>
-			<div class="col-xs-4">
+			<div class="col-xs-5">
 				{{$order->discount}}   </div>
-			<div class="col-xs-4">
-				Total &
+            <div class="col-xs-7">
+				Total Amount
 			</div>
 
-			<div class="col-xs-4">
-				بعد الخصم
-			</div>
-			<div class="col-xs-4">
+			<div class="col-xs-5">
 				{{sprintf('%0.2f',$order->sub_total)}}
 			</div>
-			<div class="col-xs-4">
+            <div class="col-xs-7">
 				VAT {{$order->vat}}%
 			</div>
 
-			<div class="col-xs-4">
-				الضریبۃ
-			</div>
-			<div class="col-xs-4">
+			<div class="col-xs-5">
 				{{sprintf('%0.2f',$total_vat)}}
 			</div>
-			<div class="col-xs-3">
-				Net
+            <div class="col-xs-7">
+				Net Amount
 			</div>
 
-			<div class="col-xs-5" style="font-size: 12px;">
-				الإجمالي شامل الضريبة
-			</div>
-			<div class="col-xs-4" style="font-weight: 600; font-size: 16px; text-align: center">
+			<div class="col-xs-5" style="font-weight: 600; font-size: 16px; text-align: center">
 				{{sprintf('%0.2f',$order->total)}}
 			</div>
 		</div>
@@ -231,33 +229,6 @@
      margin-bottom: 1px;">
 		<hr style="margin-top: 1px;
      margin-bottom: 1px;">
-   <?php
-
-   /* $date = date( 'm/d/Y h:i:s A', strtotime( $order->created_at ) );
-	$data = "اسم المؤسسۃ:" . option( 'title' ) . "    ";
-	$data .= "العنوان :" . option( 'address' ) . "    ";
-	$data .= "الرقم الضربی :" . option( 'vat_number' ) . "    ";
-	$data .= "رقم الفاتورۃ :" . $order->id . "    ";
-	$data .= "التاریخ و الوقت  :" . $date . "    ";
-	$data .= "المبلغ  :" . sprintf( '%0.2f', $order->sub_total ) . "    ";
-	$data .= "القیمۃ المضافۃ :" . sprintf( '%0.2f', $total_vat ) . "    ";
-	$data .= "الاِجمالی :" . sprintf( '%0.2f', $order->total );
-	// data:image/png;base64, .........*/
-   $displayQRCodeAsBase64 = \Salla\ZATCA\GenerateQrCode::fromArray( [
-     new \Salla\ZATCA\Tags\Seller( option( 'title' ) ), // seller name
-     new \Salla\ZATCA\Tags\TaxNumber( option( 'vat_number' ) ), // seller tax number
-     new \Salla\ZATCA\Tags\InvoiceDate( $order->created_at ), // invoice date as Zulu ISO8601 @see https://en.wikipedia.org/wiki/ISO_8601
-     new \Salla\ZATCA\Tags\InvoiceTotalAmount( $order->sub_total ), // invoice total amount
-     new \Salla\ZATCA\Tags\InvoiceTaxAmount( $total_vat ) // invoice tax amount
-   ] )->render();
-
-   // now you can inject the output to src of html img tag :)
-   // <img src="$displayQRCodeAsBase64" alt="QR Code" />
-   ?>
-		<img class="center" style="width: 60%" src="{{$displayQRCodeAsBase64}}" alt="QR Code"/>
-		<br><br><br>
-	</div>
-
 </div>
 <script src="{{asset('themes/default/jquery/jquery.min.js')}}"></script>
 <script src="{{asset('themes/default/bootstrap-3/js/bootstrap.min.js')}}"></script>
