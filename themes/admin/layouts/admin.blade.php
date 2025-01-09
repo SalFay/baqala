@@ -246,13 +246,13 @@
 
 		<!-- Content area -->
 		<div class="content">
-			@impersonating
+		{{--	@impersonating
 			<div class="alert alert-primary alert-styled-left">
 				You are logged-in as {!! user()->full_name !!}. <a href="{{ route('impersonate.stop') }}">
 					Stop Session</a>
 			</div>
 
-			@endImpersonating
+			@endImpersonating--}}
 			@yield('content')
 		</div>
 		<!-- /content area -->
