@@ -22,6 +22,7 @@
         "laravel/tinker": "^2.0",
         "livewire/livewire": "^2.3",
         "milon/barcode": "^9.0",
+        "onecentlin/laravel-adminer": "^7.0",
         "prettus/l5-repository": "^2.8",
         "pusher/pusher-php-server": "^4.1",
         "salla/zatca": "^2.0",

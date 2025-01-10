@@ -148,6 +148,13 @@
       0 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
     ),
   ),
+  'onecentlin/laravel-adminer' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Onecentlin\\Adminer\\ServiceProvider',
+    ),
+  ),
   'prettus/l5-repository' => 
   array (
     'providers' => 

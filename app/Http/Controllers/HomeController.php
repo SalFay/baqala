@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\TestEmail;
+use App\Models\Product;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Contracts\Foundation\Application;
@@ -26,7 +27,7 @@ class HomeController extends Controller
   {
     //$this->middleware( 'auth' );
   }
-  
+
   /**
    * Show the application dashboard.
    * @return Renderable
@@ -35,20 +36,24 @@ class HomeController extends Controller
   {
     return redirect( 'login' );
   }
-  
+
   public function storageLink()
   {
     Artisan::call( 'storage:link' );
   }
-  
+
   public function backupDatabase()
   {
     Artisan::call( 'backup:run' );
-    
+
     return Artisan::output();
-    
+
   }
-  
+
+    public function changeCategory()
+    {
+        Product::where('category_id', 59)->update(['category_id' => 1]);
+    }
   /**
    * @param $action
    * @return JsonResponse
@@ -63,10 +68,10 @@ class HomeController extends Controller
       $output = Mail::to( [ 'haroonyousaf80@gmail.com' ] )->send( new TestEmail() );
       return JsonResponse::create( [ 'message' => $output ] );
     }
-    
+
     return JsonResponse::create( [ Artisan::output() ] );
   }// artisan
-  
+
   /**
    * @param User $user
    * @return Application|RedirectResponse|Redirector
@@ -76,7 +81,7 @@ class HomeController extends Controller
     Auth::user()->impersonate( $user );
     return redirect( '/admin' );
   }// startImpersonation
-  
+
   /**
    * @return Application|RedirectResponse|Redirector
    */
@@ -85,5 +90,5 @@ class HomeController extends Controller
     Auth::user()->leaveImpersonation();
     return redirect( '/admin/user' );
   }
-  
+
 }

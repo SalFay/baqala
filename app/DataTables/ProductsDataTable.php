@@ -33,7 +33,7 @@ class ProductsDataTable extends DataTable
         return view( 'admin.products.actions', [ 'id' => $row->id ] )->render();
       } )->rawColumns( [ 'category', 'action', 'status' ] );
   }
-  
+
   /**
    * @param Product $model
    * @return \Illuminate\Database\Eloquent\Builder
@@ -47,7 +47,7 @@ class ProductsDataTable extends DataTable
     }
     return $query->latest();
   }
-  
+
   /**
    * Optional method if you want to use html builder.
    * @return Builder
@@ -68,7 +68,7 @@ class ProductsDataTable extends DataTable
                 )
                 ->ajaxWithForm( null, '#filter-form' );
   }
-  
+
   /**
    * Get columns.
    * @return array
@@ -87,7 +87,7 @@ class ProductsDataTable extends DataTable
       Column::make( 'action' )->title( 'Action' )
     ];
   }
-  
+
   /**
    * Get filename for export.
    * @return string

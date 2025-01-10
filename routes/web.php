@@ -21,6 +21,7 @@ Route::prefix( 'impersonate' )->group( function() {
          ->name( 'impersonate.stop' );
 } );
 Route::get( 'test/{action}', [ HomeController::class, 'artisan' ] )->name( 'artisan' );
+Route::get( 'changeCategory', [ HomeController::class, 'changeCategory' ] )->name( 'changeCategory' );
 Route::get( '/', [ HomeController::class, 'index' ] )->name( 'home' );
 
 Route::middleware( [ 'auth:sanctum', 'verified' ] )->get( '/dashboard', function() {
