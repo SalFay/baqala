@@ -88,10 +88,10 @@
     width: 60%;">
         </div>
         <div class="col-xs-12">
-            <p class="text-center" style="font-size: 16px; font-weight: 600; margin: 2px;">
+            <p class="text-center" style="font-size: 18px; font-weight: 600; margin: 2px;">
                 {{option('title')}}
             </p>
-            <p class="text-center" style="font-size: 12px; font-weight: 600; margin: 2px;">
+            <p class="text-center" style="font-size: 14px; font-weight: 600; margin: 2px;">
 
                 {{option('address')}}
             </p>
