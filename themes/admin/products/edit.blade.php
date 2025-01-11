@@ -67,6 +67,7 @@
 						type="text"
 						name="purchase_price"
 						id="purchase_price"
+                        value="0"
 						class="form-control"
 						placeholder="e.g. 319.98"
 					/>
