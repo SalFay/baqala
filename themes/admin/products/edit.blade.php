@@ -98,7 +98,7 @@
 				       class="col-lg-2 col-form-label">Taxable:</label>
 				<div class="col-lg-4">
 					<div class="form-check">
-						<input type="checkbox" checked id="taxable" class="form-check-input" name="taxable"/>
+						<input type="checkbox" id="taxable" class="form-check-input" name="taxable"/>
 					</div>
 				</div>
 			</div>
