@@ -24,6 +24,20 @@
 				</div>
 			</div>
 			<div class="form-group row">
+                <label for="first_name"
+                       class="col-lg-2 col-form-label">
+                    Name:</label>
+                <div class="col-lg-4">
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        class="form-control"
+                        placeholder="Product Name"
+                    />
+
+                </div>
+
 
 				<label for="first_name"
 				       class="col-lg-2 col-form-label">
@@ -39,19 +53,7 @@
 
 				</div>
 
-				<label for="first_name"
-				       class="col-lg-2 col-form-label">
-					Name:</label>
-				<div class="col-lg-4">
-					<input
-						type="text"
-						id="name"
-						name="name"
-						class="form-control"
-						placeholder="Product Name"
-					/>
 
-				</div>
 
 
 			</div>
