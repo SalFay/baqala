@@ -27,7 +27,7 @@
 
 				<label for="first_name"
 				       class="col-lg-2 col-form-label">
-					Arabic Name:</label>
+					Urdu Name:</label>
 				<div class="col-lg-4">
 					<input
 						type="text"
