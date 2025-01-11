@@ -19,15 +19,15 @@ use Option;
 
 class OrderController extends Controller
 {
-  
+
   private $cartService;
-  
+
   public function __construct( CartService $cartService )
   {
     $this->cartService = $cartService;
     $this->cartService->setForClient();
   }
-  
+
   /**
    * @param Customer $customer
    * @return Application|Factory|View
@@ -36,25 +36,25 @@ class OrderController extends Controller
   {
     return view( 'admin.order.index', [ 'customer' => $customer ] );
   }
-  
+
   public function invoice( Order $order )
   {
     if( option( 'printer' ) === 'Thermal Arabic' ) {
       return view( 'admin.order.thermal', [ 'order' => $order ] );
-      
+
     } elseif( option( 'printer' ) === 'Thermal Arabic New' ) {
       return view( 'admin.order.thermal_new', [ 'order' => $order ] );
-      
+
     } elseif( option( 'printer' ) === 'Thermal Eng' ) {
       return view( 'admin.order.thermal_en', [ 'order' => $order ] );
-      
+
     } else {
       return view( 'admin.order.invoice', [ 'order' => $order ] );
-      
+
     }
-    
+
   }
-  
+
   /**
    * @param Customer $customer
    * @return Application|Factory|View
@@ -67,7 +67,7 @@ class OrderController extends Controller
     $cart = $this->cartService->getContent();
     return \view( 'admin.order.cart', [ 'customer' => $customer, 'cart' => $cart ] );
   }// showCart
-  
+
   public function get( Request $request )
   {
     $product = Product::where( 'pid', $request->pid )->first();
@@ -109,16 +109,16 @@ class OrderController extends Controller
         return response()->json( [ 'status' => 'error', 'message' => 'Product Not Found!' ], 400 );
       }
     }
-    
+
   }
-  
+
   public
   function addToCart(
     Request  $request,
     Customer $customer
   ) {
     $this->cartService->setCustomerId( $customer->id );
-    
+
     $id = $request->id;
     $stock = $request->stock;
     $price = $request->sale_price;
@@ -140,18 +140,18 @@ class OrderController extends Controller
            return response()->json( [ 'status' => 'error', 'message' => 'Stock Entry is Greater than Available Stock' ],
                400 );
        }*/
-    
+
   }// addToCart
-  
+
   public function deleteFromCart( Request $request, Customer $customer )
   {
-    
+
     $this->cartService->setCustomerId( $customer->id );
     $this->cartService->remove( $request->id );
     return response()->json( [ 'status' => 'ok', 'message' => 'Product Deleted from Cart' ], 200 );
-    
+
   }
-  
+
   public
   function emptyCart(
     Customer $customer
@@ -159,12 +159,11 @@ class OrderController extends Controller
     $this->cartService->setCustomerId( $customer->id );
     $this->cartService->trash();
     return response()->json( [ 'status' => 'ok', 'message' => 'Cart Deleted Successfully' ], 200 );
-    
+
   }
-  
+
   public function store( Request $request, Customer $customer )
   {
-    
     $paid = $request->amount;
     $total = $request->total;
     $type = $request->payment_type;
@@ -177,6 +176,7 @@ class OrderController extends Controller
       'customer_id'      => $customer->id,
       'payment_type'     => $type,
       'date'             => $request->date,
+      'discount_type'    => $request->discount_type,
       'discount'         => $request->discount,
       'vat'              => option( 'vat_amount' ),
       'delivery_charges' => $request->delivery_charges,
@@ -187,13 +187,13 @@ class OrderController extends Controller
       'customer_name'    => $request->customer_name,
       'cashier_name'     => $request->cashier_name
     ];
-    
+
     $order = Order::create( $data );
-    
+
     foreach( $request->products as $product ) {
-      
+
       for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
-        
+
         $prod = Inventory::where( 'product_id', $product[ 'id' ] )
                          ->where( 'status', 'Available' )->first();
         if( $prod ) {
@@ -211,7 +211,7 @@ class OrderController extends Controller
             'date'       => $request->date
           ] );
         }
-        
+
       }
       OrderItem::create( [
         'order_type'     => Order::class,
@@ -224,7 +224,7 @@ class OrderController extends Controller
         'status'         => 'Delivered',
         'date'           => $request->date
       ] );
-      
+
       InventoryLog::create( [
         'order_type'    => Order::class,
         'order_id'      => $order->id,
@@ -236,7 +236,7 @@ class OrderController extends Controller
         'date'          => $request->date
       ] );
     }
-    
+
     Account::create( [
       'party_type' => Customer::class,
       'party_id'   => $customer->id,
@@ -244,7 +244,7 @@ class OrderController extends Controller
       'bank_id'    => 0,
       'comments'   => 'Order No.' . $order->id,
     ] );
-    
+
     if( $paid > 0 ) {
       Account::create( [
         'party_type' => Customer::class,
@@ -254,7 +254,7 @@ class OrderController extends Controller
         'comments'   => 'Order No.' . $order->id,
       ] );
     }
-    
+
     /* } else {
          $installment = $request->installment;
          for( $i = 1; $i <= $installment; $i++ ) {
@@ -275,17 +275,17 @@ class OrderController extends Controller
          }
 
      }*/
-    
+
     if( $request->printer ) {
       Option::set( 'printer', $request->printer );
     }
     $this->cartService->setCustomerId( $customer->id );
     $this->cartService->trash();
-    
+
     return response()->json( [ 'status' => 'ok', 'message' => 'Order Added Successfully', 'url' => url( 'admin/order/invoice/' . $order->id ) ] );
-    
+
   }
-  
+
   /**
    * @param Order $order
    * @return array|string[]
@@ -293,32 +293,32 @@ class OrderController extends Controller
   public function destroy( Order $order ) : array
   {
     foreach( $order->items as $item ) {
-      
+
       for( $i = 1; $i <= $item->stock; $i++ ) {
         $prod = Inventory::where( 'product_id', $item->product_id )
                          ->where( 'order_id', $order->id )
                          ->where( 'status', 'Sold' )->first();
-        
+
         $prod->update( [
           'status'   => 'Available',
           'order_id' => 0
         ] );
-        
+
       }
-      
+
       InventoryLog::where( 'order_id', $order->id )
                   ->where( 'order_type', Order::class )->delete();
-      
+
       $item->delete();
     }
-    
+
     Account::create( [
       'party_type' => Customer::class,
       'party_id'   => $order->customer->id,
       'credit'     => $order->total,
       'comments'   => 'Order No.' . $order->id . ' Deleted',
     ] );
-    
+
     $order->delete();
     return [ 'status' => 'ok', 'message' => 'Order Deleted' ];
   }

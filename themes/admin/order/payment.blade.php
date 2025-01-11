@@ -47,7 +47,7 @@
         <div class="form-group row">
             <label class="col-sm-5 col-form-label">Total:</label>
             <div class="col-sm-7">
-                <input type="text" name="price" id="price" readonly class="form-control" placeholder="Total"/>
+                <input type="number" name="price" id="price" readonly class="form-control" placeholder="Total"/>
             </div>
         </div>
         <div class="form-group row">
@@ -71,7 +71,7 @@
         <div class="form-group row">
             <label class="col-sm-5 col-form-label">Discount:</label>
             <div class="col-sm-7">
-                <input id="discount" value="0" onblur="proceed()" type="text"
+                <input id="discount" value="0" onblur="proceed()" type="number"
                        name="discount"
                        class="form-control">
             </div>
@@ -84,7 +84,7 @@
         <div class="form-group row">
             <label class="col-sm-5 col-form-label">Net Amount:</label>
             <div class="col-sm-7">
-                <input type="text" name="netAmount" id="netAmount" readonly class="form-control"
+                <input type="number" name="netAmount" id="netAmount" readonly class="form-control"
                        placeholder="Net Amount"/>
 
             </div>
@@ -101,7 +101,7 @@
         <div class="form-group row">
             <label class="col-sm-5 col-form-label">Paid:</label>
             <div class="col-sm-7">
-                <input type="text" name="paid" id="paid" onchange="changed()" value="0" class="form-control"
+                <input type="number" name="paid" id="paid" onchange="changed()" value="0" class="form-control"
                        placeholder="Enter Paid Amount"/>
 
             </div>
@@ -109,7 +109,7 @@
         <div class="form-group row">
             <label class="col-sm-5 col-form-label">Change:</label>
             <div class="col-sm-7">
-                <input type="text" name="change" id="change" value="0" class="form-control"/>
+                <input type="number" name="change" id="change" value="0" class="form-control"/>
 
 
             </div>

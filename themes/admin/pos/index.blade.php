@@ -251,7 +251,7 @@
             let discount = $('#disc').val()
             let dis = $('#discount').val()
             //let vat = '{{option('vat_amount')}}'
-            let price = $('#netAmount').val()
+            let price = $('#price').val()
             let delivery_charges = $('#delivery').val()
             // let amountVat = (parseFloat(price) * parseFloat(vat)) / 100
             let total
@@ -348,6 +348,7 @@
                                     products: products,
                                     sub_total: price,
                                     total: netAmount,
+                                    discount_type: $('#disc').val(),
                                     discount: discount,
                                     date: date,
                                     payment_id: payment_id,
@@ -361,6 +362,8 @@
                                 },
                                 success: function (res) {
                                     if (res.status === 'ok') {
+                                        $('#discount').val(0)
+                                        $('#delivery').val(0)
                                         ui.successMessage(res.message)
                                         refreshCart()
                                         window.location = res.url
@@ -433,6 +436,7 @@
                             products: products,
                             sub_total: price,
                             total: netAmount,
+                            discount_type: $('#disc').val(),
                             discount: discount,
                             date: date,
                             payment_id: payment_id,
@@ -446,11 +450,12 @@
                         },
                         success: function (res) {
                             if (res.status === 'ok') {
+                                $('#discount').val(0)
+                                $('#delivery').val(0)
                                 ui.successMessage(res.message)
                                 refreshCart()
                                 document.location.href = res.url
                                 return
-
                             }
                             ui.errorMessage(res.message)
                         },
