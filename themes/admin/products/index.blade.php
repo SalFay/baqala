@@ -14,8 +14,6 @@
 @push('footer')
 	{!! $dataTable->scripts() !!}
 	<script>
-
-
 	 $(document).ready(function () {
 		 onScan.attachTo(document, {
 			 scanButtonKeyCode: false,
