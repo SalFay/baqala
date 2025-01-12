@@ -33,7 +33,7 @@ return [
      */
 
     'root_users' => [
-        'superadmin@gmail.com',
+        'admin@admin.com',
         'haroonyousaf80@gmail.com',
     ],
     /*
@@ -47,7 +47,8 @@ return [
     |
     */
 
-    'debug' => (bool)env('APP_DEBUG', false),
+    //'debug' => (bool)env('APP_DEBUG', false),
+    'debug' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -75,7 +76,7 @@ return [
     |
     */
 
-    'timezone' => 'Asia/Riyadh',
+    'timezone' => 'Asia/Karachi',
 
     /*
     |--------------------------------------------------------------------------
