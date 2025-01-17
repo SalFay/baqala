@@ -63,7 +63,8 @@
                                         </a>
                                     </div>
                                     <div>
-                                        <a href="#" class="text-body font-weight-semibold letter-icon-title">Customers</a>
+                                        <a href="#"
+                                           class="text-body font-weight-semibold letter-icon-title">Customers</a>
                                     </div>
                                 </div>
                             </td>
@@ -99,7 +100,8 @@
                                         </a>
                                     </div>
                                     <div>
-                                        <a href="#" class="text-body font-weight-semibold letter-icon-title">Categories</a>
+                                        <a href="#"
+                                           class="text-body font-weight-semibold letter-icon-title">Categories</a>
                                     </div>
                                 </div>
                             </td>
@@ -118,7 +120,8 @@
                                         </a>
                                     </div>
                                     <div>
-                                        <a href="#" class="text-body font-weight-semibold letter-icon-title">Products</a>
+                                        <a href="#"
+                                           class="text-body font-weight-semibold letter-icon-title">Products</a>
                                     </div>
                                 </div>
                             </td>
@@ -195,28 +198,43 @@
                             <thead>
                             <tr>
                                 <th>Month</th>
-                                <th>Stock</th>
-                                <th>Profit</th>
-                                <th>Discount</th>
+                                <th>Sub Total</th>
+                                <th>Daily Discount</th>
+                                <th>Daily Delivery</th>
+                                <th>Customer Discount</th>
                                 <th>Vendor Discount</th>
                                 <th>Expense</th>
-                                <th>Net Profit</th>
+                                <th>Net Amount</th>
                             </tr>
                             </thead>
+
+
                             <tbody>
                             @foreach($month as $m)
                                 <tr>
                                     <th>{{$m['month']}}</th>
-                                    <td>{{$m['stock']}}</td>
-                                    <td>{{$m['profit']}}</td>
+                                    <td>{{$m['sub_total']}}</td>
+                                    <td>{{$m['daily_discount']}}</td>
+                                    <td>{{$m['daily_delivery']}}</td>
                                     <td>{{$m['discount']}}</td>
                                     <td>{{$m['vendor_discount']}}</td>
                                     <td>{{$m['expense']}}</td>
-                                    <td>{{$m['net'] - $m['discount'] - $m['expense'] + $m['vendor_discount']}}</td>
+                                    <td>{{$m['net']}}</td>
                                 </tr>
-
                             @endforeach
                             </tbody>
+                            <tfoot>
+                            <tr>
+                                <td><strong>Total</strong></td>
+                                <td><strong>{{ collect($month)->sum('sub_total') }}</strong></td>
+                                <td><strong>{{ collect($month)->sum('daily_discount') }}</strong></td>
+                                <td><strong>{{ collect($month)->sum('daily_delivery') }}</strong></td>
+                                <td><strong>{{ collect($month)->sum('discount') }}</strong></td>
+                                <td><strong>{{ collect($month)->sum('vendor_discount') }}</strong></td>
+                                <td><strong>{{ collect($month)->sum('expense') }}</strong></td>
+                                <td><strong>{{ collect($month)->sum('net') }}</strong></td>
+                            </tr>
+                            </tfoot>
                         </table>
 
                     </div>
@@ -235,24 +253,33 @@
                             <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Stock</th>
-                                <th>Profit</th>
+                                <th>Total Sale</th>
+                                <th>Delivery Charges</th>
                                 <th>Discount</th>
-                                <th>Net Profit</th>
+                                <th>Net Amount</th>
                             </tr>
                             </thead>
                             <tbody>
                             @foreach($data as $d)
                                 <tr>
                                     <th>{{date('d-m-Y', strtotime($d['date']))}}</th>
-                                    <td>{{$d['stock']}}</td>
-                                    <td>{{$d['profit']}}</td>
+                                    <td>{{$d['total']}}</td>
+                                    <td>{{$d['delivery']}}</td>
                                     <td>{{$d['discount']}}</td>
-                                    <td>{{$d['net'] - $d['discount']}}</td>
+                                    <td>{{$d['net']}}</td>
                                 </tr>
 
                             @endforeach
                             </tbody>
+                            <tfoot>
+                            <tr>
+                                <td><strong>Total</strong></td>
+                                <td><strong>{{ collect($data)->sum('total') }}</strong></td>
+                                <td><strong>{{ collect($data)->sum('delivery') }}</strong></td>
+                                <td><strong>{{ collect($data)->sum('discount') }}</strong></td>
+                                <td><strong>{{ collect($data)->sum('net') }}</strong></td>
+                            </tr>
+                            </tfoot>
                         </table>
 
                     </div>

@@ -11,7 +11,7 @@ use Yajra\DataTables\DataTables;
 
 class InvoiceService
 {
-  
+
   /**
    * @param Request $request
    * @param DataTables $dataTables
@@ -20,16 +20,16 @@ class InvoiceService
    */
   public function customerDataTables( Request $request, DataTables $dataTables )
   {
-    $table = DataTables::of( Order::query()->orderBy( 'id', 'DESC' )->limit( 20 ) );
-    
+    $table = DataTables::of( Order::query()->orderBy( 'id', 'DESC' )->limit( 500 ) );
+
     $table->addColumn( 'customer', static function( $row ) {
       return $row->customer->full_name;
     } );
-    
+
     $table->addColumn( 'action', static function( Order $row ) {
-      
+
       $buttons = [
-        
+
         [
           'href'  => route( 'order.invoice', $row->id ),
           'label' => '<i class="fas fa-eye"></i>',
@@ -52,19 +52,19 @@ class InvoiceService
     $table->rawColumns( [ 'customer', 'action' ] );
     return $table->make();
   }
-  
+
   public function vendorDataTables( Request $request, DataTables $dataTables )
   {
-    $table = DataTables::of( Stock::query()->orderBy( 'id', 'DESC' )->limit( 20 ) );
-    
+    $table = DataTables::of( Stock::query()->orderBy( 'id', 'DESC' )->limit( 500 ) );
+
     $table->addColumn( 'vendor', static function( $row ) {
       return $row->vendor->name;
     } );
-    
+
     $table->addColumn( 'action', static function( Stock $row ) {
-      
+
       $buttons = [
-        
+
         [
           'href'  => route( 'inventory.invoice', $row->id ),
           'label' => '<i class="fas fa-eye"></i>',
@@ -76,5 +76,5 @@ class InvoiceService
     $table->rawColumns( [ 'vendor', 'action' ] );
     return $table->make();
   }
-  
+
 }
