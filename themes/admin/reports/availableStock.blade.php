@@ -44,7 +44,9 @@
 	 let table
 	 $(document).ready(function () {
 		 table = $('#stockAvailability').dataTable({
-			 processing: true,
+             "lengthMenu": [[100, "All", 50, 25], [100, "All", 50, 25]],
+
+             processing: true,
 			 serverSide: true,
 			 autoWidth: true,
 			 ajax: {

@@ -17,20 +17,20 @@ use Yajra\DataTables\DataTables;
 class ProductService
 {
   private $repository;
-  
+
   public function __construct( ProductRepository $repository )
   {
     $this->repository = $repository;
   }
-  
+
   public function availableStock( Request $request, DataTables $dataTables )
   {
     $query = $this->repository->dataTablesQuery();
-    
+
     if( !empty( $request->search[ 'value' ] ) ) {
       $query->where( 'name', 'LIKE', '%' . $request->search[ 'value' ] . '%' );
     }
-    $table = $dataTables->eloquent( $query->limit( 20 )->orderByDesc( 'id' ) );
+    $table = $dataTables->eloquent( $query->limit( 500 )->orderByDesc( 'id' ) );
     $table->addColumn( 'name', static function( $row ) {
       return $row->full_name;
     } )->addColumn( 'totalStock', static function( $row ) {
@@ -45,12 +45,12 @@ class ProductService
     $table->rawColumns( [ 'name', 'totalStock', 'StockChecking', 'stockSold', 'stockReturn' ] );
     return $table->make();
   }
-  
+
   public function inventoryLog( Request $request, DataTables $dataTables )
   {
     $start = startDate( $request->date );
     $end = endDate( $request->date );
-    
+
     $query = InventoryLog::query();
     if( !empty( $request->search[ 'value' ] ) ) {
       $search = $request->search[ 'value' ];
@@ -64,7 +64,7 @@ class ProductService
     if( $start && $end ) {
       $query->where( 'created_at', '>=', $start )->where( 'created_at', '<=', $end );
     }
-    $table = $dataTables->eloquent( $query->limit( 20 )->orderByDesc( 'id' ) );
+    $table = $dataTables->eloquent( $query->limit( 500 )->orderByDesc( 'id' ) );
     $table->addColumn( 'id', static function( $row ) {
       return $row->order_id;
     } )->addColumn( 'type', static function( $row ) {
@@ -93,12 +93,12 @@ class ProductService
     $table->rawColumns( [ 'id', 'type', 'product', 'stock', 'cost', 'status', 'date' ] );
     return $table->make();
   }
-  
+
   public function orders( Request $request, DataTables $dataTables )
   {
     $start = startDate( $request->date );
     $end = endDate( $request->date );
-    
+
     $query = Order::query();
     if( !empty( $request->search[ 'value' ] ) ) {
       $search = $request->search[ 'value' ];
@@ -112,7 +112,7 @@ class ProductService
     if( $start && $end ) {
       $query->where( 'created_at', '>=', $start )->where( 'created_at', '<=', $end );
     }
-    $table = $dataTables->eloquent( $query->limit( 20 )->orderByDesc( 'id' ) );
+    $table = $dataTables->eloquent( $query->limit( 500 )->orderByDesc( 'id' ) );
     $table->addColumn( 'customer', static function( $row ) {
       return $row->customer->first_name . ' ' . $row->customer->last_name;
     } )->addColumn( 'date', static function( $row ) {
@@ -121,5 +121,5 @@ class ProductService
     $table->rawColumns( [ 'customer', 'date' ] );
     return $table->make();
   }
-  
+
 }

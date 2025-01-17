@@ -60,7 +60,9 @@
 	 $(document).ready(function () {
 
 		 table = $('#stockTable').dataTable({
-			 autoWidth: true,
+             "lengthMenu": [[100, "All", 50, 25], [100, "All", 50, 25]],
+
+             autoWidth: true,
 			 ordering: false,
 			 search: {
 				 'regex': true

@@ -52,7 +52,8 @@
 
 	 function callDataTable (date = '') {
 		 table.dataTable({
-			 autoWidth: true,
+             "lengthMenu": [[100, "All", 50, 25], [100, "All", 50, 25]],
+             autoWidth: true,
 			 ordering: false,
 			 processing: true,
 			 serverSide: true,
