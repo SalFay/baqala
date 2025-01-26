@@ -34,8 +34,8 @@
                     <thead>
                     <tr>
                         <th>Product Name</th>
-                        <th>Quantity Sold</th>
                         <th>Sale Price</th>
+                        <th>Quantity Sold</th>
                         <th>Total Sales</th>
                     </tr>
                     </thead>
