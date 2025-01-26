@@ -235,4 +235,5 @@ class DashboardController extends Controller
         return view('admin.invoices.vendor');
     }
 
+
 }
