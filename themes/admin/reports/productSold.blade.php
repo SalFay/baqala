@@ -43,15 +43,15 @@
                     @foreach($products as $product)
                         <tr>
                             <td>{{ $product['name'] }}</td>
-                            <td>{{ $product['quantity_sold'] }}</td>
                             <td>{{ $product['sale_price'] }}</td>
+                            <td>{{ $product['quantity_sold'] }}</td>
                             <td>{{ number_format($product['total_sales'], 2) }}</td>
                         </tr>
                     @endforeach
                     </tbody>
                     <tfoot>
                     <tr>
-                        <th>Total</th>
+                        <th colspan="2">Total</th>
                         <th>{{ $totalQuantitySold }}</th>
                         <th>{{ number_format($totalSales, 2) }}</th>
                     </tr>
