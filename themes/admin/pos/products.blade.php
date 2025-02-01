@@ -1,5 +1,5 @@
 <div id="productList">
-	<label for="barcode"><strong>Search Product:</strong></label>
+	<label for="barcode"><strong>Search Product using Barcode:</strong></label>
 	<input type="text" name="pid" id="barcode" autocomplete="off" autofocus class="form-control"/>
 </div>
 @include('plugins.ajax')

@@ -5,7 +5,7 @@
 	</div>
 
 	<div class="card-body">
-		<form method="post" onsubmit="return false;" action="#" name="form-edit" id="form-edit" class="form-horizontal">
+        <form method="post" onsubmit="return false;" action="#" name="form-edit" id="form-edit" class="form-horizontal" enctype="multipart/form-data">
 			@csrf
 
 			<div class="form-group row">
@@ -105,9 +105,15 @@
 					</div>
 				</div>
 			</div>
+            <div class="form-group row">
+                <label for="product_image" class="col-lg-2 col-form-label">Product Image:</label>
+                <div class="col-lg-4">
+                    <input type="file" id="product_image" name="product_image" class="form-control" accept="image/*" />
+                </div>
+            </div>
+            <img id="product_image_preview" src="" alt="Product Image" style="display:none; width: 200px;">
 
-
-		</form>
+        </form>
 		<div class="box-footer text-right">
 			<div class="btn-group">
 				<input type="submit" id="form-submit" name="form-submit" class="btn btn-primary" form="form-edit"

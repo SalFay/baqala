@@ -14,37 +14,63 @@
                        class="form-control"/>
 
                 <div class="col-md-6">
-                    @include('admin.pos.products')
+                    <label><strong>Product Name:</strong></label>
+                    <!-- Replace select2 with a simple search input -->
+                    <input type="text" name="product_search" autofocus id="product_search" placeholder="Search Product"
+                           class="form-control"/>
                 </div>
                 <div class="col-md-6">
-
-                    <label><strong>Product Name:</strong></label>
-                    <select name="products" id="products" data-placeholder="Select Product"
-                            class="form-control select2"></select>
+                    @include('admin.pos.products')
                 </div>
             </div>
 
             <div class="row">
-                <div class="col-md-7">
+                <!-- Product Grid -->
+                <div class="col-md-7" style="max-height: 80vh; overflow-y: auto;">
+                    <div class="row" id="productGrid">
+                        @foreach($products as $product)
+                            <div class="col-2 mb-2">
+                                <div class="card product-card"
+                                     data-id="{{ $product->id }}"
+                                     data-name="{{ $product->name }}"
+                                     data-taxable-price="{{ $product->taxable_price }}"
+                                     data-purchase-price="{{ $product->purchase_price }}"
+                                     data-price="{{ $product->taxable_price }}">
+                                    <img src="{{ $product->image  }}" alt="{{ $product->name }}" class="product-image">
 
+                                    <div class="card-body">
+                                        <p class="card-text product-name" title="{{ $product->name }}">{{ $product->name }}</p>
+                                        <p class="card-text product-price">Rs. {{ $product->taxable_price }}</p>
+                                        <input type="hidden" class="stock{{ $product->id }}" value="1">
+                                        <button class="btn btn-primary btn-sm btn-block add-to-cart"
+                                                data-id="{{ $product->id }}">
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+
+                <!-- Cart Section -->
+                <div class="col-md-5">
                     <div class="card border-dark">
                         <div class="card-header bg-dark text-white header-elements-inline">
                             <h6 class="card-title">Cart</h6>
-                            <button type="button" data-action="emptyCart"
-                                    class="btn btn-success">Empty Cart
-                            </button>
+                            <button type="button" data-action="emptyCart" class="btn btn-success">Empty Cart</button>
                         </div>
                         <div class="card-body" id="cart">
+                            <!-- Cart content will be loaded here -->
                         </div>
                     </div>
-
-                    {{--				@include('admin.order.products')--}}
-                </div>
-                <div class="col-md-5">
                     @include('admin.order.payment')
                 </div>
             </div>
         </div>
+
+
         <input type="hidden" id="cart_url" value="{{route('order.show_cart',1)}}">
     </form>
 @endsection
@@ -55,9 +81,41 @@
 @push('footer')
 
     <script>
-
-
         $(document).ready(function () {
+            // Function to filter products based on search term
+            function filterProducts(searchTerm) {
+                $('#productGrid .product-card').each(function () {
+                    const productName = $(this).data('name').toLowerCase();
+                    if (productName.includes(searchTerm.toLowerCase())) {
+                        $(this).closest('.col-2').show();
+                    } else {
+                        $(this).closest('.col-2').hide();
+                    }
+                });
+            }
+
+            // Event listener for the search input
+            $('#product_search').on('input', function () {
+                const searchTerm = $(this).val().trim();
+                filterProducts(searchTerm);
+            });
+
+            // Prevent form submission on Enter key press in the search field
+            $('#product_search').on('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent form submission
+                    const searchTerm = $(this).val().trim();
+                    filterProducts(searchTerm); // Trigger search
+                }
+            });
+
+            // Optional: Clear search and show all products on blur if the field is empty
+            $('#product_search').on('blur', function () {
+                if ($(this).val().trim() === '') {
+                    $('#productGrid .col-2').show();
+                }
+            });
+
             refreshCart()
             $('body').addClass('sidebar-xs')
             let newPayment = new Option('Cash', 0, false, false)
@@ -307,6 +365,40 @@
             })
         }
 
+
+        ui.$body.on('click', '.add-to-cart', function (e) {
+            e.preventDefault(); // Prevent form submission
+
+            let productId = $(this).data('id');
+            let price = $(this).closest('.product-card').data('price'); // Get price from the card
+            let taxable_price = $(this).closest('.product-card').data('taxable-price'); // Get taxable price
+            let purchase_price = $(this).closest('.product-card').data('purchase-price'); // Get purchase price
+            let stock = $('.stock' + productId).val(); // Get stock value
+
+            $.ajax({
+                url: '{{ route("order.add_to_cart", 1) }}',
+                type: 'post',
+                dataType: 'json',
+                data: {
+                    'id': productId,
+                    'sale_price': price,
+                    'taxable_price': taxable_price,
+                    'purchase_price': purchase_price,
+                    'stock': stock
+                },
+                success: function (res) {
+                    if (res.status === 'ok') {
+                        ui.successMessage(res.message);
+                        refreshCart(); // Ensure this function is defined
+                    } else {
+                        ui.errorMessage(res.message);
+                    }
+                },
+                error: function (res) {
+                    ui.ajaxError(res);
+                }
+            });
+        });
         ui.$body.on('click', '[data-action="save"]', function (e) {
             e.preventDefault()
             let products = []

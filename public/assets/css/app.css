@@ -49315,3 +49315,94 @@ body {
         margin-right: 1.25rem
     }
 }
+
+
+/* General card styling */
+.product-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    background-color: #ffffff;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Product image styling */
+.product-image {
+    height: 120px;
+    width: 100%;
+    object-fit: cover;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Card body styling */
+.card-body {
+    padding: 15px;
+    text-align: center;
+}
+
+/* Product name styling */
+.product-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Product price styling */
+.product-price {
+    font-size: 14px;
+    color: #28a745; /* Green color for price */
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+/* Add to cart button styling */
+.add-to-cart {
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.add-to-cart:hover {
+    background-color: #0056b3;
+}
+
+/* Grid layout adjustments */
+#productGrid {
+    gap: 10px; /* Adds spacing between cards */
+}
+
+.col-2 {
+    padding: 5px; /* Adds spacing around each card */
+}
+
+/* Scrollbar styling for the container */
+.col-md-7::-webkit-scrollbar {
+    width: 8px;
+}
+
+.col-md-7::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.col-md-7::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.col-md-7::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

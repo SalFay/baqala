@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\DataTables\ProductsDataTable;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,7 @@ class ProductController extends Controller
    */
   public function edit( Product $product ) : JsonResponse
   {
-    return new JsonResponse( $product );
+    return new JsonResponse( ProductResource::make( $product ) );
   }// edit
 
 }
