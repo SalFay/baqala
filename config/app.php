@@ -34,6 +34,7 @@ return [
 
     'root_users' => [
         'admin@admin.com',
+        'admin@sherinhuts.com',
         'haroonyousaf80@gmail.com',
     ],
     /*
