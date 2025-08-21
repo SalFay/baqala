@@ -39,13 +39,13 @@ class InvoiceService
           'href'  => route( 'orders.edit', $row->id ),
           'label' => '<i class="fas fa-edit"></i>',
           'class' => 'btn-info btn-sm'
-        ], [
+        ], /*[
           'href'        => '#',
           'data-url'    => route( 'order.delete', $row->id ),
           'label'       => '<i class="fas fa-trash"></i>',
           'class'       => 'btn-danger btn-sm',
           'data-action' => 'delete'
-        ]
+        ]*/
       ];
       return Ui::actionButtons( $buttons );
     } );
