@@ -35,11 +35,11 @@ class InvoiceService
           'label' => '<i class="fas fa-eye"></i>',
           'class' => 'btn-primary btn-sm'
         ],
-        [
+       /* [
           'href'  => route( 'orders.edit', $row->id ),
           'label' => '<i class="fas fa-edit"></i>',
           'class' => 'btn-info btn-sm'
-        ], /*[
+        ],*/ /*[
           'href'        => '#',
           'data-url'    => route( 'order.delete', $row->id ),
           'label'       => '<i class="fas fa-trash"></i>',
