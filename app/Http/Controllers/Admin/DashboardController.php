@@ -190,11 +190,12 @@ class DashboardController extends Controller
             'name' => 'Vendor',
             'amount' => $creditVendor - $debitVendor
         ];
-        $productsAll = Product::withCount('inventory')->get();
-        $stockAmount = 0;
-        foreach ($productsAll as $prod) {
-            $stockAmount += $prod->inventory_count * $prod->purchase_price;
-        }
+        // Optimized: Calculate stock value with single query instead of loading all products
+        $stockAmount = DB::table('inventory')
+            ->join('products', 'inventory.product_id', '=', 'products.id')
+            ->where('inventory.status', 'Available')
+            ->whereNull('inventory.deleted_at')
+            ->sum('products.purchase_price');
         $bank_details[] = [
             'name' => 'Stock',
             'amount' => $stockAmount
