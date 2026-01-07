@@ -70,43 +70,42 @@ class DashboardController extends Controller
          */
         $month = [];
 
-// Combine current and previous month in one query
-        $currentYear = date('Y');
-        $currentMonth = date('m');
-        $previousMonth = Carbon::now()->subMonth()->month;
+// Fetch previous year's last 2 months + current year's months up to current month
+        $currentYear = (int) date('Y');
+        $previousYear = $currentYear - 1;
+        $currentMonth = (int) date('m');
 
         $query = DB::select("
     SELECT
         MONTH(date) as month,
         MONTHNAME(date) as month_name,
+        YEAR(date) as year,
         SUM(sub_total) as sub_total,
         SUM(total) as total
     FROM orders
-    WHERE YEAR(date) = :year
-    AND MONTH(date) IN (:currentMonth, :previousMonth)
-    GROUP BY MONTH(date), MONTHNAME(date)
-", [
-            'year' => $currentYear,
-            'currentMonth' => $currentMonth,
-            'previousMonth' => $previousMonth
-        ]);
+    WHERE (YEAR(date) = ? AND MONTH(date) IN (11, 12))
+       OR (YEAR(date) = ? AND MONTH(date) <= ?)
+    GROUP BY YEAR(date), MONTH(date), MONTHNAME(date)
+    ORDER BY YEAR(date), MONTH(date)
+", [$previousYear, $currentYear, $currentMonth]);
 
         foreach ($query as $r) {
-            $monthName = Carbon::create()->month($r->month)->format('M');
+            $rowYear = $r->year;
+            $monthName = Carbon::create()->month($r->month)->format('M') . ' ' . $rowYear;
             $subTotal = $r->sub_total; // This is the equivalent of the old profit calculation
             $netAmount = $r->total;    // This is the equivalent of the old net amount
 
             // Calculate daily discount for the month
             $dailyDiscount = 0;
             $dailyQuery = Order::whereMonth('date', $r->month)
-                ->whereYear('date', $currentYear)
+                ->whereYear('date', $rowYear)
                 ->selectRaw('date, SUM(CASE WHEN discount_type = "rupee" THEN discount ELSE (discount * sub_total / 100) END) as daily_discount')
                 ->groupBy('date')
                 ->get();
 
             $dailyDelivery = 0;
             $dailyDeliveryQuery = Order::whereMonth('date', $r->month)
-                ->whereYear('date', $currentYear)
+                ->whereYear('date', $rowYear)
                 ->selectRaw('date, SUM(delivery_charges) as daily_delivery')
                 ->groupBy('date')
                 ->get();
@@ -121,21 +120,21 @@ class DashboardController extends Controller
 
             // Fetch vendor discounts and expenses for the month
             $discountVendor = Stock::whereMonth('date', $r->month)
-                ->whereYear('date', $currentYear)
+                ->whereYear('date', $rowYear)
                 ->sum('discount');
 
             $discountVendor += Account::whereMonth('created_at', $r->month)
-                ->whereYear('created_at', $currentYear)
+                ->whereYear('created_at', $rowYear)
                 ->where('party_type', Vendor::class)
                 ->sum('discount');
 
             $discountCustomer = Account::whereMonth('created_at', $r->month)
-                ->whereYear('created_at', $currentYear)
+                ->whereYear('created_at', $rowYear)
                 ->where('party_type', Customer::class)
                 ->sum('discount');
 
             $expense = Account::whereMonth('created_at', $r->month)
-                ->whereYear('created_at', $currentYear)
+                ->whereYear('created_at', $rowYear)
                 ->where('party_type', Expense::class)
                 ->where('party_id', '!=', 6)
                 ->sum('debit');
