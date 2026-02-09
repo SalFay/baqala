@@ -4,6 +4,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Super Users
+    |--------------------------------------------------------------------------
+    |
+    | These email addresses will have full access to all permissions in the
+    | application. Use sparingly and only for system administrators.
+    |
+    */
+
+    'super_users' => [
+        // Add admin emails here, e.g.:
+        // 'admin@baqala.com',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Defaults
     |--------------------------------------------------------------------------
     |

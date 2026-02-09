@@ -13,6 +13,13 @@ return [
         'Banks',
         'Accounts',
         'Reports',
-        'General'
+        'General',
+        'Returns',
+        'Stores',
+        'Loyalty',
+        'POS',
+        'Settings',
+        'PurchaseOrders',
+        'StockTransfers',
     ],
 ];

@@ -1,32 +1,27 @@
 <?php
 
-use Database\Seeders\CategorySeeder;
-use Database\Seeders\CustomerSeeder;
-use Database\Seeders\OptionTableSeeder;
-use Database\Seeders\PaymentMethodSeeder;
-use Database\Seeders\ProductsSeeder;
-use Database\Seeders\RoleSeeder;
-use Database\Seeders\StatusSeeder;
-use Database\Seeders\UserTableSeeder;
-use Database\Seeders\VendorSeeder;
+namespace Database\Seeders;
+
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
-    public function run()
+    public function run(): void
     {
-        $this->call( OptionTableSeeder::class );
-        $this->call( RoleSeeder::class );
-        $this->call( UserTableSeeder::class );
-        $this->call( CategorySeeder::class );
-        $this->call( ProductsSeeder::class );
-        $this->call( CustomerSeeder::class );
-        $this->call( VendorSeeder::class );
-        $this->call( PaymentMethodSeeder::class );
+        // Core system data (stores, settings, chart of accounts, etc.)
+        $this->call(InitialDataSeeder::class);
+
+        // Application data
+        $this->call(OptionTableSeeder::class);
+        $this->call(RoleSeeder::class);
+        $this->call(UserTableSeeder::class);
+        $this->call(CategorySeeder::class);
+        $this->call(ProductsSeeder::class);
+        $this->call(CustomerSeeder::class);
+        $this->call(VendorSeeder::class);
+        $this->call(PaymentMethodSeeder::class);
     }
 }

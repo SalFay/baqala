@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs basename:*)",
+      "Bash(dir \"C:\\\\laragon\\\\www\\\\baqala\\\\resources\\\\views\")",
+      "WebSearch",
+      "Bash(dir \"C:\\\\laragon\\\\www\\\\baqala\" /s /b)",
+      "Bash(findstr:*)",
+      "Bash(grep:*)",
+      "Bash(dir \"C:\\\\laragon\\\\www\\\\baqala\\\\database\\\\migrations\")",
+      "Bash(yarn install)",
+      "Bash(composer install:*)",
+      "Bash(php:*)",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\mysql\\\\mysql-8.0.30-winx64\\\\bin\\\\mysql.exe\" -u root baqala -e \"DESCRIBE customers;\")",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\mysql\\\\mysql-8.0.30-winx64\\\\bin\\\\mysql.exe\" -u root baqala -e \"SELECT id, email, password FROM users WHERE id = 1;\")",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\mysql\\\\mysql-8.0.30-winx64\\\\bin\\\\mysql.exe\":*)"
+    ]
+  }
+}

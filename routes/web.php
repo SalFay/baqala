@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ImpersonationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,26 +12,8 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::prefix( 'impersonate' )->group( function() {
-    Route::get( 'start/{user}', [ ImpersonationController::class, 'startImpersonation' ] )
-         ->name( 'impersonate.start' );
-    Route::get( 'stop', [ ImpersonationController::class, 'endImpersonation' ] )
-         ->name( 'impersonate.stop' );
-} );
-Route::get( 'test/{action}', [ HomeController::class, 'artisan' ] )->name( 'artisan' );
-Route::get( 'changeCategory', [ HomeController::class, 'changeCategory' ] )->name( 'changeCategory' );
-Route::get( '/', [ HomeController::class, 'index' ] )->name( 'home' );
 
-Route::middleware( [ 'auth:sanctum', 'verified' ] )->get( '/dashboard', function() {
-    return view( 'dashboard' );
-} )->name( 'dashboard' );
-
-
-/*    Route::get( 'addToCart/{id}',
-        [ \App\Http\Controllers\Api\InventoryController::class, 'addToCart' ] )->name( 'addToCart' );
-    Route::post( 'removeCart',
-        [ \App\Http\Controllers\Api\InventoryController::class, 'remove' ] )->name( 'removeCart' );*/
-Route::get( 'storage', [ HomeController::class, 'storageLink' ] );
-
-Route::get( 'backup', [ HomeController::class, 'backupDatabase' ] )->name( 'backup' );
-
+// Serve the React SPA for all frontend routes
+Route::get('/{any?}', function () {
+    return view('pos');
+})->where('any', '^(?!api|storage|adminer|build).*$')->name('spa');
