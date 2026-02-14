@@ -1,89 +1,93 @@
-# POS System Enhancement & Development Plan
+# Baqala POS: Unified Development & Enhancement Plan
 
-This document outlines the development plan for the existing Point-of-Sale system. The project already has a strong foundation with many core features implemented. This plan focuses on enhancing the current application, improving the user experience, and adding advanced capabilities to make it a world-class system.
+This document outlines the comprehensive strategy for transforming the Baqala POS into a world-class retail solution. It merges high-level strategic goals with a detailed, actionable front-end implementation plan.
 
 ---
 
 ### **Section 1: Current System Analysis**
 
-The existing application is a comprehensive POS system built on Laravel. A review of the codebase confirms the following features are already implemented:
+The existing application is a robust, feature-rich POS system built on Laravel. Key implemented features include:
 
-*   **Core Functionality:**
-    *   User Authentication & Role-Based Access
-    *   Product & Category Management
-    *   Customer Management
-    *   Order Management & History
-    *   Full-Featured POS Interface (Cart, Checkout, Barcode Scanning)
-
-*   **Advanced Features:**
-    *   Inventory Management (Adjustments, Movements, Low-Stock Alerts)
-    *   Purchase Order Management
-    *   Vendor Management
-    *   Stock Transfers between stores
-    *   Multi-Store Configuration
-    *   Reporting (Sales, Inventory, Customers)
-    *   System Settings (Users, Payments, Taxes)
+*   **Core Functionality:** User Authentication, Product & Category Management, Customer & Order Management, and a full-featured POS interface.
+*   **Advanced Features:** Inventory Management, Purchase Orders, Vendor Management, Stock Transfers, Multi-Store Configuration, and Reporting.
 
 ---
 
-### **Section 2: Proposed Enhancements & Improvisations**
+### **Section 2: Comprehensive UI/UX Overhaul (Frontend)**
 
-The following are proposed enhancements to build upon the current system.
+This section incorporates the detailed plan for modernizing the user interface and experience, based on `claude-plan.md`.
 
-**Phase 1: Frontend Modernization & UX Improvement**
+**Phase 1: Design System Foundation (Priority: HIGH)**
+*   **Goal:** Establish a consistent and professional design language.
+*   **Actions:**
+    *   **DONE:** Create `resources/js/theme/tokens.js` for design tokens (colors, spacing, etc.).
+    *   **DONE:** Install `framer-motion` and `canvas-confetti`.
+    *   **PENDING:** Create `resources/js/theme/antdTheme.js` for Ant Design v5 theme configuration.
+    *   **PENDING:** Create `resources/js/theme/animations.js` for Framer Motion presets.
+    *   **PENDING:** Update `resources/js/app.jsx` to add the new theme provider and dark mode support.
+    *   **PENDING:** Update `resources/css/app.css` to use CSS custom properties from tokens.
 
-1.  **UI/UX Overhaul with a Modern JavaScript Framework:**
-    *   **Goal:** Create a faster, more responsive, and user-friendly interface.
-    *   **Action:** Migrate the POS interface and other dynamic sections from traditional Blade views to **Vue.js** or **React**. This will enable a Single Page Application (SPA) experience for key areas.
-    *   **Benefit:** Instant page loads, real-time updates, and a more modern feel.
+**Phase 2: Core POS Components Redesign (Priority: HIGH)**
+*   **Goal:** Improve usability, touch-friendliness, and visual appeal of the main POS interface.
+*   **Actions:**
+    *   **ProductGrid:** Redesign with larger, touch-friendly cards, lazy loading, skeleton states, and smooth animations.
+    *   **Cart:** Implement larger quantity buttons, smooth add/remove animations, and an improved customer selector.
+    *   **PaymentPanel:** Create large, touch-friendly payment buttons, real-time change calculation, and a "celebration" animation on successful checkout.
+    *   **Receipt:** Optimize for 80mm thermal printers with clear branding and formatting.
 
-2.  **Progressive Web App (PWA) for Offline Functionality:**
-    *   **Goal:** Ensure the POS can continue to operate during internet outages.
-    *   **Action:** Implement PWA features, including a service worker to cache application assets and an offline mode that queues sales transactions locally. Transactions will be synced with the server once the connection is restored.
-    *   **Benefit:** Increased reliability and business continuity.
+**Phase 3: Dark Mode & Accessibility (Priority: MEDIUM)**
+*   **Goal:** Enhance user comfort and ensure the application is usable by everyone.
+*   **Actions:**
+    *   Implement a theme toggle and persist user preference.
+    *   Ensure WCAG AA compliance with proper ARIA labels, keyboard navigation, focus indicators, and color contrast.
 
-**Phase 2: Advanced Business Intelligence & Customer Retention**
+**Phase 4: Responsive Layout (Priority: MEDIUM)**
+*   **Goal:** Provide a seamless experience across all devices.
+*   **Actions:**
+    *   Implement a responsive main layout with a collapsible sidebar for tablets and a slide-out drawer for mobile.
+    *   Adapt the POS layout for desktop, tablet, and mobile breakpoints.
 
-1.  **Advanced Analytics & AI-Powered Insights:**
-    *   **Goal:** Provide actionable insights to store owners.
-    *   **Action:** Develop a new dashboard with advanced analytics, including:
-        *   Sales forecasting based on historical data.
-        *   Customer segmentation (e.g., high-spending, frequent visitors).
-        *   Product recommendation engine for upselling/cross-selling at the POS.
-    *   **Benefit:** Data-driven decision-making to increase revenue.
-
-2.  **Integrated Customer Loyalty Program:**
-    *   **Goal:** Improve customer retention and repeat business.
-    *   **Action:** Create a flexible loyalty module where businesses can define point-earning rules and rewards. Customers can earn and redeem points directly through the POS.
-    *   **Benefit:** Increased customer engagement and loyalty.
-
-**Phase 3: Extensibility and Specialization**
-
-1.  **Mobile Application for Store Management:**
-    *   **Goal:** Allow store owners/managers to monitor their business on the go.
-    *   **Action:** Develop a cross-platform mobile app (using React Native or Flutter) that connects to the main system's API. The app would display real-time dashboards, reports, and allow for essential management tasks.
-    *   **Benefit:** Remote access to critical business data.
-
-2.  **Deepen Business-Specific Modules:**
-    *   **Goal:** Enhance the system for specific industries.
-    *   **Action:**
-        *   **Medical Store:** Integrate prescription management and tracking. Add compliance reporting features.
-        *   **Restaurant/Cafe:** Add table management, order modifiers (e.g., "no onions"), and kitchen order ticket (KOT) printing.
-        *   **General/Apparel:** Implement a product variant matrix for items with different sizes, colors, and styles.
-
-3.  **Supplier/Vendor Portal:**
-    *   **Goal:** Streamline communication and operations with suppliers.
-    *   **Action:** Create a separate web portal for vendors to view purchase orders, manage their product listings, and track payment statuses.
-    *   **Benefit:** Reduced administrative overhead and improved supply chain efficiency.
+**Phase 5: Progressive Web App (PWA) & Offline Functionality**
+*   **Goal:** Ensure business continuity during internet outages.
+*   **Action:** Implement PWA features, including a service worker to cache assets and an offline mode that queues sales transactions locally for later synchronization.
 
 ---
 
-### **Section 3: Technical Improvements**
+### **Section 3: Advanced Features & Specialization (Backend/Full-Stack)**
 
-1.  **Performance Optimization:**
-    *   **Action:** Implement advanced caching strategies (e.g., Redis) for frequently accessed data. Offload intensive tasks like report generation to background queues.
-    *   **Benefit:** A faster and more scalable application.
+This section focuses on expanding the system's capabilities.
 
-2.  **Enhanced Security:**
-    *   **Action:** Implement Two-Factor Authentication (2FA) for users. Create a detailed audit log to track all significant actions within the system.
-    *   **Benefit:** Increased security and accountability.
+**Phase 6: Advanced Business Intelligence & Customer Retention**
+*   **Goal:** Provide data-driven insights and tools to increase revenue and loyalty.
+*   **Actions:**
+    *   **Analytics:** Develop a new dashboard with sales forecasting, customer segmentation, and a product recommendation engine.
+    *   **Loyalty Program:** Create a flexible module for defining point-earning rules and rewards, integrated directly into the POS.
+
+**Phase 7: Extensibility and Specialization**
+*   **Goal:** Broaden the system's reach and adapt it for specific industries.
+*   **Actions:**
+    *   **Mobile App:** Develop a cross-platform mobile app (React Native/Flutter) for on-the-go store management.
+    *   **Industry Modules:**
+        *   **Medical:** Add prescription tracking and compliance reporting.
+        *   **Restaurant:** Add table management and kitchen order ticket (KOT) printing.
+        *   **Apparel:** Implement a product variant matrix for size/color/style.
+    *   **Supplier Portal:** Create a web portal for vendors to manage orders and products.
+
+---
+
+### **Section 4: Technical Improvements**
+
+**Phase 8: Performance & Security**
+*   **Goal:** Ensure the application is fast, scalable, and secure.
+*   **Actions:**
+    *   **Performance:** Implement advanced caching (Redis) and offload intensive tasks to background queues.
+    *   **Security:** Implement Two-Factor Authentication (2FA) and a detailed audit log for all significant user actions.
+
+---
+
+### **Next Steps**
+
+The immediate priority is to continue with **Phase 1: Design System Foundation**. The next concrete steps are:
+1.  Create `resources/js/theme/antdTheme.js`.
+2.  Create `resources/js/theme/animations.js`.
+3.  Update `resources/js/app.jsx` and `resources/css/app.css`.
