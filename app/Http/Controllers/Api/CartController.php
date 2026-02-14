@@ -191,7 +191,7 @@ class CartController extends Controller
     {
         $heldCarts = $this->cartService->getHeldCarts($request->store_id);
 
-        return response()->json($heldCarts);
+        return response()->json($heldCarts->values()->all());
     }
 
     public function hold(Request $request): JsonResponse

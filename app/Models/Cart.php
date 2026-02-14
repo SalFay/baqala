@@ -12,23 +12,10 @@ class Cart extends Model
     use HasFactory;
 
     protected $fillable = [
-        'store_id',
-        'user_id',
-        'customer_id',
-        'session_id',
-        'status',
-        'hold_name',
-        'subtotal',
-        'tax_amount',
-        'discount',
-        'discount_type',
-        'discount_reason',
-        'total',
-        'loyalty_points_to_redeem',
-        'loyalty_discount',
-        'notes',
-        'held_at',
-        'expires_at',
+        'store_id', 'user_id', 'customer_id', 'session_id', 'status',
+        'hold_name', 'subtotal', 'tax_amount', 'discount', 'discount_type',
+        'discount_reason', 'total', 'loyalty_points_to_redeem', 'loyalty_discount',
+        'notes', 'held_at', 'expires_at',
     ];
 
     protected $casts = [
@@ -37,240 +24,114 @@ class Cart extends Model
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
         'loyalty_discount' => 'decimal:2',
-        'loyalty_points_to_redeem' => 'integer',
         'held_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
 
     // Relationships
-    public function store(): BelongsTo
-    {
-        return $this->belongsTo(Store::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
-    }
-
-    public function items(): HasMany
-    {
-        return $this->hasMany(CartItem::class);
-    }
+    public function store(): BelongsTo { return $this->belongsTo(Store::class); }
+    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
+    public function items(): HasMany { return $this->hasMany(CartItem::class); }
 
     // Scopes
-    public function scopeActive($query)
+    public function scopeActive($q) { return $q->where('status', 'active'); }
+    public function scopeHeld($q) { return $q->where('status', 'held'); }
+    public function scopeForUser($q, int $userId) { return $q->where('user_id', $userId); }
+
+    // Format for API/Frontend
+    public function toApiArray(): array
     {
-        return $query->where('status', 'active');
+        return [
+            'id' => $this->id,
+            'items' => $this->items->map->toApiArray(),
+            'customer' => $this->customer,
+            'subtotal' => $this->subtotal ?? 0,
+            'tax_amount' => $this->tax_amount ?? 0,
+            'discount' => $this->discount ?? 0,
+            'total' => $this->total ?? 0,
+        ];
     }
 
-    public function scopeHeld($query)
+    // Calculate totals from items
+    public function recalculate(): self
     {
-        return $query->where('status', 'held');
-    }
+        // Refresh items relationship to get latest data including newly created items
+        $this->load('items');
 
-    public function scopeAbandoned($query)
-    {
-        return $query->where('status', 'abandoned');
-    }
-
-    public function scopeConverted($query)
-    {
-        return $query->where('status', 'converted');
-    }
-
-    public function scopeForStore($query, int $storeId)
-    {
-        return $query->where('store_id', $storeId);
-    }
-
-    public function scopeForUser($query, int $userId)
-    {
-        return $query->where('user_id', $userId);
-    }
-
-    public function scopeNotExpired($query)
-    {
-        return $query->where(function ($q) {
-            $q->whereNull('expires_at')
-                ->orWhere('expires_at', '>', now());
-        });
-    }
-
-    // Accessors
-    public function getIsActiveAttribute(): bool
-    {
-        return $this->status === 'active';
-    }
-
-    public function getIsHeldAttribute(): bool
-    {
-        return $this->status === 'held';
-    }
-
-    public function getIsConvertedAttribute(): bool
-    {
-        return $this->status === 'converted';
-    }
-
-    public function getIsExpiredAttribute(): bool
-    {
-        return $this->expires_at && $this->expires_at->isPast();
-    }
-
-    public function getItemCountAttribute(): int
-    {
-        return $this->items->sum('quantity');
-    }
-
-    public function getTotalItemsAttribute(): int
-    {
-        return $this->items->count();
-    }
-
-    public function getHasDiscountAttribute(): bool
-    {
-        return $this->discount > 0 || $this->loyalty_discount > 0;
-    }
-
-    public function getTotalDiscountAttribute(): float
-    {
-        $discount = 0;
-
-        if ($this->discount > 0) {
-            if ($this->discount_type === 'percentage') {
-                $discount = ($this->subtotal * $this->discount) / 100;
-            } else {
-                $discount = $this->discount;
-            }
-        }
-
-        return $discount + $this->loyalty_discount;
-    }
-
-    public function getGrandTotalAttribute(): float
-    {
-        return max(0, $this->subtotal + $this->tax_amount - $this->total_discount);
-    }
-
-    // Methods
-    public function calculateTotals(): void
-    {
-        $subtotal = 0;
-        $taxAmount = 0;
-
-        foreach ($this->items as $item) {
-            $subtotal += $item->line_total;
-            $taxAmount += $item->tax_amount;
-        }
-
-        $this->subtotal = $subtotal;
-        $this->tax_amount = $taxAmount;
-        $this->total = $this->grand_total;
-    }
-
-    public function recalculateAndSave(): void
-    {
-        $this->calculateTotals();
+        $this->subtotal = $this->items->sum('line_total');
+        $this->tax_amount = $this->items->sum('tax_amount');
+        $this->total = max(0, $this->subtotal + $this->tax_amount - $this->getTotalDiscount());
         $this->save();
+        return $this;
     }
 
-    public function hold(string $name): void
+    protected function getTotalDiscount(): float
     {
-        $this->update([
-            'status' => 'held',
-            'hold_name' => $name,
-            'held_at' => now(),
-            'expires_at' => now()->addDays(7),
+        $discount = $this->discount_type === 'percentage'
+            ? ($this->subtotal * $this->discount) / 100
+            : ($this->discount ?? 0);
+        return $discount + ($this->loyalty_discount ?? 0);
+    }
+
+    // Cart operations
+    public function addItem(Product $product, int $qty = 1, ?ProductVariant $variant = null): CartItem
+    {
+        $item = $this->items()
+            ->where('product_id', $product->id)
+            ->where('product_variant_id', $variant?->id)
+            ->first();
+
+        if ($item) {
+            $item->increment('quantity', $qty);
+            $item->recalculate();
+            return $item;
+        }
+
+        $price = $variant?->price ?? $product->price;
+        return $this->items()->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant?->id,
+            'sku' => $variant?->sku ?? $product->sku,
+            'product_name' => $product->name,
+            'variant_name' => $variant?->name,
+            'quantity' => $qty,
+            'unit_price' => $price,
+            'purchase_price' => $variant?->cost ?? $product->cost ?? 0,
+            'tax_rate' => $product->tax_rate ?? 0,
+            'line_total' => $price * $qty,
         ]);
     }
 
-    public function restore(): void
+    public function updateItemQty(int $itemId, int $qty): void
     {
-        $this->update([
-            'status' => 'active',
-            'hold_name' => null,
-            'held_at' => null,
-            'expires_at' => null,
-        ]);
+        $item = $this->items()->findOrFail($itemId);
+        $qty <= 0 ? $item->delete() : $item->update(['quantity' => $qty]) && $item->recalculate();
+        $this->recalculate();
     }
 
-    public function abandon(): void
+    public function removeItem(int $itemId): void
     {
-        $this->update(['status' => 'abandoned']);
-    }
-
-    public function markAsConverted(): void
-    {
-        $this->update(['status' => 'converted']);
+        $this->items()->where('id', $itemId)->delete();
+        $this->recalculate();
     }
 
     public function clear(): void
     {
         $this->items()->delete();
         $this->update([
-            'subtotal' => 0,
-            'tax_amount' => 0,
-            'discount' => 0,
-            'discount_type' => null,
-            'discount_reason' => null,
-            'total' => 0,
-            'loyalty_points_to_redeem' => 0,
-            'loyalty_discount' => 0,
-            'customer_id' => null,
-            'notes' => null,
+            'subtotal' => 0, 'tax_amount' => 0, 'discount' => 0,
+            'discount_type' => null, 'total' => 0, 'customer_id' => null,
         ]);
     }
 
-    public function setCustomer(?Customer $customer): void
+    public function hold(string $name): void
     {
-        $this->update(['customer_id' => $customer?->id]);
+        $this->update(['status' => 'held', 'hold_name' => $name, 'held_at' => now()]);
     }
 
-    public function applyDiscount(float $amount, string $type, ?string $reason = null): void
+    public function restore(): void
     {
-        $this->update([
-            'discount' => $amount,
-            'discount_type' => $type,
-            'discount_reason' => $reason,
-        ]);
-        $this->recalculateAndSave();
-    }
-
-    public function removeDiscount(): void
-    {
-        $this->update([
-            'discount' => 0,
-            'discount_type' => null,
-            'discount_reason' => null,
-        ]);
-        $this->recalculateAndSave();
-    }
-
-    public function setLoyaltyPoints(int $points): void
-    {
-        if (!$this->customer) {
-            throw new \InvalidArgumentException('No customer selected');
-        }
-
-        $customerPoints = $this->customer->loyalty_points;
-        if ($points > $customerPoints) {
-            throw new \InvalidArgumentException('Customer does not have enough points');
-        }
-
-        // Calculate loyalty discount based on points
-        $pointsValue = Setting::get('loyalty_points_value', 0.01);
-        $loyaltyDiscount = $points * $pointsValue;
-
-        $this->update([
-            'loyalty_points_to_redeem' => $points,
-            'loyalty_discount' => min($loyaltyDiscount, $this->subtotal),
-        ]);
-        $this->recalculateAndSave();
+        $this->update(['status' => 'active', 'hold_name' => null, 'held_at' => null]);
     }
 }

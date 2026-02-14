@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class OrderReturn extends Model
+class OrderReturn extends BaseModel
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasStatus;
 
     protected $fillable = [
         'return_number',
@@ -20,6 +20,7 @@ class OrderReturn extends Model
         'processed_by',
         'type',
         'status',
+        'current_status_id',
         'return_reason_id',
         'reason',
         'notes',
@@ -31,6 +32,8 @@ class OrderReturn extends Model
         'refund_method',
         'approved_at',
         'completed_at',
+        'created_by_id',
+        'updated_by_id',
     ];
 
     protected $casts = [
@@ -71,5 +74,28 @@ class OrderReturn extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderReturnItem::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by_id');
+    }
+
+    /**
+     * Define allowed status transitions.
+     */
+    public function getAllowedStatusTransitions(): array
+    {
+        return [
+            'pending' => ['approved', 'rejected'],
+            'approved' => ['processed', 'rejected'],
+            'processed' => [],
+            'rejected' => [],
+        ];
     }
 }

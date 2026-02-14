@@ -3,234 +3,92 @@
 namespace App\Services\Cart;
 
 use App\Models\Cart;
-use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class CartService
 {
     protected ?Cart $cart = null;
 
-    public function getCart(?int $storeId = null): Cart
+    public function getCart(): Cart
     {
-        if ($this->cart) {
-            return $this->cart;
-        }
-
-        $userId = Auth::id();
-
-        $this->cart = Cart::query()
-            ->where('user_id', $userId)
-            ->where('status', 'active')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
-            ->first();
-
-        if (!$this->cart) {
-            $this->cart = Cart::create([
-                'user_id' => $userId,
-                'store_id' => $storeId,
-                'status' => 'active',
-            ]);
-        }
-
-        return $this->cart;
+        return $this->cart ??= Cart::with(['items.product', 'customer'])
+            ->forUser(Auth::id())
+            ->active()
+            ->first()
+            ?? Cart::create(['user_id' => Auth::id(), 'status' => 'active']);
     }
 
-    public function addItem(
-        Product $product,
-        int $quantity = 1,
-        ?ProductVariant $variant = null,
-        ?int $storeId = null
-    ): CartItem {
-        $cart = $this->getCart($storeId);
-
-        return DB::transaction(function () use ($cart, $product, $quantity, $variant) {
-            $item = $cart->addItem($product, $quantity, $variant);
-            $cart->calculateTotals();
-            return $item;
-        });
-    }
-
-    public function updateItemQuantity(int $itemId, int $quantity): CartItem
+    public function addItem(Product $product, int $qty = 1, ?ProductVariant $variant = null): Cart
     {
         $cart = $this->getCart();
-        $item = $cart->items()->findOrFail($itemId);
-
-        if ($quantity <= 0) {
-            $item->delete();
-            $cart->calculateTotals();
-            return $item;
-        }
-
-        $item->quantity = $quantity;
-        $item->calculateTotals();
-        $item->save();
-
-        $cart->calculateTotals();
-
-        return $item;
+        $cart->addItem($product, $qty, $variant);
+        return $cart->recalculate();
     }
 
-    public function removeItem(int $itemId): void
+    public function updateItemQuantity(int $itemId, int $qty): Cart
     {
         $cart = $this->getCart();
-        $cart->items()->where('id', $itemId)->delete();
-        $cart->calculateTotals();
+        $cart->updateItemQty($itemId, $qty);
+        return $cart;
+    }
+
+    public function removeItem(int $itemId): Cart
+    {
+        $cart = $this->getCart();
+        $cart->removeItem($itemId);
+        return $cart;
     }
 
     public function setCustomer(?Customer $customer): Cart
     {
         $cart = $this->getCart();
         $cart->update(['customer_id' => $customer?->id]);
-        return $cart->fresh();
-    }
-
-    public function applyDiscount(float $amount, string $type = 'fixed', ?string $reason = null): Cart
-    {
-        $cart = $this->getCart();
-
-        $cart->update([
-            'discount' => $amount,
-            'discount_type' => $type,
-            'discount_reason' => $reason,
-        ]);
-
-        $cart->calculateTotals();
-
-        return $cart->fresh();
-    }
-
-    public function removeDiscount(): Cart
-    {
-        $cart = $this->getCart();
-
-        $cart->update([
-            'discount' => 0,
-            'discount_type' => null,
-            'discount_reason' => null,
-        ]);
-
-        $cart->calculateTotals();
-
-        return $cart->fresh();
-    }
-
-    public function setLoyaltyPoints(int $points): Cart
-    {
-        $cart = $this->getCart();
-
-        if (!$cart->customer) {
-            throw new \InvalidArgumentException('Customer is required to redeem loyalty points');
-        }
-
-        $loyalty = $cart->customer->loyalty;
-
-        if (!$loyalty || $points > $loyalty->points_balance) {
-            throw new \InvalidArgumentException('Insufficient loyalty points');
-        }
-
-        // Calculate discount (e.g., 1 point = 0.01 SAR)
-        $pointValue = (float) \App\Models\Setting::get('loyalty_point_value', 0.01);
-        $discount = $points * $pointValue;
-
-        $cart->update([
-            'loyalty_points_to_redeem' => $points,
-            'loyalty_discount' => $discount,
-        ]);
-
-        $cart->calculateTotals();
-
-        return $cart->fresh();
+        return $cart->fresh(['items.product', 'customer']);
     }
 
     public function clearCart(): void
     {
-        $cart = $this->getCart();
-        $cart->clear();
+        $this->getCart()->clear();
         $this->cart = null;
     }
 
-    public function holdCart(string $name): Cart
+    public function holdCart(string $name): void
     {
-        $cart = $this->getCart();
-        $cart->hold($name);
+        $this->getCart()->hold($name);
         $this->cart = null;
-        return $cart;
     }
 
-    public function getHeldCarts(?int $storeId = null): \Illuminate\Database\Eloquent\Collection
+    public function getHeldCarts()
     {
-        return Cart::query()
-            ->with(['items', 'customer'])
-            ->where('user_id', Auth::id())
-            ->where('status', 'held')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
-            ->orderByDesc('held_at')
+        return Cart::with(['items', 'customer'])
+            ->forUser(Auth::id())
+            ->held()
+            ->latest('held_at')
             ->get();
     }
 
     public function restoreHeldCart(int $cartId): Cart
     {
-        // First clear current active cart
-        $activeCart = Cart::query()
-            ->where('user_id', Auth::id())
-            ->where('status', 'active')
-            ->first();
-
-        if ($activeCart) {
-            $activeCart->delete();
-        }
+        // Clear current active cart
+        Cart::forUser(Auth::id())->active()->delete();
 
         // Restore held cart
-        $heldCart = Cart::findOrFail($cartId);
-        $heldCart->restore();
-
-        $this->cart = $heldCart;
-
-        return $heldCart;
+        $cart = Cart::findOrFail($cartId);
+        $cart->restore();
+        return $this->cart = $cart;
     }
 
-    public function findProductByBarcode(string $barcode, ?int $storeId = null): ?array
+    public function findProductByBarcode(string $barcode): ?array
     {
-        // Check product variants first
-        $variant = ProductVariant::where('barcode', $barcode)->first();
-
-        if ($variant) {
-            return [
-                'product' => $variant->product,
-                'variant' => $variant,
-            ];
+        if ($variant = ProductVariant::where('barcode', $barcode)->first()) {
+            return ['product' => $variant->product, 'variant' => $variant];
         }
-
-        // Check products
-        $product = Product::where('barcode', $barcode)->first();
-
-        if ($product) {
-            return [
-                'product' => $product,
-                'variant' => null,
-            ];
+        if ($product = Product::where('barcode', $barcode)->orWhere('sku', $barcode)->first()) {
+            return ['product' => $product, 'variant' => null];
         }
-
         return null;
-    }
-
-    public function getCartSummary(): array
-    {
-        $cart = $this->getCart();
-
-        return [
-            'items_count' => $cart->items->sum('quantity'),
-            'subtotal' => $cart->subtotal,
-            'tax_amount' => $cart->tax_amount,
-            'discount' => $cart->discount,
-            'discount_type' => $cart->discount_type,
-            'loyalty_discount' => $cart->loyalty_discount,
-            'total' => $cart->total,
-            'customer' => $cart->customer,
-        ];
     }
 }

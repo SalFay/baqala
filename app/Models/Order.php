@@ -4,35 +4,37 @@ namespace App\Models;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Traits\HasStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Order extends Model
+class Order extends BaseModel
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasStatus;
 
     protected $fillable = [
         'order_number',
+        'invoice_no',
         'store_id',
         'customer_id',
         'user_id',
         'status',
+        'current_status_id',
         'payment_status',
         'payment_type',
         'date',
         'sub_total',
         'subtotal',
         'tax_amount',
+        'vat',
         'discount',
         'discount_type',
         'discount_percent',
         'total',
         'paid_amount',
         'change_amount',
-        'vat',
         'loyalty_points_earned',
         'loyalty_points_redeemed',
         'loyalty_discount',
@@ -40,7 +42,8 @@ class Order extends Model
         'cashier_name',
         'notes',
         'completed_at',
-        'invoice_no',
+        'created_by_id',
+        'updated_by_id',
     ];
 
     protected $casts = [
@@ -131,6 +134,30 @@ class Order extends Model
     public function returns(): HasMany
     {
         return $this->hasMany(OrderReturn::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by_id');
+    }
+
+    /**
+     * Define allowed status transitions.
+     */
+    public function getAllowedStatusTransitions(): array
+    {
+        return [
+            'pending' => ['processing', 'completed', 'cancelled'],
+            'processing' => ['completed', 'cancelled'],
+            'completed' => ['refunded'],
+            'cancelled' => [],
+            'refunded' => [],
+        ];
     }
 
     // Scopes

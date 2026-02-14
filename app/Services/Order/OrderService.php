@@ -61,27 +61,25 @@ class OrderService
                     'sku' => $cartItem->sku,
                     'product_name' => $cartItem->product_name,
                     'variant_name' => $cartItem->variant_name,
-                    'purchase_price' => $cartItem->purchase_price,
-                    'sale_price' => $cartItem->unit_price,
-                    'taxable_price' => $cartItem->line_total,
-                    'discount' => $cartItem->discount,
+                    'quantity' => $cartItem->quantity,
+                    'unit_price' => $cartItem->unit_price,
+                    'cost_price' => $cartItem->purchase_price,
+                    'discount' => $cartItem->discount ?? 0,
                     'discount_percent' => $cartItem->discount_type === 'percentage' ? $cartItem->discount : 0,
-                    'tax_rate' => $cartItem->tax_rate,
-                    'tax_amount' => $cartItem->tax_amount,
+                    'tax_rate' => $cartItem->tax_rate ?? 0,
+                    'tax_amount' => $cartItem->tax_amount ?? 0,
                     'line_total' => $cartItem->line_total,
-                    'stock' => $cartItem->quantity,
-                    'date' => now(),
                 ]);
 
-                // Deduct inventory
-                if ($cartItem->product->track_inventory) {
+                // Deduct inventory (only if store is assigned and product tracks inventory)
+                if ($cart->store_id && $cartItem->product?->track_inventory) {
                     $this->inventoryService->recordMovement(
                         storeId: $cart->store_id,
                         productId: $cartItem->product_id,
                         variantId: $cartItem->product_variant_id,
                         type: InventoryMovementType::SALE,
                         quantity: -$cartItem->quantity,
-                        unitCost: $cartItem->purchase_price,
+                        unitCost: $cartItem->purchase_price ?? 0,
                         referenceType: Order::class,
                         referenceId: $order->id
                     );
@@ -154,7 +152,7 @@ class OrderService
                         productId: $item->product_id,
                         variantId: $item->product_variant_id,
                         type: InventoryMovementType::ADJUSTMENT_ADD,
-                        quantity: $item->stock,
+                        quantity: $item->quantity,
                         reason: 'Order cancelled: ' . ($reason ?? 'No reason provided'),
                         referenceType: Order::class,
                         referenceId: $order->id
@@ -199,7 +197,7 @@ class OrderService
             'store' => $order->store,
             'items' => $order->items->map(fn($item) => [
                 'name' => $item->display_name,
-                'quantity' => $item->stock,
+                'quantity' => $item->quantity,
                 'price' => $item->sale_price,
                 'total' => $item->line_total,
             ]),

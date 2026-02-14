@@ -11,21 +11,9 @@ class CartItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'cart_id',
-        'product_id',
-        'product_variant_id',
-        'sku',
-        'product_name',
-        'variant_name',
-        'quantity',
-        'unit_price',
-        'purchase_price',
-        'discount',
-        'discount_type',
-        'tax_rate',
-        'tax_amount',
-        'line_total',
-        'notes',
+        'cart_id', 'product_id', 'product_variant_id', 'sku', 'product_name',
+        'variant_name', 'quantity', 'unit_price', 'purchase_price', 'discount',
+        'discount_type', 'tax_rate', 'tax_amount', 'line_total', 'notes',
     ];
 
     protected $casts = [
@@ -38,18 +26,35 @@ class CartItem extends Model
         'line_total' => 'decimal:2',
     ];
 
-    public function cart(): BelongsTo
+    public function cart(): BelongsTo { return $this->belongsTo(Cart::class); }
+    public function product(): BelongsTo { return $this->belongsTo(Product::class); }
+    public function variant(): BelongsTo { return $this->belongsTo(ProductVariant::class, 'product_variant_id'); }
+
+    // Format for API/Frontend
+    public function toApiArray(): array
     {
-        return $this->belongsTo(Cart::class);
+        return [
+            'id' => $this->id,
+            'product_id' => $this->product_id,
+            'product' => $this->product?->only(['id', 'name', 'sku', 'price', 'image_url'])
+                ?? ['name' => $this->product_name, 'sku' => $this->sku],
+            'quantity' => $this->quantity,
+            'price' => $this->unit_price,
+            'subtotal' => $this->line_total,
+        ];
     }
 
-    public function product(): BelongsTo
+    public function recalculate(): self
     {
-        return $this->belongsTo(Product::class);
-    }
+        $subtotal = $this->unit_price * $this->quantity;
+        $discount = $this->discount_type === 'percentage'
+            ? ($subtotal * $this->discount) / 100
+            : ($this->discount ?? 0);
 
-    public function variant(): BelongsTo
-    {
-        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+        $afterDiscount = $subtotal - $discount;
+        $this->tax_amount = round(($afterDiscount * ($this->tax_rate ?? 0)) / 100, 2);
+        $this->line_total = round($afterDiscount + $this->tax_amount, 2);
+        $this->save();
+        return $this;
     }
 }

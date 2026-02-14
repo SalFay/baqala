@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Customer\StoreCustomerRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerRequest;
+use App\Http\Resources\CustomerResource;
+use App\Http\Resources\OrderResource;
 use App\Models\Customer;
 use App\Services\Loyalty\LoyaltyService;
 use Illuminate\Http\JsonResponse;
@@ -23,56 +27,37 @@ class CustomerController extends Controller
             ->orderBy($request->sort_by ?? 'first_name', $request->sort_order ?? 'asc')
             ->paginate($request->per_page ?? 20);
 
-        return response()->json($customers);
+        return CustomerResource::collection($customers)->response();
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreCustomerRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'business_name' => 'nullable|string|max:200',
-            'email' => 'nullable|email|unique:customers,email',
-            'phone_mobile' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'date_of_birth' => 'nullable|date',
-            'gender' => 'nullable|in:male,female',
-            'accepts_marketing' => 'boolean',
-        ]);
+        $customer = Customer::create($request->validated());
 
-        $customer = Customer::create($validated);
+        // Create loyalty record if not exists
+        if (method_exists($customer, 'getOrCreateLoyalty')) {
+            $customer->getOrCreateLoyalty();
+        }
 
-        // Create loyalty record
-        $customer->getOrCreateLoyalty();
-
-        return response()->json($customer->load('loyalty'), 201);
+        return CustomerResource::make($customer->load('loyalty'))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Customer $customer): JsonResponse
     {
-        return response()->json($customer->load(['loyalty.tier', 'orders' => function ($q) {
-            $q->latest()->limit(10);
-        }]));
+        return CustomerResource::make(
+            $customer->load(['loyalty.tier', 'orders' => function ($q) {
+                $q->latest()->limit(10);
+            }])
+        )->response();
     }
 
-    public function update(Request $request, Customer $customer): JsonResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
-        $validated = $request->validate([
-            'first_name' => 'sometimes|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'business_name' => 'nullable|string|max:200',
-            'email' => 'nullable|email|unique:customers,email,' . $customer->id,
-            'phone_mobile' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'date_of_birth' => 'nullable|date',
-            'gender' => 'nullable|in:male,female',
-            'accepts_marketing' => 'boolean',
-            'credit_limit' => 'nullable|numeric|min:0',
-        ]);
+        $customer->update($request->validated());
 
-        $customer->update($validated);
-
-        return response()->json($customer->fresh('loyalty'));
+        return CustomerResource::make($customer->fresh('loyalty'))->response();
     }
 
     public function destroy(Customer $customer): JsonResponse
@@ -92,17 +77,17 @@ class CustomerController extends Controller
             ->limit(20)
             ->get();
 
-        return response()->json($customers);
+        return CustomerResource::collection($customers)->response();
     }
 
     public function orders(Customer $customer): JsonResponse
     {
         $orders = $customer->orders()
-            ->with(['items', 'user'])
+            ->with(['items', 'user', 'currentStatus'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return response()->json($orders);
+        return OrderResource::collection($orders)->response();
     }
 
     public function loyalty(Customer $customer): JsonResponse

@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StockTransfer\StoreStockTransferRequest;
+use App\Http\Requests\Api\StockTransfer\UpdateStockTransferStatusRequest;
+use App\Http\Resources\StatusHistoryResource;
+use App\Http\Resources\StatusResource;
+use App\Http\Resources\StockTransferResource;
 use App\Models\StockTransfer;
 use App\Models\StockTransferItem;
 use App\Enums\StockTransferStatus;
@@ -11,6 +16,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 
 class StockTransferController extends Controller
 {
@@ -20,12 +26,9 @@ class StockTransferController extends Controller
         protected InventoryService $inventoryService
     ) {}
 
-    /**
-     * List stock transfers
-     */
     public function index(Request $request): JsonResponse
     {
-        $query = StockTransfer::with(['fromStore', 'toStore', 'createdBy']);
+        $query = StockTransfer::with(['fromStore', 'toStore', 'createdBy', 'currentStatus']);
 
         if ($search = $request->input('search')) {
             $query->where('transfer_number', 'like', "%{$search}%");
@@ -33,6 +36,10 @@ class StockTransferController extends Controller
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
+        }
+
+        if ($statusCode = $request->input('status_code')) {
+            $query->whereStatus($statusCode);
         }
 
         if ($fromStoreId = $request->input('from_store_id')) {
@@ -45,26 +52,14 @@ class StockTransferController extends Controller
 
         $transfers = $query->latest()->paginate($request->input('per_page', 20));
 
-        return $this->paginated($transfers);
+        return StockTransferResource::collection($transfers)->response();
     }
 
-    /**
-     * Create stock transfer
-     */
-    public function store(Request $request): JsonResponse
+    public function store(StoreStockTransferRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'from_store_id' => 'required|exists:stores,id',
-            'to_store_id' => 'required|exists:stores,id|different:from_store_id',
-            'notes' => 'nullable|string|max:1000',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
-            'items.*.quantity_requested' => 'required|integer|min:1',
-        ]);
+        $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
-            // Generate transfer number
             $transferNumber = 'ST-' . date('Ymd') . '-' . str_pad(
                 StockTransfer::whereDate('created_at', today())->count() + 1,
                 4, '0', STR_PAD_LEFT
@@ -75,7 +70,7 @@ class StockTransferController extends Controller
                 'from_store_id' => $validated['from_store_id'],
                 'to_store_id' => $validated['to_store_id'],
                 'created_by' => auth()->id(),
-                'status' => StockTransferStatus::DRAFT,
+                'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
             ]);
 
@@ -84,22 +79,17 @@ class StockTransferController extends Controller
                     'stock_transfer_id' => $transfer->id,
                     'product_id' => $item['product_id'],
                     'product_variant_id' => $item['product_variant_id'] ?? null,
-                    'quantity_requested' => $item['quantity_requested'],
-                    'quantity_sent' => 0,
-                    'quantity_received' => 0,
+                    'quantity' => $item['quantity'],
+                    'received_quantity' => 0,
                 ]);
             }
 
-            return $this->created(
-                $transfer->load(['items.product', 'fromStore', 'toStore']),
-                'Stock transfer created successfully'
-            );
+            return StockTransferResource::make($transfer->load(['items.product', 'fromStore', 'toStore', 'currentStatus']))
+                ->response()
+                ->setStatusCode(201);
         });
     }
 
-    /**
-     * Show stock transfer
-     */
     public function show(StockTransfer $stockTransfer): JsonResponse
     {
         $stockTransfer->load([
@@ -110,18 +100,19 @@ class StockTransferController extends Controller
             'createdBy',
             'approvedBy',
             'receivedBy',
+            'currentStatus',
+            'statusHistories.status',
+            'statusHistories.previousStatus',
+            'statusHistories.user',
         ]);
 
-        return $this->success($stockTransfer);
+        return StockTransferResource::make($stockTransfer)->response();
     }
 
-    /**
-     * Update stock transfer (draft only)
-     */
     public function update(Request $request, StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status !== StockTransferStatus::DRAFT) {
-            return $this->error('Can only edit draft transfers', 422);
+        if (!$stockTransfer->hasStatus('pending')) {
+            return response()->json(['message' => 'Can only edit pending transfers'], 422);
         }
 
         $validated = $request->validate([
@@ -131,15 +122,14 @@ class StockTransferController extends Controller
             'items' => 'sometimes|required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
-            'items.*.quantity_requested' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:1',
         ]);
 
-        // Validate different stores
         $fromStore = $validated['from_store_id'] ?? $stockTransfer->from_store_id;
         $toStore = $validated['to_store_id'] ?? $stockTransfer->to_store_id;
 
         if ($fromStore === $toStore) {
-            return $this->error('Source and destination stores must be different', 422);
+            return response()->json(['message' => 'Source and destination stores must be different'], 422);
         }
 
         return DB::transaction(function () use ($validated, $stockTransfer) {
@@ -157,56 +147,68 @@ class StockTransferController extends Controller
                         'stock_transfer_id' => $stockTransfer->id,
                         'product_id' => $item['product_id'],
                         'product_variant_id' => $item['product_variant_id'] ?? null,
-                        'quantity_requested' => $item['quantity_requested'],
-                        'quantity_sent' => 0,
-                        'quantity_received' => 0,
+                        'quantity' => $item['quantity'],
+                        'received_quantity' => 0,
                     ]);
                 }
             }
 
-            return $this->success(
-                $stockTransfer->load(['items.product', 'fromStore', 'toStore']),
-                'Stock transfer updated successfully'
-            );
+            return StockTransferResource::make($stockTransfer->load(['items.product', 'fromStore', 'toStore']))
+                ->response();
         });
     }
 
-    /**
-     * Delete stock transfer (draft only)
-     */
     public function destroy(StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status !== StockTransferStatus::DRAFT) {
-            return $this->error('Can only delete draft transfers', 422);
+        if (!$stockTransfer->hasStatus('pending')) {
+            return response()->json(['message' => 'Can only delete pending transfers'], 422);
         }
 
         $stockTransfer->items()->delete();
         $stockTransfer->delete();
 
-        return $this->success(null, 'Stock transfer deleted successfully');
+        return response()->json(['message' => 'Stock transfer deleted successfully']);
     }
 
-    /**
-     * Submit for approval
-     */
-    public function submit(StockTransfer $stockTransfer): JsonResponse
+    public function updateStatus(UpdateStockTransferStatusRequest $request, StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status !== StockTransferStatus::DRAFT) {
-            return $this->error('Can only submit draft transfers', 422);
+        try {
+            $stockTransfer->changeStatus(
+                $request->validated('status'),
+                $request->validated('reason')
+            );
+
+            return response()->json([
+                'message' => 'Status updated successfully',
+                'stock_transfer' => StockTransferResource::make($stockTransfer->fresh(['currentStatus', 'statusHistories.status'])),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        $stockTransfer->update(['status' => StockTransferStatus::PENDING]);
-
-        return $this->success($stockTransfer, 'Stock transfer submitted for approval');
     }
 
-    /**
-     * Approve and ship transfer
-     */
+    public function statusHistory(StockTransfer $stockTransfer): JsonResponse
+    {
+        $histories = $stockTransfer->statusHistories()
+            ->with(['status', 'previousStatus', 'user'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return StatusHistoryResource::collection($histories)->response();
+    }
+
+    public function availableStatuses(StockTransfer $stockTransfer): JsonResponse
+    {
+        return response()->json([
+            'current_status' => StatusResource::make($stockTransfer->currentStatus),
+            'available_statuses' => StatusResource::collection($stockTransfer->getAllowedNextStatuses()),
+        ]);
+    }
+
     public function ship(Request $request, StockTransfer $stockTransfer): JsonResponse
     {
-        if (!in_array($stockTransfer->status, [StockTransferStatus::DRAFT, StockTransferStatus::PENDING])) {
-            return $this->error('Cannot ship this transfer', 422);
+        if (!$stockTransfer->hasAnyStatus(['pending', 'approved'])) {
+            return response()->json(['message' => 'Cannot ship this transfer'], 422);
         }
 
         $validated = $request->validate([
@@ -219,7 +221,6 @@ class StockTransferController extends Controller
             foreach ($validated['items'] as $item) {
                 $transferItem = StockTransferItem::find($item['stock_transfer_item_id']);
 
-                // Validate stock availability
                 $available = $this->inventoryService->getAvailableStock(
                     $stockTransfer->from_store_id,
                     $transferItem->product_id,
@@ -227,15 +228,13 @@ class StockTransferController extends Controller
                 );
 
                 if ($available < $item['quantity_sent']) {
-                    return $this->error(
-                        "Insufficient stock for product ID {$transferItem->product_id}",
-                        422
-                    );
+                    return response()->json([
+                        'message' => "Insufficient stock for product ID {$transferItem->product_id}"
+                    ], 422);
                 }
 
-                $transferItem->update(['quantity_sent' => $item['quantity_sent']]);
+                $transferItem->update(['quantity' => $item['quantity_sent']]);
 
-                // Deduct from source store
                 $this->inventoryService->removeStock(
                     $stockTransfer->from_store_id,
                     $transferItem->product_id,
@@ -247,23 +246,20 @@ class StockTransferController extends Controller
                 );
             }
 
+            $stockTransfer->changeStatus('in_transit', 'Shipped');
             $stockTransfer->update([
-                'status' => StockTransferStatus::IN_TRANSIT,
                 'approved_by' => auth()->id(),
                 'shipped_at' => now(),
             ]);
 
-            return $this->success($stockTransfer->load('items'), 'Stock transfer shipped');
+            return StockTransferResource::make($stockTransfer->load('items'))->response();
         });
     }
 
-    /**
-     * Receive transfer at destination
-     */
     public function receive(Request $request, StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status !== StockTransferStatus::IN_TRANSIT) {
-            return $this->error('Can only receive in-transit transfers', 422);
+        if (!$stockTransfer->hasStatus('in_transit')) {
+            return response()->json(['message' => 'Can only receive in-transit transfers'], 422);
         }
 
         $validated = $request->validate([
@@ -278,11 +274,9 @@ class StockTransferController extends Controller
                 $transferItem = StockTransferItem::find($item['stock_transfer_item_id']);
 
                 $transferItem->update([
-                    'quantity_received' => $item['quantity_received'],
-                    'notes' => $item['notes'] ?? null,
+                    'received_quantity' => $item['quantity_received'],
                 ]);
 
-                // Add to destination store
                 if ($item['quantity_received'] > 0) {
                     $this->inventoryService->addStock(
                         $stockTransfer->to_store_id,
@@ -297,36 +291,31 @@ class StockTransferController extends Controller
                 }
             }
 
+            $stockTransfer->changeStatus('completed', 'Received');
             $stockTransfer->update([
-                'status' => StockTransferStatus::RECEIVED,
                 'received_by' => auth()->id(),
                 'received_at' => now(),
             ]);
 
-            return $this->success($stockTransfer->load('items'), 'Stock transfer received');
+            return StockTransferResource::make($stockTransfer->load('items'))->response();
         });
     }
 
-    /**
-     * Cancel transfer
-     */
     public function cancel(StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status === StockTransferStatus::RECEIVED) {
-            return $this->error('Cannot cancel received transfers', 422);
+        if ($stockTransfer->hasStatus('completed')) {
+            return response()->json(['message' => 'Cannot cancel completed transfers'], 422);
         }
 
-        // If already shipped, need to reverse inventory
-        if ($stockTransfer->status === StockTransferStatus::IN_TRANSIT) {
+        if ($stockTransfer->hasStatus('in_transit')) {
             return DB::transaction(function () use ($stockTransfer) {
                 foreach ($stockTransfer->items as $item) {
-                    if ($item->quantity_sent > 0) {
-                        // Add back to source store
+                    if ($item->quantity > 0) {
                         $this->inventoryService->addStock(
                             $stockTransfer->from_store_id,
                             $item->product_id,
                             $item->product_variant_id,
-                            $item->quantity_sent,
+                            $item->quantity,
                             'adjustment_add',
                             null,
                             $stockTransfer,
@@ -335,14 +324,20 @@ class StockTransferController extends Controller
                     }
                 }
 
-                $stockTransfer->update(['status' => StockTransferStatus::CANCELLED]);
+                $stockTransfer->changeStatus('cancelled', 'Transfer cancelled - inventory restored');
 
-                return $this->success($stockTransfer, 'Stock transfer cancelled and inventory restored');
+                return response()->json([
+                    'message' => 'Stock transfer cancelled and inventory restored',
+                    'stock_transfer' => StockTransferResource::make($stockTransfer),
+                ]);
             });
         }
 
-        $stockTransfer->update(['status' => StockTransferStatus::CANCELLED]);
+        $stockTransfer->changeStatus('cancelled', 'Transfer cancelled');
 
-        return $this->success($stockTransfer, 'Stock transfer cancelled');
+        return response()->json([
+            'message' => 'Stock transfer cancelled',
+            'stock_transfer' => StockTransferResource::make($stockTransfer),
+        ]);
     }
 }

@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class PurchaseOrder extends Model
+class PurchaseOrder extends BaseModel
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasStatus;
 
     protected $fillable = [
         'po_number',
@@ -19,6 +19,7 @@ class PurchaseOrder extends Model
         'created_by',
         'approved_by',
         'status',
+        'current_status_id',
         'order_date',
         'expected_date',
         'received_date',
@@ -30,6 +31,8 @@ class PurchaseOrder extends Model
         'notes',
         'vendor_notes',
         'vendor_invoice_number',
+        'created_by_id',
+        'updated_by_id',
     ];
 
     protected $casts = [
@@ -71,5 +74,31 @@ class PurchaseOrder extends Model
     public function receipts(): HasMany
     {
         return $this->hasMany(PurchaseOrderReceipt::class);
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    public function updatedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by_id');
+    }
+
+    /**
+     * Define allowed status transitions.
+     */
+    public function getAllowedStatusTransitions(): array
+    {
+        return [
+            'draft' => ['pending', 'cancelled'],
+            'pending' => ['approved', 'cancelled'],
+            'approved' => ['ordered', 'cancelled'],
+            'ordered' => ['partial', 'received', 'cancelled'],
+            'partial' => ['received', 'cancelled'],
+            'received' => [],
+            'cancelled' => [],
+        ];
     }
 }

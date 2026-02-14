@@ -40,7 +40,7 @@ class ReportService
         return OrderItem::query()
             ->select([
                 'product_id',
-                DB::raw('SUM(stock) as total_quantity'),
+                DB::raw('SUM(quantity) as total_quantity'),
                 DB::raw('SUM(line_total) as total_revenue'),
                 DB::raw('COUNT(DISTINCT order_id) as order_count'),
             ])
@@ -66,7 +66,7 @@ class ReportService
             ->select([
                 'products.category_id',
                 'categories.name as category_name',
-                DB::raw('SUM(order_items.stock) as total_quantity'),
+                DB::raw('SUM(order_items.quantity) as total_quantity'),
                 DB::raw('SUM(order_items.line_total) as total_revenue'),
             ])
             ->join('products', 'order_items.product_id', '=', 'products.id')
@@ -141,7 +141,7 @@ class ReportService
 
         $totalRevenue = $orders->sum('total');
         $totalCost = $orders->flatMap->items->sum(function ($item) {
-            return $item->stock * $item->purchase_price;
+            return $item->quantity * $item->cost_price;
         });
         $grossProfit = $totalRevenue - $totalCost;
 

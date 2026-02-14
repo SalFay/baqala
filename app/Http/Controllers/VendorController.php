@@ -1,0 +1,119 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\Api\Vendor\StoreVendorRequest;
+use App\Http\Requests\Api\Vendor\UpdateVendorRequest;
+use App\Models\Vendor;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class VendorController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $vendors = Vendor::query()
+            ->when($request->search, function ($q, $term) {
+                $q->where(function ($q) use ($term) {
+                    $q->where('name', 'like', "%{$term}%")
+                        ->orWhere('email', 'like', "%{$term}%")
+                        ->orWhere('phone', 'like', "%{$term}%");
+                });
+            })
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->orderBy($request->sort_by ?? 'name', $request->sort_dir ?? 'asc')
+            ->paginate($request->per_page ?? 20);
+
+        return Inertia::render('Vendors/Index', [
+            'vendors' => [
+                'data' => $vendors->map(fn($vendor) => [
+                    'id' => $vendor->id,
+                    'name' => $vendor->name,
+                    'email' => $vendor->email,
+                    'phone' => $vendor->phone,
+                    'address' => $vendor->address,
+                    'status' => $vendor->status,
+                    'created_at' => $vendor->created_at,
+                ]),
+                'meta' => [
+                    'total' => $vendors->total(),
+                    'per_page' => $vendors->perPage(),
+                    'current_page' => $vendors->currentPage(),
+                ],
+            ],
+            'filters' => $request->only(['search', 'status']),
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('Vendors/Create');
+    }
+
+    public function store(StoreVendorRequest $request): RedirectResponse
+    {
+        Vendor::create($request->validated());
+
+        return redirect()->route('vendors.index')->with('success', 'Vendor created successfully.');
+    }
+
+    public function show(Vendor $vendor): Response
+    {
+        $vendor->load(['purchaseOrders' => fn($q) => $q->latest()->limit(10)]);
+
+        return Inertia::render('Vendors/Show', [
+            'vendor' => [
+                'id' => $vendor->id,
+                'name' => $vendor->name,
+                'email' => $vendor->email,
+                'phone' => $vendor->phone,
+                'address' => $vendor->address,
+                'city' => $vendor->city,
+                'country' => $vendor->country,
+                'tax_number' => $vendor->tax_number,
+                'status' => $vendor->status,
+                'recent_orders' => $vendor->purchaseOrders->map(fn($po) => [
+                    'id' => $po->id,
+                    'po_number' => $po->po_number,
+                    'total' => $po->total,
+                    'status' => $po->status,
+                    'created_at' => $po->created_at,
+                ]),
+                'created_at' => $vendor->created_at,
+            ],
+        ]);
+    }
+
+    public function edit(Vendor $vendor): Response
+    {
+        return Inertia::render('Vendors/Edit', [
+            'vendor' => [
+                'id' => $vendor->id,
+                'name' => $vendor->name,
+                'email' => $vendor->email,
+                'phone' => $vendor->phone,
+                'address' => $vendor->address,
+                'city' => $vendor->city,
+                'country' => $vendor->country,
+                'tax_number' => $vendor->tax_number,
+                'status' => $vendor->status,
+            ],
+        ]);
+    }
+
+    public function update(UpdateVendorRequest $request, Vendor $vendor): RedirectResponse
+    {
+        $vendor->update($request->validated());
+
+        return redirect()->route('vendors.index')->with('success', 'Vendor updated successfully.');
+    }
+
+    public function destroy(Vendor $vendor): RedirectResponse
+    {
+        $vendor->delete();
+
+        return redirect()->route('vendors.index')->with('success', 'Vendor deleted successfully.');
+    }
+}

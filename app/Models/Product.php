@@ -4,13 +4,12 @@ namespace App\Models;
 
 use App\Enums\ProductType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Product extends Model
+class Product extends BaseModel
 {
     use HasFactory, SoftDeletes;
 
@@ -265,5 +264,36 @@ class Product extends Model
     public function findVariantByBarcode(string $barcode): ?ProductVariant
     {
         return $this->variants()->where('barcode', $barcode)->first();
+    }
+
+    // Alias accessors for DRY (used by Cart/CartItem)
+    public function getPriceAttribute(): float
+    {
+        return (float) $this->sale_price;
+    }
+
+    public function getCostAttribute(): float
+    {
+        return (float) $this->cost_price;
+    }
+
+    // Format for POS frontend
+    public function toPosArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'name_ar' => $this->name_ar,
+            'sku' => $this->sku,
+            'barcode' => $this->barcode,
+            'price' => $this->price,
+            'cost' => $this->cost,
+            'image_url' => $this->image_url,
+            'category_id' => $this->category_id,
+            'category' => $this->category?->name,
+            'in_stock' => $this->isInStock(),
+            'stock_qty' => $this->track_inventory ? $this->getStockQuantity() : null,
+            'has_variants' => $this->is_variable,
+        ];
     }
 }

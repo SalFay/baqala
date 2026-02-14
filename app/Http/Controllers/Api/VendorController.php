@@ -3,36 +3,37 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Vendor\StoreVendorRequest;
+use App\Http\Requests\Api\Vendor\UpdateVendorRequest;
+use App\Http\Resources\PurchaseOrderResource;
+use App\Http\Resources\VendorResource;
 use App\Models\Vendor;
-use App\Models\PurchaseOrder;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class VendorController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * List all vendors with optional filters
-     */
     public function index(Request $request): JsonResponse
     {
-        $query = Vendor::query();
+        $query = Vendor::query()
+            ->withCount(['products', 'purchaseOrders']);
 
         // Search
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('mobile', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('address', 'like', "%{$search}%");
             });
         }
 
         // Status filter
-        if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
         }
 
         // Sorting
@@ -42,113 +43,75 @@ class VendorController extends Controller
 
         $vendors = $query->paginate($request->input('per_page', 20));
 
-        return $this->paginated($vendors);
+        return VendorResource::collection($vendors)->response();
     }
 
-    /**
-     * Create a new vendor
-     */
-    public function store(Request $request): JsonResponse
+    public function store(StoreVendorRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'mobile' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'status' => 'nullable|in:active,inactive',
-        ]);
+        $vendor = Vendor::create($request->validated());
 
-        $validated['status'] = $validated['status'] ?? 'active';
-
-        $vendor = Vendor::create($validated);
-
-        return $this->created($vendor, 'Vendor created successfully');
+        return VendorResource::make($vendor)
+            ->response()
+            ->setStatusCode(201);
     }
 
-    /**
-     * Show vendor details
-     */
     public function show(Vendor $vendor): JsonResponse
     {
-        $vendor->load(['paymentMethods', 'account']);
-
-        return $this->success($vendor);
+        return VendorResource::make($vendor)->response();
     }
 
-    /**
-     * Update vendor
-     */
-    public function update(Request $request, Vendor $vendor): JsonResponse
+    public function update(UpdateVendorRequest $request, Vendor $vendor): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'mobile' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'status' => 'nullable|in:active,inactive',
-        ]);
+        $vendor->update($request->validated());
 
-        $vendor->update($validated);
-
-        return $this->success($vendor, 'Vendor updated successfully');
+        return VendorResource::make($vendor->fresh())->response();
     }
 
-    /**
-     * Delete vendor
-     */
     public function destroy(Vendor $vendor): JsonResponse
     {
         // Check if vendor has purchase orders
         if ($vendor->purchaseOrders()->exists()) {
-            return $this->error('Cannot delete vendor with purchase orders', 422);
+            return response()->json([
+                'message' => 'Cannot delete vendor with purchase orders'
+            ], 422);
         }
 
         $vendor->delete();
 
-        return $this->success(null, 'Vendor deleted successfully');
+        return response()->json(['message' => 'Vendor deleted successfully']);
     }
 
-    /**
-     * Search vendors (for dropdowns)
-     */
     public function search(Request $request): JsonResponse
     {
         $search = $request->input('q', '');
 
-        $vendors = Vendor::where('status', 'active')
+        $vendors = Vendor::where('is_active', true)
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('mobile', 'like', "%{$search}%");
+                  ->orWhere('phone', 'like', "%{$search}%");
             })
             ->limit(20)
-            ->get(['id', 'name', 'mobile']);
+            ->get();
 
-        return $this->success($vendors);
+        return VendorResource::collection($vendors)->response();
     }
 
-    /**
-     * Get vendor's purchase orders
-     */
     public function purchaseOrders(Vendor $vendor, Request $request): JsonResponse
     {
         $orders = $vendor->purchaseOrders()
-            ->with(['store', 'createdBy'])
+            ->with(['store', 'createdBy', 'currentStatus'])
             ->latest()
             ->paginate($request->input('per_page', 20));
 
-        return $this->paginated($orders);
+        return PurchaseOrderResource::collection($orders)->response();
     }
 
-    /**
-     * Get vendor balance/account info
-     */
     public function balance(Vendor $vendor): JsonResponse
     {
-        $account = $vendor->account()->first();
-
-        return $this->success([
+        return response()->json([
             'vendor_id' => $vendor->id,
             'vendor_name' => $vendor->name,
-            'balance' => $account->balance ?? 0,
-            'account' => $account,
+            'balance' => $vendor->balance,
         ]);
     }
 }

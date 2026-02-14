@@ -64,4 +64,20 @@ class User extends Authenticatable
         $rootUsers = Config::get('app.root_users', []);
         return in_array($this->email, $rootUsers);
     }
+
+    /**
+     * Get the redirect URL after authentication based on user role.
+     */
+    public function redirection(): string
+    {
+        // Redirect based on role
+        $role = $this->role?->name ?? $this->role ?? 'cashier';
+
+        return match ($role) {
+            'admin', 'manager' => '/dashboard',
+            'cashier' => '/pos',
+            'inventory' => '/inventory',
+            default => '/dashboard',
+        };
+    }
 }

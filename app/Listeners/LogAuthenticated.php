@@ -2,29 +2,19 @@
 
 namespace App\Listeners;
 
-use App\Events\DesignEvent;
 use Illuminate\Auth\Events\Authenticated;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 
 class LogAuthenticated
 {
-  /**
-   * Create the event listener.
-   * @return void
-   */
-  public function __construct()
-  {
-    //
-  }
-  
-  /**
-   * Handle the event.
-   * @param object $event
-   * @return void
-   */
-  public function handle( Authenticated $event )
-  {
-    config( [ 'fortify.home' => $event->user->redirection() ] );
-  }
+    /**
+     * Handle the authenticated event.
+     * Set redirect path based on user role (used by auth middleware).
+     */
+    public function handle(Authenticated $event): void
+    {
+        // Store redirect path in session for use by auth controller
+        if (method_exists($event->user, 'redirection')) {
+            session(['intended_redirect' => $event->user->redirection()]);
+        }
+    }
 }

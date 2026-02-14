@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Product\StoreProductRequest;
+use App\Http\Requests\Api\Product\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\JsonResponse;
@@ -17,77 +20,52 @@ class ProductController extends Controller
             ->with(['category', 'variants', 'storeInventories'])
             ->when($request->category_id, fn($q, $id) => $q->where('category_id', $id))
             ->when($request->search, fn($q, $term) => $q->search($term))
-            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->is_active !== null, fn($q) => $q->where('is_active', $request->boolean('is_active')))
             ->when($request->store_id, fn($q, $id) => $q->where('store_id', $id))
             ->orderBy($request->sort_by ?? 'name', $request->sort_order ?? 'asc')
             ->paginate($request->per_page ?? 20);
 
-        return response()->json($products);
+        return ProductResource::collection($products)
+            ->response();
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'arabic_name' => 'nullable|string|max:255',
-            'sku' => 'nullable|string|unique:products,sku',
-            'barcode' => 'nullable|string',
-            'type' => 'required|in:simple,variable',
-            'category_id' => 'required|exists:categories,id',
-            'purchase_price' => 'required|numeric|min:0',
-            'sale_price' => 'required|numeric|min:0',
-            'taxable' => 'boolean',
-            'status' => 'nullable|string',
-            'track_inventory' => 'boolean',
-            'low_stock_threshold' => 'nullable|integer|min:0',
-            'store_id' => 'nullable|exists:stores,id',
-            'product_image' => 'nullable|image|max:2048',
-        ]);
+        $validated = $request->validated();
 
-        if ($request->hasFile('product_image')) {
-            $validated['product_image'] = $request->file('product_image')->store('products', 'public');
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
         $product = Product::create($validated);
 
-        return response()->json($product->load(['category', 'variants']), 201);
+        return ProductResource::make($product->load(['category', 'variants']))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Product $product): JsonResponse
     {
-        return response()->json(
-            $product->load(['category', 'variants.attributeValues.attribute', 'storeInventories'])
-        );
+        return ProductResource::make(
+            $product->load(['category', 'vendor', 'variants.attributeValues.attribute', 'storeInventories'])
+        )->response();
     }
 
-    public function update(Request $request, Product $product): JsonResponse
+    public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'arabic_name' => 'nullable|string|max:255',
-            'sku' => 'nullable|string|unique:products,sku,' . $product->id,
-            'barcode' => 'nullable|string',
-            'type' => 'sometimes|in:simple,variable',
-            'category_id' => 'sometimes|exists:categories,id',
-            'purchase_price' => 'sometimes|numeric|min:0',
-            'sale_price' => 'sometimes|numeric|min:0',
-            'taxable' => 'boolean',
-            'status' => 'nullable|string',
-            'track_inventory' => 'boolean',
-            'low_stock_threshold' => 'nullable|integer|min:0',
-            'product_image' => 'nullable|image|max:2048',
-        ]);
+        $validated = $request->validated();
 
-        if ($request->hasFile('product_image')) {
-            if ($product->product_image) {
-                Storage::disk('public')->delete($product->product_image);
+        if ($request->hasFile('image')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
             }
-            $validated['product_image'] = $request->file('product_image')->store('products', 'public');
+            $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
         $product->update($validated);
 
-        return response()->json($product->fresh(['category', 'variants']));
+        return ProductResource::make($product->fresh(['category', 'variants']))
+            ->response();
     }
 
     public function destroy(Product $product): JsonResponse
@@ -104,11 +82,12 @@ class ProductController extends Controller
         $products = Product::query()
             ->with(['category', 'variants'])
             ->search($request->q)
-            ->where('status', 'active')
+            ->active()
             ->limit(20)
             ->get();
 
-        return response()->json($products);
+        return ProductResource::collection($products)
+            ->response();
     }
 
     public function findByBarcode(string $barcode): JsonResponse
@@ -120,7 +99,7 @@ class ProductController extends Controller
 
         if ($variant) {
             return response()->json([
-                'product' => $variant->product,
+                'product' => ProductResource::make($variant->product),
                 'variant' => $variant,
             ]);
         }
@@ -132,7 +111,7 @@ class ProductController extends Controller
 
         if ($product) {
             return response()->json([
-                'product' => $product,
+                'product' => ProductResource::make($product),
                 'variant' => null,
             ]);
         }
@@ -146,7 +125,7 @@ class ProductController extends Controller
             'sku' => 'nullable|string|unique:product_variants,sku',
             'barcode' => 'nullable|string',
             'name' => 'nullable|string|max:255',
-            'purchase_price' => 'required|numeric|min:0',
+            'cost_price' => 'required|numeric|min:0',
             'sale_price' => 'required|numeric|min:0',
             'compare_price' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
@@ -159,7 +138,7 @@ class ProductController extends Controller
             'sku' => $validated['sku'],
             'barcode' => $validated['barcode'],
             'name' => $validated['name'],
-            'purchase_price' => $validated['purchase_price'],
+            'cost_price' => $validated['cost_price'],
             'sale_price' => $validated['sale_price'],
             'compare_price' => $validated['compare_price'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
@@ -180,7 +159,7 @@ class ProductController extends Controller
             'sku' => 'nullable|string|unique:product_variants,sku,' . $variant->id,
             'barcode' => 'nullable|string',
             'name' => 'nullable|string|max:255',
-            'purchase_price' => 'sometimes|numeric|min:0',
+            'cost_price' => 'sometimes|numeric|min:0',
             'sale_price' => 'sometimes|numeric|min:0',
             'compare_price' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',

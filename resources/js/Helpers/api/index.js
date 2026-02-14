@@ -1,0 +1,9 @@
+export { default as productService } from './productService';
+export { default as customerService } from './customerService';
+export { default as vendorService } from './vendorService';
+export { default as categoryService } from './categoryService';
+export { default as orderService } from './orderService';
+export { default as stockTransferService } from './stockTransferService';
+export { default as purchaseOrderService } from './purchaseOrderService';
+export { default as statusService } from './statusService';
+export { default as dashboardService } from './dashboardService';

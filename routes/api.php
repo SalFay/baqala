@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\DropdownController;
+use App\Http\Controllers\Api\StatusController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -96,6 +97,10 @@ Route::group([], function () {
             Route::get('{order}', [OrderController::class, 'show']);
             Route::get('{order}/receipt', [OrderController::class, 'receipt']);
             Route::post('{order}/cancel', [OrderController::class, 'cancel']);
+            Route::get('{order}/status-history', [OrderController::class, 'statusHistory']);
+            Route::post('{order}/status', [OrderController::class, 'updateStatus']);
+            Route::get('{order}/activity-log', [OrderController::class, 'activityLog']);
+            Route::get('{order}/available-statuses', [OrderController::class, 'availableStatuses']);
         });
 
         // Returns
@@ -224,10 +229,12 @@ Route::group([], function () {
             Route::get('{stockTransfer}', [StockTransferController::class, 'show']);
             Route::put('{stockTransfer}', [StockTransferController::class, 'update']);
             Route::delete('{stockTransfer}', [StockTransferController::class, 'destroy']);
-            Route::post('{stockTransfer}/submit', [StockTransferController::class, 'submit']);
             Route::post('{stockTransfer}/ship', [StockTransferController::class, 'ship']);
             Route::post('{stockTransfer}/receive', [StockTransferController::class, 'receive']);
             Route::post('{stockTransfer}/cancel', [StockTransferController::class, 'cancel']);
+            Route::get('{stockTransfer}/status-history', [StockTransferController::class, 'statusHistory']);
+            Route::post('{stockTransfer}/status', [StockTransferController::class, 'updateStatus']);
+            Route::get('{stockTransfer}/available-statuses', [StockTransferController::class, 'availableStatuses']);
         });
 
         // Tax Rates
@@ -274,6 +281,13 @@ Route::group([], function () {
 
         // Dropdowns
         Route::post('dropdown', [DropdownController::class, 'index'])->name('dropdown');
+
+        // Statuses
+        Route::prefix('statuses')->group(function () {
+            Route::get('categories', [StatusController::class, 'categories']);
+            Route::get('{category}', [StatusController::class, 'index']);
+            Route::get('{category}/default', [StatusController::class, 'getDefault']);
+        });
 
         // Sync (Offline-First)
         Route::prefix('sync')->group(function () {
