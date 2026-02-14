@@ -1,5 +1,5 @@
 import api from '../axios';
-import type { User, Role, Store, PaginatedResponse } from '../../types';
+import type { User, Store, PaginatedResponse } from '../../types';
 
 interface UserFilters {
   search?: string;

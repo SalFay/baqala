@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,10 +27,9 @@ import {
   SendOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
-import { stockTransferService, StockTransfer, StockTransferItem } from '../../api/services/stockTransfer.service';
+import { stockTransferService } from '../../api/services/stockTransfer.service';
 import { storeService } from '../../api/services/store.service';
-import { productService } from '../../api/services/product.service';
-import type { Store, Product } from '../../types';
+import type { Store } from '../../types';
 
 const { Title, Text } = Typography;
 
@@ -44,7 +43,7 @@ interface TransferLine {
   quantity_requested: number;
 }
 
-export default function StockTransferFormPage(): React.JSX.Element {
+export default function StockTransferFormPage(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams();
   const queryClient = useQueryClient();

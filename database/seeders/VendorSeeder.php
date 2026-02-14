@@ -14,11 +14,41 @@ class VendorSeeder extends Seeder
      */
     public function run()
     {
-        Vendor::create( [
-            'name'    => 'Haroon Yousaf',
-            'address' => 'Mingora',
-            'mobile'   => '03339471086',
-            'status'  => 'Active'
-        ] );
+        $vendors = [
+            [
+                'name' => 'Samsung Electronics',
+                'code' => 'SAMSUNG',
+                'contact_name' => 'John Smith',
+                'email' => 'sales@samsung.com',
+                'phone' => '+82-2-2053-3000',
+                'address' => 'Seoul, South Korea',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Local Supplier',
+                'code' => 'LOCAL01',
+                'contact_name' => 'Mohammed Al-Fahad',
+                'email' => 'supplier@local.sa',
+                'phone' => '+966512345678',
+                'address' => 'Riyadh Industrial Area',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Beverage Distributor',
+                'code' => 'BEVDIST',
+                'contact_name' => 'Ahmad Hassan',
+                'email' => 'orders@bevdist.sa',
+                'phone' => '+966567891234',
+                'address' => 'Dammam, Saudi Arabia',
+                'is_active' => true,
+            ],
+        ];
+
+        foreach ($vendors as $vendor) {
+            Vendor::firstOrCreate(
+                ['code' => $vendor['code']],
+                $vendor
+            );
+        }
     }
 }

@@ -2,9 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Customer;
-use App\Models\PaymentMethods;
-use App\Models\Vendor;
+use App\Models\PaymentMethod;
 use Illuminate\Database\Seeder;
 
 class PaymentMethodSeeder extends Seeder
@@ -16,21 +14,44 @@ class PaymentMethodSeeder extends Seeder
      */
     public function run()
     {
-        PaymentMethods::create( [
-            'paymentable_type' => Customer::class,
-            'paymentable_id'   => 1,
-            'name'             => 'Meezan Bank',
-            'account_title'    => 'XpertzDev IT Solution',
-            'account_number'   => '1802010000000',
-            'source'           => 'Bank'
-        ] );
-        PaymentMethods::create( [
-            'paymentable_type' => Vendor::class,
-            'paymentable_id'   => 1,
-            'name'             => 'Meezan Bank',
-            'account_title'    => 'XpertzDev IT Solution',
-            'account_number'   => '1802010000000',
-            'source'           => 'Bank'
-        ] );
+        $methods = [
+            [
+                'name' => 'Cash',
+                'code' => 'CASH',
+                'is_active' => true,
+                'sort_order' => 0,
+            ],
+            [
+                'name' => 'Credit Card',
+                'code' => 'CARD',
+                'is_active' => true,
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'Mada',
+                'code' => 'MADA',
+                'is_active' => true,
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'Bank Transfer',
+                'code' => 'BANK',
+                'is_active' => true,
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'Store Credit',
+                'code' => 'CREDIT',
+                'is_active' => true,
+                'sort_order' => 4,
+            ],
+        ];
+
+        foreach ($methods as $method) {
+            PaymentMethod::firstOrCreate(
+                ['code' => $method['code']],
+                $method
+            );
+        }
     }
 }

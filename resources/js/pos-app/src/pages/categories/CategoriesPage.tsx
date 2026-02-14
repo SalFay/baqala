@@ -105,7 +105,7 @@ export default function CategoriesPage() {
               type="text"
               danger
               icon={<DeleteOutlined />}
-              disabled={record.products_count && record.products_count > 0}
+              disabled={(record.products_count || 0) > 0}
             />
           </Popconfirm>
         </Space>

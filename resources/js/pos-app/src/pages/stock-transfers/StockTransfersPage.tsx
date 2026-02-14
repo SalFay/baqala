@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -18,8 +18,6 @@ import {
   SearchOutlined,
   EyeOutlined,
   DeleteOutlined,
-  SendOutlined,
-  CheckOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
 import { stockTransferService, StockTransfer, StockTransferStatus } from '../../api/services/stockTransfer.service';
@@ -44,7 +42,7 @@ const statusLabels: Record<StockTransferStatus, string> = {
   cancelled: 'Cancelled',
 };
 
-export default function StockTransfersPage(): React.JSX.Element {
+export default function StockTransfersPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -62,7 +60,7 @@ export default function StockTransfersPage(): React.JSX.Element {
       }),
   });
 
-  const { data: stores } = useQuery({
+  useQuery({
     queryKey: ['stores'],
     queryFn: () => storeService.getStores(),
   });

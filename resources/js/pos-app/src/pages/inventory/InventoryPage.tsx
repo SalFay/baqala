@@ -69,7 +69,7 @@ export default function InventoryPage() {
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
-    queryFn: categoryService.getCategories,
+    queryFn: () => categoryService.getCategories(),
   });
 
   const { data: stores } = useQuery({

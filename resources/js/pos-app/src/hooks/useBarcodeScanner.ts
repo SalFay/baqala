@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-interface UseBarcodeScanner Options {
+interface UseBarcodeScannerOptions {
   onScan: (barcode: string) => void;
   minLength?: number;
   maxLength?: number;
@@ -20,7 +20,7 @@ export function useBarcodeScanner({
   maxLength = 50,
   timeout = 100,
   enabled = true,
-}: UseBarcodeScanner Options) {
+}: UseBarcodeScannerOptions) {
   const [buffer, setBuffer] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -58,14 +58,12 @@ export function useBarcodeScanner({
 
       // Ignore if user is typing in a specific input (not barcode input)
       const target = event.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' &&
-        !(target as HTMLInputElement).dataset.barcodeInput
-      ) {
-        // Allow scanning in inputs marked with data-barcode-input
-        if (target.tagName === 'TEXTAREA' || target.isContentEditable) {
-          return;
+      if (target.tagName === 'INPUT') {
+        if (!(target as HTMLInputElement).dataset.barcodeInput) {
+          return; // Skip normal inputs without barcode-input attribute
         }
+      } else if (target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return; // Skip textareas and contenteditable elements
       }
 
       // Handle Enter key - process buffer if we have content

@@ -6,63 +6,64 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
-  
-  /**
-   * @param Request $request
-   * @return JsonResponse
-   * @throws ValidationException
-   */
-  public function store( Request $request )
-  {
-    $this->validate( $request, [
-      'name' => 'required|string|max:191|unique:categories'
-    ], [
-      'name.required' => 'Category Name is Required',
-    ] );
-    $data = $request->all();
-    if( empty( $request->code ) ) {
-      $data[ 'code' ] = $request->name;
+    public function index(Request $request): JsonResponse
+    {
+        $categories = Category::query()
+            ->withCount('products')
+            ->when($request->search, function ($q, $term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('code', 'like', "%{$term}%");
+            })
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($categories);
     }
-    Category::create( $data );
-    return response()->json( [ 'status' => 'ok', 'message' => 'Category Added' ], 200 );
-  } // store
-  
-  /**
-   * @param Request $request
-   * @param category $category
-   * @return object
-   * @throws ValidationException
-   */
-  public function update( Request $request, Category $category ) : object
-  {
-    $this->validate( $request, [
-      'name' => [
-        'required', 'string', 'max:191',
-        Rule::unique( 'categories' )->ignore( $category->id ),
-      ],
-    ], [
-      'name.required' => 'Category Name is Required',
-    ] );
-    //update the Category
-    
-    $category->update( $request->all() );
-    
-    return response()->json( [ 'status' => 'ok', 'message' => 'Category Updated' ], 200 );
-  } // update
-  
-  /**
-   * @param category $category
-   * @return array|string[]
-   * @throws \Exception
-   */
-  public function destroy( Category $category ) : array
-  {
-    $category->delete();
-    return [ 'status' => 'ok', 'message' => 'Category Deleted' ];
-  }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'code' => 'nullable|string|max:20|unique:categories,code',
+            'description' => 'nullable|string',
+        ]);
+
+        $category = Category::create($validated);
+
+        return response()->json($category, 201);
+    }
+
+    public function show(Category $category): JsonResponse
+    {
+        return response()->json($category->loadCount('products'));
+    }
+
+    public function update(Request $request, Category $category): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:100',
+            'code' => 'nullable|string|max:20|unique:categories,code,' . $category->id,
+            'description' => 'nullable|string',
+        ]);
+
+        $category->update($validated);
+
+        return response()->json($category);
+    }
+
+    public function destroy(Category $category): JsonResponse
+    {
+        if ($category->products()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete category with products',
+            ], 422);
+        }
+
+        $category->delete();
+
+        return response()->json(['message' => 'Category deleted successfully']);
+    }
 }

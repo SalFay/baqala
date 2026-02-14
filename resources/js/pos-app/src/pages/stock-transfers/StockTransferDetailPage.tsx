@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,15 +17,12 @@ import {
   InputNumber,
   Form,
   Input,
-  Divider,
   Steps,
   Alert,
-  Timeline,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   EditOutlined,
-  CheckOutlined,
   CloseOutlined,
   PrinterOutlined,
   SendOutlined,
@@ -34,7 +31,7 @@ import {
   SwapOutlined,
   ShopOutlined,
 } from '@ant-design/icons';
-import { stockTransferService, StockTransfer, StockTransferItem, StockTransferStatus } from '../../api/services/stockTransfer.service';
+import { stockTransferService, StockTransferItem, StockTransferStatus } from '../../api/services/stockTransfer.service';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;

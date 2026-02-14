@@ -55,6 +55,7 @@ export interface Customer {
   full_name: string;
   loyalty_points: number;
   credit_balance: number;
+  date_of_birth?: string | null;
   loyalty?: CustomerLoyalty;
 }
 
@@ -86,6 +87,7 @@ export interface Order {
   customer: Customer | null;
   user_id: number | null;
   user: User | null;
+  cashier_name?: string | null;
   payment_type: string;
   status: OrderStatus;
   payment_status: PaymentStatus;
@@ -131,6 +133,7 @@ export interface Cart {
   customer: Customer | null;
   status: 'active' | 'held' | 'converted';
   hold_name: string | null;
+  held_at?: string | null;
   subtotal: number;
   tax_amount: number;
   discount: number;

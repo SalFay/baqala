@@ -30,7 +30,6 @@ import {
   reportService,
   type SalesReportFilters,
   type ProductSalesReport,
-  type CategorySalesReport,
 } from '../../api/services/report.service';
 import { inventoryService } from '../../api/services/inventory.service';
 

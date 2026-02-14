@@ -1,5 +1,5 @@
 import api from '../axios';
-import type { DashboardStats, Product } from '../../types';
+import type { DashboardStats } from '../../types';
 
 export const dashboardService = {
   async getStats(storeId?: number): Promise<DashboardStats> {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Modal, List, Button, Empty, Typography, Tag } from 'antd';
-import { PlayCircleOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined } from '@ant-design/icons';
 import { useCartStore } from '../../../store/cartStore';
 import dayjs from 'dayjs';
 

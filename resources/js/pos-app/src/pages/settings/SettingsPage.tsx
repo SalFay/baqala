@@ -37,7 +37,7 @@ import {
   type TaxRate,
 } from '../../api/services/settings.service';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { TextArea } = Input;
 
 export default function SettingsPage() {
@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const [taxModalOpen, setTaxModalOpen] = useState(false);
   const [editingTax, setEditingTax] = useState<TaxRate | null>(null);
 
-  const { data: settingGroups, isLoading } = useQuery({
+  const { data: settingGroups } = useQuery({
     queryKey: ['settings'],
     queryFn: settingsService.getSettings,
   });

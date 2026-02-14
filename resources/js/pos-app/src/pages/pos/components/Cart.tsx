@@ -110,20 +110,20 @@ export default function Cart({ onCheckout, onCustomerClick }: CartProps) {
           <Text>Tax (VAT 15%)</Text>
           <Text>{(summary?.tax_amount || 0).toFixed(2)} SAR</Text>
         </div>
-        {summary?.discount > 0 && (
+        {(summary?.discount ?? 0) > 0 && (
           <div
             style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}
           >
             <Text type="success">Discount</Text>
-            <Text type="success">-{summary.discount.toFixed(2)} SAR</Text>
+            <Text type="success">-{(summary?.discount ?? 0).toFixed(2)} SAR</Text>
           </div>
         )}
-        {summary?.loyalty_discount > 0 && (
+        {(summary?.loyalty_discount ?? 0) > 0 && (
           <div
             style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}
           >
             <Text type="success">Loyalty Discount</Text>
-            <Text type="success">-{summary.loyalty_discount.toFixed(2)} SAR</Text>
+            <Text type="success">-{(summary?.loyalty_discount ?? 0).toFixed(2)} SAR</Text>
           </div>
         )}
 

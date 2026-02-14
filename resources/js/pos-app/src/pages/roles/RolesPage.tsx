@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -19,7 +19,6 @@ import {
   Col,
   ColorPicker,
 } from 'antd';
-import type { Color } from 'antd/es/color-picker';
 import {
   PlusOutlined,
   SearchOutlined,
@@ -29,7 +28,7 @@ import {
   CheckOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import { roleService, PermissionGroup } from '../../api/services/role.service';
+import { roleService } from '../../api/services/role.service';
 import type { Role } from '../../types';
 
 const { Title, Text } = Typography;

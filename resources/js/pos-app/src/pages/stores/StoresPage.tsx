@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -18,7 +18,6 @@ import {
   Statistic,
   Tabs,
   Descriptions,
-  Transfer,
   Select,
 } from 'antd';
 import {

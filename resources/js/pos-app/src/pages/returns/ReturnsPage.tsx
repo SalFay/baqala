@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -36,7 +35,6 @@ const { RangePicker } = DatePicker;
 const { TextArea } = Input;
 
 export default function ReturnsPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<ReturnFilters>({ page: 1, per_page: 20 });
   const [createModalOpen, setCreateModalOpen] = useState(false);

@@ -1,25 +1,27 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\CartController;
-use App\Http\Controllers\Api\V1\CategoryController;
-use App\Http\Controllers\Api\V1\CustomerController;
-use App\Http\Controllers\Api\V1\DashboardController;
-use App\Http\Controllers\Api\V1\InventoryController;
-use App\Http\Controllers\Api\V1\LoyaltyController;
-use App\Http\Controllers\Api\V1\OrderController;
-use App\Http\Controllers\Api\V1\ProductAttributeController;
-use App\Http\Controllers\Api\V1\ProductController;
-use App\Http\Controllers\Api\V1\PurchaseOrderController;
-use App\Http\Controllers\Api\V1\ReportController;
-use App\Http\Controllers\Api\V1\ReturnController;
-use App\Http\Controllers\Api\V1\RoleController;
-use App\Http\Controllers\Api\V1\SettingsController;
-use App\Http\Controllers\Api\V1\StockTransferController;
-use App\Http\Controllers\Api\V1\StoreController;
-use App\Http\Controllers\Api\V1\TaxRateController;
-use App\Http\Controllers\Api\V1\UserController;
-use App\Http\Controllers\Api\V1\VendorController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\LoyaltyController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductAttributeController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\PurchaseOrderController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ReturnController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\StockTransferController;
+use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\TaxRateController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VendorController;
+use App\Http\Controllers\Api\SyncController;
+use App\Http\Controllers\Api\DropdownController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,8 +30,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// API v1 Routes
-Route::prefix('v1')->group(function () {
+// API Routes
+Route::group([], function () {
     // Public routes
     Route::post('auth/login', [AuthController::class, 'login']);
     Route::get('settings/public', [SettingsController::class, 'public']);
@@ -268,6 +270,20 @@ Route::prefix('v1')->group(function () {
             Route::post('{attribute}/values/reorder', [ProductAttributeController::class, 'reorderValues']);
             Route::put('values/{value}', [ProductAttributeController::class, 'updateValue']);
             Route::delete('values/{value}', [ProductAttributeController::class, 'destroyValue']);
+        });
+
+        // Dropdowns
+        Route::post('dropdown', [DropdownController::class, 'index'])->name('dropdown');
+
+        // Sync (Offline-First)
+        Route::prefix('sync')->group(function () {
+            Route::post('bootstrap', [SyncController::class, 'bootstrap']);
+            Route::get('pull', [SyncController::class, 'pull']);
+            Route::post('push', [SyncController::class, 'push']);
+            Route::get('status', [SyncController::class, 'status']);
+            Route::post('register-terminal', [SyncController::class, 'registerTerminal']);
+            Route::post('resolve', [SyncController::class, 'resolve']);
+            Route::get('conflicts', [SyncController::class, 'conflicts']);
         });
     });
 });
