@@ -55,9 +55,36 @@ class POSController extends Controller
         return response()->json(['data' => $products]);
     }
 
+    public function categories(Request $request): JsonResponse
+    {
+        $categories = Category::query()
+            ->when($request->search, fn($q, $term) => $q->where('name', 'like', "%{$term}%"))
+            ->withCount('products')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'parent_id', 'image', 'is_active']);
+
+        return response()->json(['data' => $categories]);
+    }
+
     public function getCart(): JsonResponse
     {
-        return response()->json($this->cartService->getCart()->load(['items.product', 'customer'])->toApiArray());
+        $cart = $this->cartService->getCart()->load(['items.product', 'customer']);
+        $cartData = $cart->toApiArray();
+
+        return response()->json([
+            'cart' => [
+                'id' => $cartData['id'],
+                'items' => $cartData['items'],
+                'customer' => $cartData['customer'],
+            ],
+            'summary' => [
+                'subtotal' => (float) ($cartData['subtotal'] ?? 0),
+                'tax_amount' => (float) ($cartData['tax_amount'] ?? 0),
+                'discount' => (float) ($cartData['discount'] ?? 0),
+                'total' => (float) ($cartData['total'] ?? 0),
+            ],
+        ]);
     }
 
     public function addItem(Request $request): JsonResponse
@@ -71,7 +98,7 @@ class POSController extends Controller
         $this->cartService->addItem(
             Product::find($data['product_id']),
             $data['quantity'] ?? 1,
-            $data['variant_id'] ? \App\Models\ProductVariant::find($data['variant_id']) : null
+            ($data['variant_id'] ?? null) ? \App\Models\ProductVariant::find($data['variant_id']) : null
         );
 
         return $this->getCart();
@@ -145,15 +172,28 @@ class POSController extends Controller
         $data = $request->validate([
             'payment_method' => 'required|in:cash,card,mobile,bank_transfer',
             'cash_received' => 'nullable|numeric|min:0',
+            'payment_reference' => 'nullable|string',
         ]);
 
         try {
             $cart = $this->cartService->getCart()->load(['items.product', 'customer']);
 
+            if ($cart->items->isEmpty()) {
+                return response()->json(['message' => 'Cart is empty'], 422);
+            }
+
+            $paymentDetails = [];
+            if (!empty($data['cash_received'])) {
+                $paymentDetails['cash_received'] = $data['cash_received'];
+            }
+            if (!empty($data['payment_reference'])) {
+                $paymentDetails['reference'] = $data['payment_reference'];
+            }
+
             $order = $this->orderService->createOrderFromCart(
                 $cart,
                 $data['payment_method'],
-                $data['cash_received'] ? ['cash_received' => $data['cash_received']] : []
+                $paymentDetails
             );
 
             return response()->json([
@@ -181,34 +221,85 @@ class POSController extends Controller
     {
         $storeId = $request->store_id;
         $today = now()->startOfDay();
+        $yesterday = now()->subDay()->startOfDay();
 
         $ordersQuery = \App\Models\Order::query()
             ->when($storeId, fn($q, $id) => $q->where('store_id', $id));
 
         $todayOrders = (clone $ordersQuery)->whereDate('created_at', $today)->get();
+        $yesterdayOrders = (clone $ordersQuery)->whereDate('created_at', $yesterday)->get();
         $monthOrders = (clone $ordersQuery)->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->get();
 
+        // Low stock count from store_inventories
+        $lowStockCount = \App\Models\StoreInventory::query()
+            ->when($storeId, fn($q, $id) => $q->where('store_id', $id))
+            ->whereRaw('quantity <= COALESCE(low_stock_threshold, 10)')
+            ->distinct('product_id')
+            ->count('product_id');
+
+        // Inventory value calculation
+        $inventoryValue = \App\Models\StoreInventory::query()
+            ->join('products', 'store_inventories.product_id', '=', 'products.id')
+            ->when($storeId, fn($q, $id) => $q->where('store_inventories.store_id', $id))
+            ->selectRaw('SUM(store_inventories.quantity * products.cost_price) as total_value')
+            ->value('total_value') ?? 0;
+
+        // Customer count
+        $customerCount = \App\Models\Customer::query()
+            ->when($storeId, fn($q, $id) => $q->where('store_id', $id))
+            ->count();
+
+        // Product count
+        $productCount = Product::active()
+            ->when($storeId, fn($q, $id) => $q->forStore($id))
+            ->count();
+
+        // Calculate sales growth
+        $todaySales = $todayOrders->sum('total');
+        $yesterdaySales = $yesterdayOrders->sum('total');
+        $salesGrowth = $yesterdaySales > 0
+            ? (($todaySales - $yesterdaySales) / $yesterdaySales) * 100
+            : ($todaySales > 0 ? 100 : 0);
+
+        // Average order value
+        $avgOrderValue = $todayOrders->count() > 0
+            ? $todaySales / $todayOrders->count()
+            : 0;
+
         return response()->json([
-            'today_sales' => $todayOrders->sum('total'),
-            'today_orders' => $todayOrders->count(),
-            'month_sales' => $monthOrders->sum('total'),
-            'month_orders' => $monthOrders->count(),
-            'pending_orders' => (clone $ordersQuery)->where('status', 'pending')->count(),
-            'low_stock_count' => Product::where('stock_quantity', '<', 10)->count(),
+            'today' => [
+                'total_sales' => (float) $todaySales,
+                'total_orders' => (int) $todayOrders->count(),
+                'average_order_value' => (float) round($avgOrderValue, 2),
+            ],
+            'month' => [
+                'total_sales' => (float) $monthOrders->sum('total'),
+                'total_orders' => (int) $monthOrders->count(),
+            ],
+            'sales_growth' => (float) round($salesGrowth, 1),
+            'inventory' => [
+                'low_stock_count' => (int) $lowStockCount,
+                'total_value' => (float) round($inventoryValue, 2),
+                'total_products' => (int) $productCount,
+            ],
+            'customers' => [
+                'total' => (int) $customerCount,
+            ],
+            'pending_orders' => (int) (clone $ordersQuery)->where('status', 'pending')->count(),
         ]);
     }
 
     public function dashboardSalesChart(Request $request): JsonResponse
     {
-        $fromDate = $request->from_date ? \Carbon\Carbon::parse($request->from_date) : now()->subDays(30);
-        $toDate = $request->to_date ? \Carbon\Carbon::parse($request->to_date) : now();
+        $fromDate = $request->from_date ? \Carbon\Carbon::parse($request->from_date)->startOfDay() : now()->subDays(30)->startOfDay();
+        $toDate = $request->to_date ? \Carbon\Carbon::parse($request->to_date)->endOfDay() : now()->endOfDay();
 
         $sales = \App\Models\Order::query()
             ->when($request->store_id, fn($q, $id) => $q->where('store_id', $id))
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->selectRaw('DATE(created_at) as date, SUM(total) as total, COUNT(*) as orders')
-            ->groupBy('date')
-            ->orderBy('date')
+            ->groupByRaw('DATE(created_at)')
+            ->orderByRaw('DATE(created_at)')
             ->get();
 
         return response()->json(['data' => $sales]);
@@ -216,15 +307,15 @@ class POSController extends Controller
 
     public function dashboardTopProducts(Request $request): JsonResponse
     {
-        $fromDate = $request->from_date ? \Carbon\Carbon::parse($request->from_date) : now()->subDays(30);
-        $toDate = $request->to_date ? \Carbon\Carbon::parse($request->to_date) : now();
+        $fromDate = $request->from_date ? \Carbon\Carbon::parse($request->from_date)->startOfDay() : now()->subDays(30)->startOfDay();
+        $toDate = $request->to_date ? \Carbon\Carbon::parse($request->to_date)->endOfDay() : now()->endOfDay();
 
         $topProducts = \App\Models\OrderItem::query()
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->when($request->store_id, fn($q, $id) => $q->where('orders.store_id', $id))
             ->whereBetween('orders.created_at', [$fromDate, $toDate])
-            ->selectRaw('products.id, products.name, SUM(order_items.quantity) as total_qty, SUM(order_items.subtotal) as total_sales')
+            ->selectRaw('products.id, products.name, SUM(order_items.quantity) as total_qty, SUM(order_items.line_total) as total_sales')
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_qty')
             ->limit($request->limit ?? 10)
@@ -235,13 +326,28 @@ class POSController extends Controller
 
     public function dashboardLowStock(Request $request): JsonResponse
     {
-        $products = Product::where('stock_quantity', '<', 10)
-            ->when($request->store_id, fn($q, $id) => $q->where('store_id', $id))
-            ->orderBy('stock_quantity')
-            ->limit(20)
-            ->get(['id', 'name', 'stock_quantity', 'sku']);
+        $storeId = $request->store_id;
 
-        return response()->json(['data' => $products]);
+        $lowStockItems = \App\Models\StoreInventory::query()
+            ->with('product:id,name,sku,low_stock_threshold')
+            ->when($storeId, fn($q, $id) => $q->where('store_id', $id))
+            ->whereRaw('quantity <= COALESCE(low_stock_threshold, 10)')
+            ->orderBy('quantity')
+            ->limit(20)
+            ->get()
+            ->map(fn($inv) => [
+                'id' => $inv->id,
+                'product' => [
+                    'id' => $inv->product_id,
+                    'name' => $inv->product?->name,
+                    'sku' => $inv->product?->sku,
+                ],
+                'quantity' => $inv->quantity,
+                'low_stock_threshold' => $inv->low_stock_threshold ?? $inv->product?->low_stock_threshold ?? 10,
+                'store_id' => $inv->store_id,
+            ]);
+
+        return response()->json($lowStockItems);
     }
 
     public function dashboardRecentOrders(Request $request): JsonResponse
@@ -254,13 +360,16 @@ class POSController extends Controller
             ->map(fn($o) => [
                 'id' => $o->id,
                 'order_number' => $o->order_number,
-                'customer_name' => $o->customer?->full_name ?? 'Walk-in',
-                'total' => $o->total,
-                'status' => $o->status,
+                'customer' => $o->customer ? [
+                    'id' => $o->customer->id,
+                    'full_name' => $o->customer->full_name,
+                ] : null,
+                'total' => (float) $o->total,
+                'status' => $o->status?->value ?? $o->status,
                 'created_at' => $o->created_at,
             ]);
 
-        return response()->json(['data' => $orders]);
+        return response()->json($orders);
     }
 
     // Orders for POS app

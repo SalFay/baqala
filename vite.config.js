@@ -10,6 +10,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.jsx',
+                'resources/js/pos/main.jsx',
             ],
             refresh: true,
         }),
@@ -90,7 +91,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': resolve(__dirname, 'resources/js'),
-            '@pos': resolve(__dirname, 'resources/js/pos-app/src'),
+            '@pos': resolve(__dirname, 'resources/js/pos'),
         },
     },
     build: {

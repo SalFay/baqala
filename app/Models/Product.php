@@ -286,14 +286,17 @@ class Product extends BaseModel
             'name_ar' => $this->name_ar,
             'sku' => $this->sku,
             'barcode' => $this->barcode,
-            'price' => $this->price,
-            'cost' => $this->cost,
+            'price' => (float) $this->price,
+            'sale_price' => (float) $this->sale_price,
+            'cost' => (float) $this->cost,
+            'image' => $this->image_url,
             'image_url' => $this->image_url,
             'category_id' => $this->category_id,
-            'category' => $this->category?->name,
+            'category' => $this->category ? ['id' => $this->category->id, 'name' => $this->category->name] : null,
             'in_stock' => $this->isInStock(),
             'stock_qty' => $this->track_inventory ? $this->getStockQuantity() : null,
             'has_variants' => $this->is_variable,
+            'type' => $this->type?->value ?? 'simple',
         ];
     }
 }

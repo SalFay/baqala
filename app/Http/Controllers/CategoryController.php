@@ -7,10 +7,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response|JsonResponse
     {
         // Get categories with hierarchy
         $categories = Category::with(['children' => function ($q) {
@@ -24,6 +25,7 @@ class CategoryController extends Controller
 
         // Also get flat list for select dropdowns
         $flatCategories = Category::withCount('products')
+            ->when($request->search, fn($q, $term) => $q->where('name', 'like', "%{$term}%"))
             ->orderBy('name')
             ->get()
             ->map(fn($cat) => [
@@ -33,6 +35,11 @@ class CategoryController extends Controller
                 'products_count' => $cat->products_count,
                 'is_active' => $cat->is_active,
             ]);
+
+        // Return JSON for API requests (POS app)
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['data' => $flatCategories]);
+        }
 
         return Inertia::render('Categories/Index', [
             'categories' => $this->formatCategoryTree($categories),

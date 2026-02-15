@@ -36,11 +36,17 @@ class CartItem extends Model
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
+            'product_variant_id' => $this->product_variant_id,
             'product' => $this->product?->only(['id', 'name', 'sku', 'price', 'image_url'])
                 ?? ['name' => $this->product_name, 'sku' => $this->sku],
-            'quantity' => $this->quantity,
-            'price' => $this->unit_price,
-            'subtotal' => $this->line_total,
+            'product_name' => $this->product_name,
+            'variant_name' => $this->variant_name,
+            'sku' => $this->sku,
+            'quantity' => (int) $this->quantity,
+            'unit_price' => (float) $this->unit_price,
+            'line_total' => (float) $this->line_total,
+            'tax_amount' => (float) ($this->tax_amount ?? 0),
+            'discount' => (float) ($this->discount ?? 0),
         ];
     }
 
