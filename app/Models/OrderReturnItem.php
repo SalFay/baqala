@@ -51,4 +51,27 @@ class OrderReturnItem extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
+
+    public function isSellable(): bool
+    {
+        return $this->condition === 'sellable';
+    }
+
+    public function isDamaged(): bool
+    {
+        return $this->condition === 'damaged';
+    }
+
+    public function isDefective(): bool
+    {
+        return $this->condition === 'defective';
+    }
+
+    public function getProductNameAttribute(): string
+    {
+        if ($this->variant) {
+            return $this->product->name . ' - ' . $this->variant->name;
+        }
+        return $this->product?->name ?? 'Unknown Product';
+    }
 }

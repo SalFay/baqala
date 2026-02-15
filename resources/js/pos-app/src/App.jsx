@@ -28,6 +28,9 @@ import PurchaseOrderDetailPage from './pages/purchase-orders/PurchaseOrderDetail
 import StockTransfersPage from './pages/stock-transfers/StockTransfersPage';
 import StockTransferFormPage from './pages/stock-transfers/StockTransferFormPage';
 import StockTransferDetailPage from './pages/stock-transfers/StockTransferDetailPage';
+import ExpensesPage from './pages/expenses/ExpensesPage';
+import StockTakesPage from './pages/stock-takes/StockTakesPage';
+import StatementsPage from './pages/statements/StatementsPage';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -84,6 +87,7 @@ function App() {
         <Route path="/returns" element={<ReturnsPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/vendors" element={<VendorsPage />} />
         <Route path="/users" element={<UsersPage />} />
@@ -97,6 +101,8 @@ function App() {
         <Route path="/stock-transfers/new" element={<StockTransferFormPage />} />
         <Route path="/stock-transfers/:id" element={<StockTransferDetailPage />} />
         <Route path="/stock-transfers/:id/edit" element={<StockTransferFormPage />} />
+        <Route path="/stock-takes" element={<StockTakesPage />} />
+        <Route path="/statements" element={<StatementsPage />} />
       </Route>
 
       {/* Fallback */}

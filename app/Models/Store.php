@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,7 +14,7 @@ class Store extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code', 'name', 'name_ar', 'address', 'city', 'phone', 'email',
+        'business_type_id', 'code', 'name', 'name_ar', 'address', 'city', 'phone', 'email',
         'manager_name', 'timezone', 'currency_code', 'is_active', 'is_warehouse',
         'operating_hours'
     ];
@@ -23,6 +24,11 @@ class Store extends Model
         'is_warehouse' => 'boolean',
         'operating_hours' => 'array',
     ];
+
+    public function businessType(): BelongsTo
+    {
+        return $this->belongsTo(BusinessType::class);
+    }
 
     public function users(): BelongsToMany
     {

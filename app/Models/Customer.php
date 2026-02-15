@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends BaseModel
@@ -73,9 +74,9 @@ class Customer extends BaseModel
         return $this->hasMany(LoyaltyTransaction::class);
     }
 
-    public function credits(): HasMany
+    public function credits(): MorphMany
     {
-        return $this->hasMany(CustomerCredit::class);
+        return $this->morphMany(Credit::class, 'creditable');
     }
 
     public function carts(): HasMany
@@ -179,7 +180,7 @@ class Customer extends BaseModel
         return $this->available_credit >= $amount;
     }
 
-    public function addCredit(float $amount, ?string $reference = null, ?string $notes = null): CustomerCredit
+    public function addCredit(float $amount, ?string $reference = null, ?string $notes = null): Credit
     {
         $credit = $this->credits()->create([
             'amount' => $amount,
@@ -187,6 +188,7 @@ class Customer extends BaseModel
             'reference' => $reference,
             'notes' => $notes,
             'balance_after' => $this->credit_balance + $amount,
+            'created_by' => auth()->id(),
         ]);
 
         $this->increment('credit_balance', $amount);
@@ -194,18 +196,19 @@ class Customer extends BaseModel
         return $credit;
     }
 
-    public function useCredit(float $amount, ?string $reference = null, ?string $notes = null): CustomerCredit
+    public function useCredit(float $amount, ?string $reference = null, ?string $notes = null): Credit
     {
         if (!$this->canUseCredit($amount)) {
             throw new \InvalidArgumentException('Insufficient credit or customer suspended');
         }
 
         $credit = $this->credits()->create([
-            'amount' => -$amount,
+            'amount' => abs($amount),
             'type' => 'debit',
             'reference' => $reference,
             'notes' => $notes,
             'balance_after' => $this->credit_balance - $amount,
+            'created_by' => auth()->id(),
         ]);
 
         $this->decrement('credit_balance', $amount);

@@ -26,13 +26,15 @@ class ReturnService
         ReturnType $type,
         ?int $returnReasonId = null,
         ?string $reason = null,
-        ?string $notes = null
+        ?string $notes = null,
+        ?string $refundMethod = null,
+        float $restockingFee = 0
     ): OrderReturn {
         if (!$order->canBeReturned()) {
             throw new \InvalidArgumentException('Order cannot be returned');
         }
 
-        return DB::transaction(function () use ($order, $items, $type, $returnReasonId, $reason, $notes) {
+        return DB::transaction(function () use ($order, $items, $type, $returnReasonId, $reason, $notes, $refundMethod, $restockingFee) {
             $subtotal = 0;
             $taxAmount = 0;
 
@@ -57,6 +59,7 @@ class ReturnService
             $totalAmount = $subtotal + $taxAmount;
 
             // Create return record
+            $refundAmount = $totalAmount - $restockingFee;
             $return = OrderReturn::create([
                 'order_id' => $order->id,
                 'customer_id' => $order->customer_id,
@@ -70,7 +73,9 @@ class ReturnService
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'total_amount' => $totalAmount,
-                'refund_amount' => $totalAmount,
+                'refund_amount' => $refundAmount,
+                'restocking_fee' => $restockingFee,
+                'refund_method' => $refundMethod,
             ]);
 
             // Create return items

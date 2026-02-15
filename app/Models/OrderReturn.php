@@ -98,4 +98,56 @@ class OrderReturn extends BaseModel
             'rejected' => [],
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderReturn $return) {
+            if (empty($return->return_number)) {
+                $return->return_number = self::generateReturnNumber();
+            }
+        });
+    }
+
+    public static function generateReturnNumber(): string
+    {
+        $prefix = 'RET';
+        $date = now()->format('Ymd');
+        $count = self::whereDate('created_at', today())->count() + 1;
+        return $prefix . $date . str_pad($count, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function canApprove(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function canReject(): bool
+    {
+        return in_array($this->status, ['pending', 'approved']);
+    }
+
+    public function canProcess(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'completed';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
+    }
 }

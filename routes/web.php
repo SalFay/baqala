@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BusinessTypeController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ReturnController;
+use App\Http\Controllers\StockTakeController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
@@ -11,6 +15,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StatementController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -177,6 +182,60 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/users', [SettingsController::class, 'storeUser'])->name('settings.users.store');
     Route::put('/settings/users/{user}', [SettingsController::class, 'updateUser'])->name('settings.users.update');
     Route::delete('/settings/users/{user}', [SettingsController::class, 'destroyUser'])->name('settings.users.destroy');
+
+    // Business Types (JSON responses for POS app)
+    Route::get('/pos/business-types', [BusinessTypeController::class, 'index'])->name('business-types.index');
+    Route::get('/pos/business-types/current', [BusinessTypeController::class, 'current'])->name('business-types.current');
+    Route::get('/pos/business-types/{businessType}/preview', [BusinessTypeController::class, 'preview'])->name('business-types.preview');
+    Route::post('/pos/business-types/{businessType}/apply', [BusinessTypeController::class, 'apply'])->name('business-types.apply');
+    Route::post('/pos/business-types/seed', [BusinessTypeController::class, 'seedTypes'])->name('business-types.seed');
+
+    // Expenses (JSON responses for POS app)
+    Route::get('/pos/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+    Route::get('/pos/expenses/summary', [ExpenseController::class, 'summary'])->name('expenses.summary');
+    Route::get('/pos/expenses/categories', [ExpenseController::class, 'categories'])->name('expenses.categories');
+    Route::get('/pos/expenses/categories/flat', [ExpenseController::class, 'categoriesFlat'])->name('expenses.categories.flat');
+    Route::get('/pos/expenses/vendors', [ExpenseController::class, 'vendors'])->name('expenses.vendors');
+    Route::post('/pos/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+    Route::get('/pos/expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
+    Route::put('/pos/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+    Route::delete('/pos/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+    Route::post('/pos/expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+    Route::post('/pos/expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+    Route::post('/pos/expenses/{expense}/paid', [ExpenseController::class, 'markPaid'])->name('expenses.paid');
+    Route::post('/pos/expenses/{expense}/receipt', [ExpenseController::class, 'uploadReceipt'])->name('expenses.receipt');
+
+    // Returns (JSON responses for POS app)
+    Route::get('/pos/returns', [ReturnController::class, 'index'])->name('returns.index');
+    Route::get('/pos/returns/reasons', [ReturnController::class, 'reasons'])->name('returns.reasons');
+    Route::get('/pos/returns/order/{order}', [ReturnController::class, 'getReturnableItems'])->name('returns.returnable');
+    Route::post('/pos/returns', [ReturnController::class, 'store'])->name('returns.store');
+    Route::get('/pos/returns/{return}', [ReturnController::class, 'show'])->name('returns.show');
+    Route::post('/pos/returns/{return}/approve', [ReturnController::class, 'approve'])->name('returns.approve');
+    Route::post('/pos/returns/{return}/reject', [ReturnController::class, 'reject'])->name('returns.reject');
+    Route::post('/pos/returns/{return}/process', [ReturnController::class, 'process'])->name('returns.process');
+
+    // Stock Takes (JSON responses for POS app)
+    Route::get('/pos/stock-takes', [StockTakeController::class, 'index'])->name('stock-takes.index');
+    Route::get('/pos/stock-takes/summary', [StockTakeController::class, 'summary'])->name('stock-takes.summary');
+    Route::post('/pos/stock-takes', [StockTakeController::class, 'store'])->name('stock-takes.store');
+    Route::get('/pos/stock-takes/{stockTake}', [StockTakeController::class, 'show'])->name('stock-takes.show');
+    Route::delete('/pos/stock-takes/{stockTake}', [StockTakeController::class, 'destroy'])->name('stock-takes.destroy');
+    Route::post('/pos/stock-takes/{stockTake}/start', [StockTakeController::class, 'start'])->name('stock-takes.start');
+    Route::post('/pos/stock-takes/{stockTake}/complete', [StockTakeController::class, 'complete'])->name('stock-takes.complete');
+    Route::post('/pos/stock-takes/{stockTake}/cancel', [StockTakeController::class, 'cancel'])->name('stock-takes.cancel');
+    Route::post('/pos/stock-takes/{stockTake}/items/{item}/count', [StockTakeController::class, 'countItem'])->name('stock-takes.count-item');
+    Route::post('/pos/stock-takes/{stockTake}/scan', [StockTakeController::class, 'scanBarcode'])->name('stock-takes.scan');
+
+    // Statements (JSON responses for POS app)
+    Route::get('/pos/customers/{customer}/statement', [StatementController::class, 'customerStatement'])->name('statements.customer');
+    Route::get('/pos/customers/{customer}/statement/pdf', [StatementController::class, 'customerStatementPdf'])->name('statements.customer.pdf');
+    Route::get('/pos/customers/{customer}/credits', [StatementController::class, 'customerCredits'])->name('statements.customer.credits');
+    Route::post('/pos/customers/{customer}/credits', [StatementController::class, 'addCustomerCredit'])->name('statements.customer.credits.add');
+    Route::get('/pos/vendors/{vendor}/statement', [StatementController::class, 'vendorStatement'])->name('statements.vendor');
+    Route::get('/pos/vendors/{vendor}/statement/pdf', [StatementController::class, 'vendorStatementPdf'])->name('statements.vendor.pdf');
+    Route::get('/pos/vendors/{vendor}/credits', [StatementController::class, 'vendorCredits'])->name('statements.vendor.credits');
+    Route::post('/pos/vendors/{vendor}/credits', [StatementController::class, 'addVendorCredit'])->name('statements.vendor.credits.add');
 });
 
 // Keep API routes in api.php, only web routes here

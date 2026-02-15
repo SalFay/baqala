@@ -52,4 +52,41 @@ class OrderItem extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
+
+    public function returnItems()
+    {
+        return $this->hasMany(OrderReturnItem::class);
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->variant_name) {
+            return $this->product_name . ' - ' . $this->variant_name;
+        }
+        return $this->product_name ?? 'Unknown Product';
+    }
+
+    public function getSalePriceAttribute(): float
+    {
+        return (float) $this->unit_price;
+    }
+
+    public function getStockAttribute(): int
+    {
+        return (int) $this->quantity;
+    }
+
+    public function getReturnedQuantityAttribute(): int
+    {
+        return (int) $this->returnItems()
+            ->whereHas('orderReturn', function ($q) {
+                $q->whereIn('status', ['approved', 'processed', 'completed']);
+            })
+            ->sum('quantity');
+    }
+
+    public function getReturnableQuantityAttribute(): int
+    {
+        return max(0, $this->quantity - $this->returned_quantity);
+    }
 }

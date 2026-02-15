@@ -295,4 +295,64 @@ class Order extends BaseModel
             'payment_status' => PaymentStatus::PAID,
         ]);
     }
+
+    /**
+     * Check if order can be returned.
+     * Returns true if order is completed, paid, and has returnable items.
+     */
+    public function canBeReturned(): bool
+    {
+        // Must be completed and paid
+        if ($this->status !== OrderStatus::COMPLETED || $this->payment_status !== PaymentStatus::PAID) {
+            return false;
+        }
+
+        // Check if fully refunded
+        if ($this->status === OrderStatus::REFUNDED) {
+            return false;
+        }
+
+        // Check return window (configurable, default 30 days)
+        $returnWindowDays = config('pos.return_window_days', 30);
+        if ($this->completed_at && $this->completed_at->diffInDays(now()) > $returnWindowDays) {
+            return false;
+        }
+
+        // Check if there are any returnable items
+        return $this->hasReturnableItems();
+    }
+
+    /**
+     * Check if order has items that can still be returned.
+     */
+    public function hasReturnableItems(): bool
+    {
+        foreach ($this->items as $item) {
+            $returnedQuantity = $this->returns()
+                ->whereIn('status', ['approved', 'processed', 'completed'])
+                ->join('order_return_items', 'order_returns.id', '=', 'order_return_items.order_return_id')
+                ->where('order_return_items.order_item_id', $item->id)
+                ->sum('order_return_items.quantity');
+
+            if ($item->quantity > $returnedQuantity) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get returnable quantity for an order item.
+     */
+    public function getReturnableQuantity(OrderItem $item): int
+    {
+        $returnedQuantity = $this->returns()
+            ->whereIn('status', ['approved', 'processed', 'completed'])
+            ->join('order_return_items', 'order_returns.id', '=', 'order_return_items.order_return_id')
+            ->where('order_return_items.order_item_id', $item->id)
+            ->sum('order_return_items.quantity');
+
+        return max(0, $item->quantity - $returnedQuantity);
+    }
 }

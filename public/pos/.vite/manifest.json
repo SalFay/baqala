@@ -1,0 +1,38 @@
+{
+  "_c.antd.DpfrXsgY.js": {
+    "file": "assets/c.antd.DpfrXsgY.js",
+    "name": "antd",
+    "imports": [
+      "_c.vendor.CeMhTQq2.js"
+    ]
+  },
+  "_c.state.DmaRLcF7.js": {
+    "file": "assets/c.state.DmaRLcF7.js",
+    "name": "state",
+    "imports": [
+      "_c.vendor.CeMhTQq2.js"
+    ]
+  },
+  "_c.vendor.CeMhTQq2.js": {
+    "file": "assets/c.vendor.CeMhTQq2.js",
+    "name": "vendor",
+    "isDynamicEntry": true
+  },
+  "index.html": {
+    "file": "assets/e.index.By5YMQGA.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "imports": [
+      "_c.state.DmaRLcF7.js",
+      "_c.vendor.CeMhTQq2.js",
+      "_c.antd.DpfrXsgY.js"
+    ],
+    "dynamicImports": [
+      "_c.vendor.CeMhTQq2.js"
+    ],
+    "css": [
+      "assets/a.index.DJPhLTX7.css"
+    ]
+  }
+}

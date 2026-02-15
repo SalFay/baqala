@@ -43,4 +43,30 @@ export const settingsService = {
   deleteTaxRate: async (id) => {
     await api.delete(`/tax-rates/${id}`);
   },
+
+  // Business Types
+  getBusinessTypes: async () => {
+    const { data } = await api.get('/pos/business-types');
+    return data.data;
+  },
+
+  getCurrentBusinessType: async () => {
+    const { data } = await api.get('/pos/business-types/current');
+    return data.data;
+  },
+
+  previewBusinessType: async (id) => {
+    const { data } = await api.get(`/pos/business-types/${id}/preview`);
+    return data.data;
+  },
+
+  applyBusinessType: async (id, options = {}) => {
+    const { data } = await api.post(`/pos/business-types/${id}/apply`, options);
+    return data;
+  },
+
+  seedBusinessTypes: async () => {
+    const { data } = await api.post('/pos/business-types/seed');
+    return data;
+  },
 };

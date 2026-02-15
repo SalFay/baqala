@@ -10,6 +10,8 @@ import {
   BarChartOutlined,
   SettingOutlined,
   SwapOutlined,
+  WalletOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { useMenuStore } from '@/Helpers/atom';
 
@@ -66,6 +68,7 @@ const useMenuManagement = () => {
     items.push(
       createMenuItem('inventory-group', 'Inventory', <InboxOutlined />, [
         createMenuItem('/inventory', routeLink('/inventory', 'Stock Levels')),
+        createMenuItem('/stock-takes', routeLink('/stock-takes', 'Stock Takes')),
         createMenuItem('/purchase-orders', routeLink('/purchase-orders', 'Purchase Orders')),
         createMenuItem('/stock-transfers', routeLink('/stock-transfers', 'Stock Transfers')),
       ])
@@ -79,6 +82,16 @@ const useMenuManagement = () => {
     // Reports
     items.push(
       createMenuItem('/reports', routeLink('/reports', 'Reports'), <BarChartOutlined />)
+    );
+
+    // Expenses
+    items.push(
+      createMenuItem('/expenses', routeLink('/expenses', 'Expenses'), <WalletOutlined />)
+    );
+
+    // Statements
+    items.push(
+      createMenuItem('/statements', routeLink('/statements', 'Statements'), <FileTextOutlined />)
     );
 
     // Settings
