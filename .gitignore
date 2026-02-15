@@ -2,6 +2,7 @@
 /bootstrap/ssr
 /node_modules
 /resources/js/pos-app/node_modules
+/resources/js/pos-app/node_modules/*
 /public/pos
 /public/build
 /public/hot
