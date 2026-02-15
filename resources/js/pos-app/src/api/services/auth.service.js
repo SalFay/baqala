@@ -1,25 +1,16 @@
 import api from '../axios';
 
 export const authService = {
-  async login(email, password) {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
-  },
-
-  async logout() {
-    await api.post('/auth/logout');
-  },
-
+  // Check if user is authenticated (via Laravel session)
   async me() {
-    const response = await api.get('/auth/me');
+    const response = await api.get('/pos/auth/me');
     return response.data;
   },
 
-  async changePassword(currentPassword, password, passwordConfirmation) {
-    await api.post('/auth/change-password', {
-      current_password: currentPassword,
-      password,
-      password_confirmation: passwordConfirmation,
-    });
+  // Logout via Laravel's logout route
+  async logout() {
+    await api.post('/logout');
+    // Redirect to login page after logout
+    window.location.href = '/login';
   },
 };

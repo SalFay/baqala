@@ -44,7 +44,7 @@ export default function DashboardPage() {
       title: 'Total',
       dataIndex: 'total',
       key: 'total',
-      render: (val) => `${val.toFixed(2)} SAR`,
+      render: (val) => `${(val ?? 0).toFixed(2)} SAR`,
     },
     {
       title: 'Status',
@@ -56,7 +56,7 @@ export default function DashboardPage() {
           pending: 'orange',
           cancelled: 'red',
         };
-        return <Tag color={colors[status] || 'default'}>{status.toUpperCase()}</Tag>;
+        return <Tag color={colors[status] || 'default'}>{(status || 'unknown').toUpperCase()}</Tag>;
       },
     },
   ];
@@ -127,8 +127,8 @@ export default function DashboardPage() {
               value={stats?.sales_growth || 0}
               precision={1}
               suffix="%"
-              prefix={stats?.sales_growth >= 0 ? <RiseOutlined /> : <FallOutlined />}
-              valueStyle={{ color: stats?.sales_growth >= 0 ? '#3f8600' : '#cf1322' }}
+              prefix={(stats?.sales_growth ?? 0) >= 0 ? <RiseOutlined /> : <FallOutlined />}
+              valueStyle={{ color: (stats?.sales_growth ?? 0) >= 0 ? '#3f8600' : '#cf1322' }}
             />
           </Card>
         </Col>
@@ -136,9 +136,9 @@ export default function DashboardPage() {
           <Card>
             <Statistic
               title="Low Stock Items"
-              value={stats?.inventory.low_stock_count || 0}
+              value={stats?.inventory?.low_stock_count || 0}
               prefix={<WarningOutlined />}
-              valueStyle={{ color: stats?.inventory.low_stock_count > 0 ? '#faad14' : 'inherit' }}
+              valueStyle={{ color: (stats?.inventory?.low_stock_count ?? 0) > 0 ? '#faad14' : 'inherit' }}
             />
           </Card>
         </Col>

@@ -1,192 +1,200 @@
-import { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Button, theme } from 'antd';
+import { useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
+import { Avatar, Button, Dropdown, Flex, Layout, theme, Typography } from 'antd';
 import {
-  DashboardOutlined,
-  ShoppingCartOutlined,
-  AppstoreOutlined,
-  TagsOutlined,
-  UserOutlined,
-  FileTextOutlined,
-  InboxOutlined,
-  BarChartOutlined,
-  SettingOutlined,
-  LogoutOutlined,
   MenuFoldOutlined,
+  MenuOutlined,
   MenuUnfoldOutlined,
-  ShopOutlined,
-  RollbackOutlined,
-  TeamOutlined,
-  SafetyCertificateOutlined,
-  SwapOutlined,
-  ShoppingOutlined,
-  ContactsOutlined,
+  MoonOutlined,
+  SunOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons';
-import { useAuthStore } from '../store/authStore';
+import { useThemeStore, useMenuStore, useUIStore } from '@/Helpers/atom';
+import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/api/services/auth.service';
+import useMenuManagement from '@/Hooks/useMenuManagement.jsx';
+import MenuSidebar from '@/Components/Layout/MenuSidebar';
 
 const { Header, Sider, Content } = Layout;
+const { useToken } = theme;
+const { Text } = Typography;
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/pos', icon: <ShoppingCartOutlined />, label: 'POS Terminal' },
-  {
-    key: 'catalog',
-    icon: <AppstoreOutlined />,
-    label: 'Catalog',
-    children: [
-      { key: '/products', icon: <AppstoreOutlined />, label: 'Products' },
-      { key: '/categories', icon: <TagsOutlined />, label: 'Categories' },
-    ],
-  },
-  {
-    key: 'sales',
-    icon: <FileTextOutlined />,
-    label: 'Sales',
-    children: [
-      { key: '/orders', icon: <FileTextOutlined />, label: 'Orders' },
-      { key: '/returns', icon: <RollbackOutlined />, label: 'Returns' },
-      { key: '/customers', icon: <UserOutlined />, label: 'Customers' },
-    ],
-  },
-  {
-    key: 'inventory-group',
-    icon: <InboxOutlined />,
-    label: 'Inventory',
-    children: [
-      { key: '/inventory', icon: <InboxOutlined />, label: 'Stock Levels' },
-      { key: '/purchase-orders', icon: <ShoppingOutlined />, label: 'Purchase Orders' },
-      { key: '/stock-transfers', icon: <SwapOutlined />, label: 'Stock Transfers' },
-      { key: '/vendors', icon: <ContactsOutlined />, label: 'Vendors' },
-    ],
-  },
-  { key: '/reports', icon: <BarChartOutlined />, label: 'Reports' },
-  {
-    key: 'admin',
-    icon: <SettingOutlined />,
-    label: 'Admin',
-    children: [
-      { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
-      { key: '/users', icon: <TeamOutlined />, label: 'Users' },
-      { key: '/roles', icon: <SafetyCertificateOutlined />, label: 'Roles' },
-      { key: '/stores', icon: <ShopOutlined />, label: 'Stores' },
-    ],
-  },
-];
+// Get initials - SparkCRM pattern
+const getInitials = (name) => {
+  if (!name) return '?';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+};
 
 export default function MainLayout() {
-  const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout } = useAuthStore();
-  const { token } = theme.useToken();
+  const { token } = useToken();
+  const { theme: currentTheme, toggleTheme } = useThemeStore();
+  const { collapsed, toggleCollapsed } = useMenuStore();
+  const { isMobile, drawerVisible, setDrawerVisible, setIsMobile } = useUIStore();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
-  const handleMenuClick = ({ key }) => {
-    if (key === '/pos') {
-      window.location.href = '/pos';
-    } else {
-      navigate(key);
+  const {
+    menuItems,
+    selectedKeys,
+    openKeys,
+    handleMenuClick,
+    handleOpenChange,
+  } = useMenuManagement();
+
+  // Handle window resize - SparkCRM pattern
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setIsMobile]);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      logout();
+      window.location.href = '/login';
     }
   };
 
-  const handleLogout = async () => {
-    logout();
-    navigate('/login');
-  };
-
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Profile',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Logout',
-      onClick: handleLogout,
-    },
-  ];
+  const mainBgColor = currentTheme === 'dark' ? '#141414' : '#ffffff';
+  const siderBgColor = currentTheme === 'dark' ? '#1f1f1f' : '#fafafa';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        theme="light"
+      {/* Fixed Header - SparkCRM pattern */}
+      <Header
         style={{
-          borderRight: `1px solid ${token.colorBorderSecondary}`,
+          background: mainBgColor,
+          borderBottom: `1px solid ${token.colorBorder}`,
+          padding: 0,
+          position: 'fixed',
+          top: 0,
+          width: '100%',
+          zIndex: 999,
+          height: 56,
         }}
       >
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          }}
+        <Flex
+          align="center"
+          justify="space-between"
+          style={{ height: '100%', padding: '0 16px' }}
         >
-          <ShopOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
-          {!collapsed && (
-            <span
-              style={{
-                marginLeft: 8,
-                fontSize: 18,
-                fontWeight: 600,
-                color: token.colorPrimary,
-              }}
-            >
-              Baqala POS
-            </span>
-          )}
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
-          style={{ borderRight: 0 }}
-        />
-      </Sider>
+          {/* Left - Logo & Toggle */}
+          <Flex align="center" gap={16}>
+            {isMobile ? (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerVisible(true)}
+              />
+            ) : (
+              <>
+                <Text strong style={{ fontSize: 18, color: token.colorPrimary }}>
+                  Baqala POS
+                </Text>
+                <Button
+                  type="text"
+                  icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                  onClick={toggleCollapsed}
+                />
+              </>
+            )}
+          </Flex>
 
-      <Layout>
-        <Header
-          style={{
-            padding: '0 24px',
-            background: token.colorBgContainer,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          }}
-        >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: 16 }}
-          />
-
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar icon={<UserOutlined />} />
-              <span>{user?.name}</span>
-            </div>
+          {/* Right - User Menu */}
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'theme',
+                  icon: currentTheme === 'dark' ? <SunOutlined /> : <MoonOutlined />,
+                  label: currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode',
+                  onClick: toggleTheme,
+                },
+                { type: 'divider' },
+                {
+                  key: 'logout',
+                  icon: <LogoutOutlined />,
+                  label: 'Logout',
+                  danger: true,
+                  onClick: handleLogout,
+                },
+              ],
+            }}
+          >
+            <Button type="text" style={{ padding: '4px 8px' }}>
+              <Flex align="center" gap={8}>
+                <Avatar size="small" style={{ backgroundColor: token.colorPrimary }}>
+                  {getInitials(user?.name)}
+                </Avatar>
+                {!isMobile && <Text strong>{user?.name}</Text>}
+              </Flex>
+            </Button>
           </Dropdown>
-        </Header>
+        </Flex>
+      </Header>
 
-        <Content
-          style={{
-            margin: 24,
-            padding: 24,
-            background: token.colorBgContainer,
-            borderRadius: token.borderRadius,
-            overflow: 'auto',
-          }}
-        >
-          <Outlet />
-        </Content>
+      {/* Main Layout */}
+      <Layout style={{ marginTop: 56 }}>
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <Sider
+            width={220}
+            collapsedWidth={60}
+            collapsed={collapsed}
+            style={{
+              position: 'fixed',
+              height: 'calc(100vh - 56px)',
+              left: 0,
+              top: 56,
+              backgroundColor: siderBgColor,
+              borderRight: `1px solid ${token.colorBorder}`,
+              overflow: 'auto',
+            }}
+          >
+            <MenuSidebar
+              menuItems={menuItems}
+              selectedKeys={selectedKeys}
+              openKeys={openKeys}
+              onOpenChange={handleOpenChange}
+              onClick={handleMenuClick}
+              collapsed={collapsed}
+              isMobile={false}
+              drawerVisible={false}
+              onDrawerClose={() => {}}
+            />
+          </Sider>
+        )}
+
+        {/* Mobile Drawer */}
+        {isMobile && (
+          <MenuSidebar
+            menuItems={menuItems}
+            selectedKeys={selectedKeys}
+            openKeys={openKeys}
+            onOpenChange={handleOpenChange}
+            onClick={handleMenuClick}
+            collapsed={false}
+            isMobile={true}
+            drawerVisible={drawerVisible}
+            onDrawerClose={() => setDrawerVisible(false)}
+          />
+        )}
+
+        {/* Content */}
+        <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 60 : 220) }}>
+          <Content
+            style={{
+              padding: 16,
+              minHeight: 'calc(100vh - 56px)',
+              backgroundColor: token.colorBgContainer,
+            }}
+          >
+            <Outlet />
+          </Content>
+        </Layout>
       </Layout>
     </Layout>
   );

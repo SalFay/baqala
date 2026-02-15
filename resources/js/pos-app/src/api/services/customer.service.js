@@ -26,8 +26,8 @@ export const customerService = {
   },
 
   async searchCustomers(query) {
-    const response = await api.get('/customers/search', { params: { q: query } });
-    return response.data;
+    const response = await api.get('/pos/customers/search', { params: { q: query } });
+    return response.data.data;
   },
 
   async getCustomerOrders(id) {

@@ -2,4 +2,746 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* ============================================
+   CSS Custom Properties / Design Tokens
+   ============================================ */
 
+:root {
+  /* Colors - Light Mode (default) */
+  --color-primary: #1890ff;
+  --color-primary-light: #bae7ff;
+  --color-primary-dark: #0050b3;
+  --color-success: #52c41a;
+  --color-warning: #fa8c16;
+  --color-error: #f5222d;
+
+  /* Background Colors - Light Mode */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #fafafa;
+  --color-bg-tertiary: #f5f5f5;
+  --color-bg-elevated: #ffffff;
+
+  /* Text Colors - Light Mode */
+  --color-text-primary: #141414;
+  --color-text-secondary: #595959;
+  --color-text-tertiary: #8c8c8c;
+
+  /* Border Colors - Light Mode */
+  --color-border-primary: #d9d9d9;
+  --color-border-secondary: #e8e8e8;
+
+  /* Shadows */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-dropdown: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+
+  /* Touch Targets */
+  --touch-target-min: 44px;
+  --touch-target-sm: 48px;
+  --touch-target-md: 56px;
+  --touch-target-lg: 64px;
+
+  /* POS Specific */
+  --product-card-width: 180px;
+  --product-card-height: 220px;
+  --cart-width: 400px;
+  --receipt-width: 280px;
+}
+
+/* Dark Mode Variables */
+:root.dark {
+  --color-bg-primary: #141414;
+  --color-bg-secondary: #262626;
+  --color-bg-tertiary: #434343;
+  --color-bg-elevated: #1f1f1f;
+
+  --color-text-primary: rgba(255, 255, 255, 0.95);
+  --color-text-secondary: rgba(255, 255, 255, 0.65);
+  --color-text-tertiary: rgba(255, 255, 255, 0.45);
+
+  --color-border-primary: #434343;
+  --color-border-secondary: #262626;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* ============================================
+   Focus Indicators (Accessibility)
+   ============================================ */
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Remove default focus outline when not using keyboard */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Custom focus ring for interactive elements */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-primary);
+  outline: none;
+}
+
+/* ============================================
+   Product Grid Styles
+   ============================================ */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--product-card-width), 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Responsive product grid */
+@media (min-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+/* Product Card Styles */
+.product-card {
+  cursor: pointer;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.product-card:active {
+  transform: scale(0.98);
+}
+
+.product-card.out-of-stock {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Skeleton Loading Animation
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary) 0%,
+    var(--color-bg-secondary) 50%,
+    var(--color-bg-tertiary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+  border-radius: var(--border-radius-md);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 12px;
+  width: 60%;
+}
+
+.skeleton-image {
+  height: 120px;
+}
+
+.skeleton-card {
+  padding: 16px;
+  border-radius: var(--border-radius-lg);
+  background: var(--color-bg-elevated);
+}
+
+/* ============================================
+   Cart Styles
+   ============================================ */
+
+.cart-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg-elevated);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.cart-item:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.cart-summary {
+  padding: 16px;
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-secondary);
+}
+
+/* ============================================
+   Touch-Friendly Controls
+   ============================================ */
+
+.touch-button {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.touch-button:active {
+  transform: scale(0.95);
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-control button {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.quantity-control button:active {
+  transform: scale(0.9);
+}
+
+/* ============================================
+   Payment Panel Styles
+   ============================================ */
+
+.payment-method-btn {
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.payment-method-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.payment-method-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.quick-amount-btn {
+  min-width: 60px;
+  height: 40px;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+}
+
+.quick-amount-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+/* ============================================
+   Success Animation
+   ============================================ */
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: success-pulse 0.5s ease-out;
+}
+
+@keyframes success-pulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-checkmark svg {
+  width: 40px;
+  height: 40px;
+  color: white;
+}
+
+/* ============================================
+   Receipt Print Styles
+   ============================================ */
+
+.receipt {
+  width: var(--receipt-width);
+  padding: 12px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  background: white;
+  color: black;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #333;
+}
+
+.receipt-divider {
+  border: none;
+  border-top: 1px dashed #333;
+  margin: 8px 0;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.receipt-total {
+  font-weight: bold;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #333;
+  font-size: 10px;
+}
+
+/* Print Media Queries */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .receipt {
+    width: 100%;
+    max-width: 80mm;
+    margin: 0 auto;
+    box-shadow: none;
+    border: none;
+  }
+
+  /* Hide non-printable elements */
+  .no-print,
+  button,
+  .ant-btn,
+  nav,
+  header,
+  aside {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   Theme Toggle Animation
+   ============================================ */
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.theme-toggle-icon {
+  position: absolute;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-toggle-icon.sun {
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-toggle-icon.moon {
+  transform: rotate(-90deg) scale(0);
+}
+
+.dark .theme-toggle-icon.sun {
+  transform: rotate(90deg) scale(0);
+}
+
+.dark .theme-toggle-icon.moon {
+  transform: rotate(0deg) scale(1);
+}
+
+/* ============================================
+   Scrollbar Styles
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-primary);
+  border-radius: 4px;
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-primary) var(--color-bg-secondary);
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.touch-target {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+}
+
+.animated-number {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animated-number.bounce {
+  animation: number-bounce 0.4s ease-out;
+}
+
+@keyframes number-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  75% {
+    transform: scale(0.95);
+  }
+}
+
+/* Fade transitions */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity var(--transition-normal);
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+/* Slide transitions */
+.slide-up-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.slide-up-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all var(--transition-normal);
+}
+
+.slide-up-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.slide-up-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all var(--transition-normal);
+}
+
+/* ============================================
+   Ant Design Overrides
+   ============================================ */
+
+/* Make Ant Design cards consistent with theme */
+.ant-card {
+  border-radius: var(--border-radius-lg);
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Improved button transitions */
+.ant-btn {
+  transition: all var(--transition-fast);
+}
+
+.ant-btn:active {
+  transform: scale(0.98);
+}
+
+/* Better modal animations */
+.ant-modal-content {
+  border-radius: var(--border-radius-lg);
+}
+
+/* Table row hover in dark mode */
+.dark .ant-table-tbody > tr:hover > td {
+  background: var(--color-bg-tertiary) !important;
+}
+
+/* Menu item transitions */
+.ant-menu-item {
+  transition: all var(--transition-fast);
+}
+
+/* Input focus states */
+.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Select dropdown in dark mode */
+.dark .ant-select-dropdown {
+  background: var(--color-bg-elevated);
+}
+
+/* Badge animations */
+.ant-badge-count {
+  transition: all var(--transition-fast);
+}
+
+/* ============================================
+   Empty State Styles
+   ============================================ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 16px;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  max-width: 300px;
+}
+
+/* ============================================
+   Loading States
+   ============================================ */
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.dark .loading-overlay {
+  background: rgba(20, 20, 20, 0.8);
+}
+
+/* ============================================
+   Accessibility Improvements
+   ============================================ */
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border-primary: #000000;
+    --shadow-card: 0 0 0 2px #000000;
+  }
+
+  .dark {
+    --color-border-primary: #ffffff;
+    --shadow-card: 0 0 0 2px #ffffff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

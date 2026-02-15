@@ -1,9 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Spin } from 'antd';
 import { useAuthStore } from './store/authStore';
+import { authService } from './api/services/auth.service';
 import MainLayout from './layouts/MainLayout';
 import POSLayout from './layouts/POSLayout';
-import AuthLayout from './layouts/AuthLayout';
-import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import POSPage from './pages/pos/POSPage';
 import ProductsPage from './pages/products/ProductsPage';
@@ -28,44 +29,47 @@ import StockTransfersPage from './pages/stock-transfers/StockTransfersPage';
 import StockTransferFormPage from './pages/stock-transfers/StockTransferFormPage';
 import StockTransferDetailPage from './pages/stock-transfers/StockTransferDetailPage';
 
-function ProtectedRoute({ children }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+function App() {
+  const [loading, setLoading] = useState(true);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  // Check auth status on app load - Laravel middleware ensures we're authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { user } = await authService.me();
+        setAuth(user, null); // No token needed - using session auth
+      } catch {
+        // If 401, axios interceptor will redirect to login
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, [setAuth]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
   }
 
-  return <>{children}</>;
-}
-
-function App() {
   return (
     <Routes>
-      {/* Auth routes */}
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<LoginPage />} />
-      </Route>
-
       {/* POS route - full screen */}
       <Route
         path="/pos"
         element={
-          <ProtectedRoute>
-            <POSLayout>
-              <POSPage />
-            </POSLayout>
-          </ProtectedRoute>
+          <POSLayout>
+            <POSPage />
+          </POSLayout>
         }
       />
 
       {/* Main app routes */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
+      <Route element={<MainLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/products" element={<ProductsPage />} />
@@ -95,7 +99,7 @@ function App() {
         <Route path="/stock-transfers/:id/edit" element={<StockTransferFormPage />} />
       </Route>
 
-      {/* 404 */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

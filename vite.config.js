@@ -10,7 +10,6 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.jsx',
-                'resources/js/pos-app/src/main.tsx',
             ],
             refresh: true,
         }),

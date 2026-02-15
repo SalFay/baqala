@@ -2,7 +2,7 @@ import api from '../axios';
 
 export const productService = {
   async getProducts(filters = {}) {
-    const response = await api.get('/products', { params: filters });
+    const response = await api.get('/pos/products', { params: filters });
     return response.data;
   },
 
@@ -43,8 +43,8 @@ export const productService = {
   },
 
   async searchProducts(query) {
-    const response = await api.get('/products/search', { params: { q: query } });
-    return response.data;
+    const response = await api.get('/pos/products', { params: { search: query } });
+    return response.data.data;
   },
 
   async findByBarcode(barcode) {

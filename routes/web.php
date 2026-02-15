@@ -32,6 +32,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// Standalone POS app - serves the React SPA (requires auth via Laravel login)
+Route::middleware('auth')->get('/pos-app/{path?}', function () {
+    return view('pos.app');
+})->where('path', '.*')->name('pos.standalone');
+
+// Check auth status for POS app (returns current user or 401)
+Route::get('/pos/auth/me', [POSController::class, 'me'])->name('pos.auth.me');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -87,6 +95,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/pos/cart/hold/{cartId}/restore', [POSController::class, 'restoreHeldCart'])->name('pos.cart.restore');
     Route::post('/pos/cart/checkout', [POSController::class, 'checkout'])->name('pos.checkout');
     Route::get('/pos/customers/search', [POSController::class, 'searchCustomers'])->name('pos.customers.search');
+
+    // POS Dashboard routes (JSON responses)
+    Route::get('/pos/dashboard/stats', [POSController::class, 'dashboardStats'])->name('pos.dashboard.stats');
+    Route::get('/pos/dashboard/sales-chart', [POSController::class, 'dashboardSalesChart'])->name('pos.dashboard.sales-chart');
+    Route::get('/pos/dashboard/top-products', [POSController::class, 'dashboardTopProducts'])->name('pos.dashboard.top-products');
+    Route::get('/pos/dashboard/low-stock', [POSController::class, 'dashboardLowStock'])->name('pos.dashboard.low-stock');
+    Route::get('/pos/dashboard/recent-orders', [POSController::class, 'dashboardRecentOrders'])->name('pos.dashboard.recent-orders');
+
+    // POS Orders routes (JSON responses)
+    Route::get('/pos/orders', [POSController::class, 'orders'])->name('pos.orders.index');
+    Route::get('/pos/orders/today', [POSController::class, 'todayOrders'])->name('pos.orders.today');
+    Route::get('/pos/orders/recent', [POSController::class, 'recentOrders'])->name('pos.orders.recent');
+    Route::get('/pos/orders/{id}', [POSController::class, 'orderDetail'])->name('pos.orders.show');
+    Route::get('/pos/orders/{id}/receipt', [POSController::class, 'orderReceipt'])->name('pos.orders.receipt');
+    Route::post('/pos/orders/{id}/cancel', [POSController::class, 'cancelOrder'])->name('pos.orders.cancel');
 
     // Vendors
     Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');

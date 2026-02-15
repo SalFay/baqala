@@ -1,6 +1,8 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
+/resources/js/pos-app/node_modules
+/public/pos
 /public/build
 /public/hot
 /public/storage
@@ -27,6 +29,22 @@ yarn-error.log
 .codiumai
 *~
 .htaccess
+
+# Claude/AI settings
+.qodo
+tmpclaude-*
+.claude/settings.local.json
+claude.json
+.playwright-mcp/
+
+# Screenshots
+*.png
+
+# Nested node_modules
+**/node_modules
+
+# Reports
+/public/reports
 
 
 

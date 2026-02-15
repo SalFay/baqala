@@ -16,6 +16,9 @@ const queryClient = new QueryClient({
   },
 });
 
+// Determine basename: /pos-app when served through Laravel, empty for dev
+const basename = window.location.pathname.startsWith('/pos-app') ? '/pos-app' : '';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -28,7 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         }}
       >
         <AntApp>
-          <BrowserRouter>
+          <BrowserRouter basename={basename}>
             <App />
           </BrowserRouter>
         </AntApp>
