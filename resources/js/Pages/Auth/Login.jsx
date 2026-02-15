@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { Card, Form, Input, Button, Typography, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
 export default function Login() {
+    const { redirect } = usePage().props;
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -13,7 +13,8 @@ export default function Login() {
     });
 
     const handleSubmit = () => {
-        post('/login');
+        const url = redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login';
+        post(url);
     };
 
     return (

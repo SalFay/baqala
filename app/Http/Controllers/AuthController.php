@@ -10,10 +10,11 @@ use Inertia\Response;
 
 class AuthController extends Controller
 {
-    public function showLogin(): Response
+    public function showLogin(Request $request): Response
     {
         return Inertia::render('Auth/Login', [
             'status' => session('status'),
+            'redirect' => $request->query('redirect'),
         ]);
     }
 
@@ -26,6 +27,11 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+
+            // Check for explicit redirect parameter (from POS app)
+            if ($request->has('redirect') && str_starts_with($request->redirect, url('/'))) {
+                return redirect($request->redirect);
+            }
 
             // Redirect based on user role
             $user = Auth::user();

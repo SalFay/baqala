@@ -24,218 +24,285 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
 */
 
-// Authentication routes
+// ==========================================
+// Authentication (Guest)
+// ==========================================
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Standalone POS app - serves the React SPA (requires auth via Laravel login)
-Route::middleware('auth')->get('/pos-app/{path?}', function () {
-    return view('pos.app');
-})->where('path', '.*')->name('pos.standalone');
-
-// Check auth status for POS app (returns current user or 401)
+// POS Auth check (no auth required - returns 401 if not logged in)
 Route::get('/pos/auth/me', [POSController::class, 'me'])->name('pos.auth.me');
 
+// ==========================================
+// Authenticated Routes
+// ==========================================
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // ==========================================
     // Dashboard
+    // ==========================================
     Route::get('/', [DashboardController::class, 'index'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Orders
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-
+    // ==========================================
     // Products
-    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
-    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
-    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    // ==========================================
+    Route::controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{product}/edit', 'edit')->name('edit');
+        Route::put('/{product}', 'update')->name('update');
+        Route::delete('/{product}', 'destroy')->name('destroy');
+    });
 
+    // ==========================================
     // Categories
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    // ==========================================
+    Route::controller(CategoryController::class)->prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{category}', 'update')->name('update');
+        Route::delete('/{category}', 'destroy')->name('destroy');
+    });
 
+    // ==========================================
     // Customers
-    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
-    Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
-    Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
-    Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
-    Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
-    Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
-    Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+    // ==========================================
+    Route::controller(CustomerController::class)->prefix('customers')->name('customers.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{customer}', 'show')->name('show');
+        Route::get('/{customer}/edit', 'edit')->name('edit');
+        Route::put('/{customer}', 'update')->name('update');
+        Route::delete('/{customer}', 'destroy')->name('destroy');
+    });
 
-    // Orders - Additional actions
-    Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
-    Route::get('/orders/{order}/status-history', [OrderController::class, 'statusHistory'])->name('orders.status-history');
-    Route::get('/orders/{order}/activity-log', [OrderController::class, 'activityLog'])->name('orders.activity-log');
-    Route::get('/orders/{order}/available-statuses', [OrderController::class, 'availableStatuses'])->name('orders.available-statuses');
+    // ==========================================
+    // Orders
+    // ==========================================
+    Route::controller(OrderController::class)->prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{order}', 'show')->name('show');
+        Route::post('/{order}/status', 'updateStatus')->name('status');
+        Route::get('/{order}/status-history', 'statusHistory')->name('status-history');
+        Route::get('/{order}/activity-log', 'activityLog')->name('activity-log');
+        Route::get('/{order}/available-statuses', 'availableStatuses')->name('available-statuses');
+    });
 
-    // POS
-    Route::get('/pos', [POSController::class, 'index'])->name('pos');
-    Route::get('/pos/products', [POSController::class, 'products'])->name('pos.products');
-    Route::get('/pos/cart', [POSController::class, 'getCart'])->name('pos.cart');
-    Route::post('/pos/cart/items', [POSController::class, 'addItem'])->name('pos.cart.add');
-    Route::put('/pos/cart/items/{itemId}', [POSController::class, 'updateItem'])->name('pos.cart.update');
-    Route::delete('/pos/cart/items/{itemId}', [POSController::class, 'removeItem'])->name('pos.cart.remove');
-    Route::delete('/pos/cart', [POSController::class, 'clearCart'])->name('pos.cart.clear');
-    Route::post('/pos/cart/customer', [POSController::class, 'setCustomer'])->name('pos.cart.customer');
-    Route::post('/pos/cart/scan', [POSController::class, 'scanBarcode'])->name('pos.cart.scan');
-    Route::post('/pos/cart/hold', [POSController::class, 'holdCart'])->name('pos.cart.hold');
-    Route::get('/pos/cart/hold', [POSController::class, 'getHeldCarts'])->name('pos.cart.held');
-    Route::post('/pos/cart/hold/{cartId}/restore', [POSController::class, 'restoreHeldCart'])->name('pos.cart.restore');
-    Route::post('/pos/cart/checkout', [POSController::class, 'checkout'])->name('pos.checkout');
-    Route::get('/pos/customers/search', [POSController::class, 'searchCustomers'])->name('pos.customers.search');
-
-    // POS Dashboard routes (JSON responses)
-    Route::get('/pos/dashboard/stats', [POSController::class, 'dashboardStats'])->name('pos.dashboard.stats');
-    Route::get('/pos/dashboard/sales-chart', [POSController::class, 'dashboardSalesChart'])->name('pos.dashboard.sales-chart');
-    Route::get('/pos/dashboard/top-products', [POSController::class, 'dashboardTopProducts'])->name('pos.dashboard.top-products');
-    Route::get('/pos/dashboard/low-stock', [POSController::class, 'dashboardLowStock'])->name('pos.dashboard.low-stock');
-    Route::get('/pos/dashboard/recent-orders', [POSController::class, 'dashboardRecentOrders'])->name('pos.dashboard.recent-orders');
-
-    // POS Orders routes (JSON responses)
-    Route::get('/pos/orders', [POSController::class, 'orders'])->name('pos.orders.index');
-    Route::get('/pos/orders/today', [POSController::class, 'todayOrders'])->name('pos.orders.today');
-    Route::get('/pos/orders/recent', [POSController::class, 'recentOrders'])->name('pos.orders.recent');
-    Route::get('/pos/orders/{id}', [POSController::class, 'orderDetail'])->name('pos.orders.show');
-    Route::get('/pos/orders/{id}/receipt', [POSController::class, 'orderReceipt'])->name('pos.orders.receipt');
-    Route::post('/pos/orders/{id}/cancel', [POSController::class, 'cancelOrder'])->name('pos.orders.cancel');
-
+    // ==========================================
     // Vendors
-    Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
-    Route::get('/vendors/create', [VendorController::class, 'create'])->name('vendors.create');
-    Route::post('/vendors', [VendorController::class, 'store'])->name('vendors.store');
-    Route::get('/vendors/{vendor}', [VendorController::class, 'show'])->name('vendors.show');
-    Route::get('/vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
-    Route::put('/vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
-    Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
+    // ==========================================
+    Route::controller(VendorController::class)->prefix('vendors')->name('vendors.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{vendor}', 'show')->name('show');
+        Route::get('/{vendor}/edit', 'edit')->name('edit');
+        Route::put('/{vendor}', 'update')->name('update');
+        Route::delete('/{vendor}', 'destroy')->name('destroy');
+    });
 
+    // ==========================================
     // Inventory
-    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-    Route::post('/inventory/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
-    Route::get('/inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
-    Route::get('/inventory/low-stock', [InventoryController::class, 'lowStock'])->name('inventory.low-stock');
+    // ==========================================
+    Route::controller(InventoryController::class)->prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/adjust', 'adjust')->name('adjust');
+        Route::get('/movements', 'movements')->name('movements');
+        Route::get('/low-stock', 'lowStock')->name('low-stock');
+    });
 
+    // ==========================================
     // Purchase Orders
-    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
-    Route::get('/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
-    Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
-    Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
-    Route::get('/purchase-orders/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('purchase-orders.edit');
-    Route::put('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('purchase-orders.update');
-    Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+    // ==========================================
+    Route::controller(PurchaseOrderController::class)->prefix('purchase-orders')->name('purchase-orders.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{purchaseOrder}', 'show')->name('show');
+        Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
+        Route::put('/{purchaseOrder}', 'update')->name('update');
+        Route::post('/{purchaseOrder}/receive', 'receive')->name('receive');
+    });
 
+    // ==========================================
     // Stock Transfers
-    Route::get('/stock-transfers', [StockTransferController::class, 'index'])->name('stock-transfers.index');
-    Route::get('/stock-transfers/create', [StockTransferController::class, 'create'])->name('stock-transfers.create');
-    Route::post('/stock-transfers', [StockTransferController::class, 'store'])->name('stock-transfers.store');
-    Route::get('/stock-transfers/{stockTransfer}', [StockTransferController::class, 'show'])->name('stock-transfers.show');
-    Route::post('/stock-transfers/{stockTransfer}/ship', [StockTransferController::class, 'ship'])->name('stock-transfers.ship');
-    Route::post('/stock-transfers/{stockTransfer}/receive', [StockTransferController::class, 'receive'])->name('stock-transfers.receive');
+    // ==========================================
+    Route::controller(StockTransferController::class)->prefix('stock-transfers')->name('stock-transfers.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{stockTransfer}', 'show')->name('show');
+        Route::post('/{stockTransfer}/ship', 'ship')->name('ship');
+        Route::post('/{stockTransfer}/receive', 'receive')->name('receive');
+    });
 
+    // ==========================================
     // Reports
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
-    Route::get('/reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
-    Route::get('/reports/customers', [ReportController::class, 'customers'])->name('reports.customers');
-    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    // ==========================================
+    Route::controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/sales', 'sales')->name('sales');
+        Route::get('/inventory', 'inventory')->name('inventory');
+        Route::get('/customers', 'customers')->name('customers');
+        Route::get('/export', 'export')->name('export');
+    });
 
+    // ==========================================
     // Settings
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    // ==========================================
+    Route::controller(SettingsController::class)->prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::put('/', 'update')->name('update');
+        // Stores
+        Route::get('/stores', 'stores')->name('stores');
+        Route::post('/stores', 'storeStore')->name('stores.store');
+        Route::put('/stores/{store}', 'updateStore')->name('stores.update');
+        Route::delete('/stores/{store}', 'destroyStore')->name('stores.destroy');
+        // Payment Methods
+        Route::get('/payment-methods', 'paymentMethods')->name('payment-methods');
+        Route::post('/payment-methods', 'storePaymentMethod')->name('payment-methods.store');
+        Route::put('/payment-methods/{paymentMethod}', 'updatePaymentMethod')->name('payment-methods.update');
+        Route::delete('/payment-methods/{paymentMethod}', 'destroyPaymentMethod')->name('payment-methods.destroy');
+        // Tax Rates
+        Route::get('/tax-rates', 'taxRates')->name('tax-rates');
+        Route::post('/tax-rates', 'storeTaxRate')->name('tax-rates.store');
+        Route::put('/tax-rates/{taxRate}', 'updateTaxRate')->name('tax-rates.update');
+        Route::delete('/tax-rates/{taxRate}', 'destroyTaxRate')->name('tax-rates.destroy');
+        // Users
+        Route::get('/users', 'users')->name('users');
+        Route::post('/users', 'storeUser')->name('users.store');
+        Route::put('/users/{user}', 'updateUser')->name('users.update');
+        Route::delete('/users/{user}', 'destroyUser')->name('users.destroy');
+    });
 
-    // Settings - Stores
-    Route::get('/settings/stores', [SettingsController::class, 'stores'])->name('settings.stores');
-    Route::post('/settings/stores', [SettingsController::class, 'storeStore'])->name('settings.stores.store');
-    Route::put('/settings/stores/{store}', [SettingsController::class, 'updateStore'])->name('settings.stores.update');
-    Route::delete('/settings/stores/{store}', [SettingsController::class, 'destroyStore'])->name('settings.stores.destroy');
+    // ==========================================
+    // POS API Routes (JSON responses for React SPA)
+    // ==========================================
+    Route::prefix('pos')->name('pos.')->group(function () {
 
-    // Settings - Payment Methods
-    Route::get('/settings/payment-methods', [SettingsController::class, 'paymentMethods'])->name('settings.payment-methods');
-    Route::post('/settings/payment-methods', [SettingsController::class, 'storePaymentMethod'])->name('settings.payment-methods.store');
-    Route::put('/settings/payment-methods/{paymentMethod}', [SettingsController::class, 'updatePaymentMethod'])->name('settings.payment-methods.update');
-    Route::delete('/settings/payment-methods/{paymentMethod}', [SettingsController::class, 'destroyPaymentMethod'])->name('settings.payment-methods.destroy');
+        // ------------------------------------------
+        // POS: Products & Cart
+        // ------------------------------------------
+        Route::controller(POSController::class)->group(function () {
+            Route::get('/products', 'products')->name('products');
+            // Cart
+            Route::get('/cart', 'getCart')->name('cart');
+            Route::post('/cart/items', 'addItem')->name('cart.add');
+            Route::put('/cart/items/{itemId}', 'updateItem')->name('cart.update');
+            Route::delete('/cart/items/{itemId}', 'removeItem')->name('cart.remove');
+            Route::delete('/cart', 'clearCart')->name('cart.clear');
+            Route::post('/cart/customer', 'setCustomer')->name('cart.customer');
+            Route::post('/cart/scan', 'scanBarcode')->name('cart.scan');
+            Route::post('/cart/hold', 'holdCart')->name('cart.hold');
+            Route::get('/cart/hold', 'getHeldCarts')->name('cart.held');
+            Route::post('/cart/hold/{cartId}/restore', 'restoreHeldCart')->name('cart.restore');
+            Route::post('/cart/checkout', 'checkout')->name('checkout');
+            Route::get('/customers/search', 'searchCustomers')->name('customers.search');
+            // Dashboard
+            Route::get('/dashboard/stats', 'dashboardStats')->name('dashboard.stats');
+            Route::get('/dashboard/sales-chart', 'dashboardSalesChart')->name('dashboard.sales-chart');
+            Route::get('/dashboard/top-products', 'dashboardTopProducts')->name('dashboard.top-products');
+            Route::get('/dashboard/low-stock', 'dashboardLowStock')->name('dashboard.low-stock');
+            Route::get('/dashboard/recent-orders', 'dashboardRecentOrders')->name('dashboard.recent-orders');
+            // Orders
+            Route::get('/orders', 'orders')->name('orders.index');
+            Route::get('/orders/today', 'todayOrders')->name('orders.today');
+            Route::get('/orders/recent', 'recentOrders')->name('orders.recent');
+            Route::get('/orders/{id}', 'orderDetail')->name('orders.show');
+            Route::get('/orders/{id}/receipt', 'orderReceipt')->name('orders.receipt');
+            Route::post('/orders/{id}/cancel', 'cancelOrder')->name('orders.cancel');
+        });
 
-    // Settings - Tax Rates
-    Route::get('/settings/tax-rates', [SettingsController::class, 'taxRates'])->name('settings.tax-rates');
-    Route::post('/settings/tax-rates', [SettingsController::class, 'storeTaxRate'])->name('settings.tax-rates.store');
-    Route::put('/settings/tax-rates/{taxRate}', [SettingsController::class, 'updateTaxRate'])->name('settings.tax-rates.update');
-    Route::delete('/settings/tax-rates/{taxRate}', [SettingsController::class, 'destroyTaxRate'])->name('settings.tax-rates.destroy');
+        // ------------------------------------------
+        // POS: Business Types
+        // ------------------------------------------
+        Route::controller(BusinessTypeController::class)->prefix('business-types')->name('business-types.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/current', 'current')->name('current');
+            Route::get('/{businessType}/preview', 'preview')->name('preview');
+            Route::post('/{businessType}/apply', 'apply')->name('apply');
+            Route::post('/seed', 'seedTypes')->name('seed');
+        });
 
-    // Settings - Users
-    Route::get('/settings/users', [SettingsController::class, 'users'])->name('settings.users');
-    Route::post('/settings/users', [SettingsController::class, 'storeUser'])->name('settings.users.store');
-    Route::put('/settings/users/{user}', [SettingsController::class, 'updateUser'])->name('settings.users.update');
-    Route::delete('/settings/users/{user}', [SettingsController::class, 'destroyUser'])->name('settings.users.destroy');
+        // ------------------------------------------
+        // POS: Expenses
+        // ------------------------------------------
+        Route::controller(ExpenseController::class)->prefix('expenses')->name('expenses.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/summary', 'summary')->name('summary');
+            Route::get('/categories', 'categories')->name('categories');
+            Route::get('/categories/flat', 'categoriesFlat')->name('categories.flat');
+            Route::get('/vendors', 'vendors')->name('vendors');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{expense}', 'show')->name('show');
+            Route::put('/{expense}', 'update')->name('update');
+            Route::delete('/{expense}', 'destroy')->name('destroy');
+            Route::post('/{expense}/approve', 'approve')->name('approve');
+            Route::post('/{expense}/reject', 'reject')->name('reject');
+            Route::post('/{expense}/paid', 'markPaid')->name('paid');
+            Route::post('/{expense}/receipt', 'uploadReceipt')->name('receipt');
+        });
 
-    // Business Types (JSON responses for POS app)
-    Route::get('/pos/business-types', [BusinessTypeController::class, 'index'])->name('business-types.index');
-    Route::get('/pos/business-types/current', [BusinessTypeController::class, 'current'])->name('business-types.current');
-    Route::get('/pos/business-types/{businessType}/preview', [BusinessTypeController::class, 'preview'])->name('business-types.preview');
-    Route::post('/pos/business-types/{businessType}/apply', [BusinessTypeController::class, 'apply'])->name('business-types.apply');
-    Route::post('/pos/business-types/seed', [BusinessTypeController::class, 'seedTypes'])->name('business-types.seed');
+        // ------------------------------------------
+        // POS: Returns
+        // ------------------------------------------
+        Route::controller(ReturnController::class)->prefix('returns')->name('returns.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/reasons', 'reasons')->name('reasons');
+            Route::get('/order/{order}', 'getReturnableItems')->name('returnable');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{return}', 'show')->name('show');
+            Route::post('/{return}/approve', 'approve')->name('approve');
+            Route::post('/{return}/reject', 'reject')->name('reject');
+            Route::post('/{return}/process', 'process')->name('process');
+        });
 
-    // Expenses (JSON responses for POS app)
-    Route::get('/pos/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
-    Route::get('/pos/expenses/summary', [ExpenseController::class, 'summary'])->name('expenses.summary');
-    Route::get('/pos/expenses/categories', [ExpenseController::class, 'categories'])->name('expenses.categories');
-    Route::get('/pos/expenses/categories/flat', [ExpenseController::class, 'categoriesFlat'])->name('expenses.categories.flat');
-    Route::get('/pos/expenses/vendors', [ExpenseController::class, 'vendors'])->name('expenses.vendors');
-    Route::post('/pos/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
-    Route::get('/pos/expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
-    Route::put('/pos/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
-    Route::delete('/pos/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
-    Route::post('/pos/expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
-    Route::post('/pos/expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
-    Route::post('/pos/expenses/{expense}/paid', [ExpenseController::class, 'markPaid'])->name('expenses.paid');
-    Route::post('/pos/expenses/{expense}/receipt', [ExpenseController::class, 'uploadReceipt'])->name('expenses.receipt');
+        // ------------------------------------------
+        // POS: Stock Takes
+        // ------------------------------------------
+        Route::controller(StockTakeController::class)->prefix('stock-takes')->name('stock-takes.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/summary', 'summary')->name('summary');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{stockTake}', 'show')->name('show');
+            Route::delete('/{stockTake}', 'destroy')->name('destroy');
+            Route::post('/{stockTake}/start', 'start')->name('start');
+            Route::post('/{stockTake}/complete', 'complete')->name('complete');
+            Route::post('/{stockTake}/cancel', 'cancel')->name('cancel');
+            Route::post('/{stockTake}/items/{item}/count', 'countItem')->name('count-item');
+            Route::post('/{stockTake}/scan', 'scanBarcode')->name('scan');
+        });
 
-    // Returns (JSON responses for POS app)
-    Route::get('/pos/returns', [ReturnController::class, 'index'])->name('returns.index');
-    Route::get('/pos/returns/reasons', [ReturnController::class, 'reasons'])->name('returns.reasons');
-    Route::get('/pos/returns/order/{order}', [ReturnController::class, 'getReturnableItems'])->name('returns.returnable');
-    Route::post('/pos/returns', [ReturnController::class, 'store'])->name('returns.store');
-    Route::get('/pos/returns/{return}', [ReturnController::class, 'show'])->name('returns.show');
-    Route::post('/pos/returns/{return}/approve', [ReturnController::class, 'approve'])->name('returns.approve');
-    Route::post('/pos/returns/{return}/reject', [ReturnController::class, 'reject'])->name('returns.reject');
-    Route::post('/pos/returns/{return}/process', [ReturnController::class, 'process'])->name('returns.process');
+        // ------------------------------------------
+        // POS: Statements (Customer & Vendor)
+        // ------------------------------------------
+        Route::controller(StatementController::class)->group(function () {
+            // Customer Statements
+            Route::get('/customers/{customer}/statement', 'customerStatement')->name('statements.customer');
+            Route::get('/customers/{customer}/statement/pdf', 'customerStatementPdf')->name('statements.customer.pdf');
+            Route::get('/customers/{customer}/credits', 'customerCredits')->name('statements.customer.credits');
+            Route::post('/customers/{customer}/credits', 'addCustomerCredit')->name('statements.customer.credits.add');
+            // Vendor Statements
+            Route::get('/vendors/{vendor}/statement', 'vendorStatement')->name('statements.vendor');
+            Route::get('/vendors/{vendor}/statement/pdf', 'vendorStatementPdf')->name('statements.vendor.pdf');
+            Route::get('/vendors/{vendor}/credits', 'vendorCredits')->name('statements.vendor.credits');
+            Route::post('/vendors/{vendor}/credits', 'addVendorCredit')->name('statements.vendor.credits.add');
+        });
 
-    // Stock Takes (JSON responses for POS app)
-    Route::get('/pos/stock-takes', [StockTakeController::class, 'index'])->name('stock-takes.index');
-    Route::get('/pos/stock-takes/summary', [StockTakeController::class, 'summary'])->name('stock-takes.summary');
-    Route::post('/pos/stock-takes', [StockTakeController::class, 'store'])->name('stock-takes.store');
-    Route::get('/pos/stock-takes/{stockTake}', [StockTakeController::class, 'show'])->name('stock-takes.show');
-    Route::delete('/pos/stock-takes/{stockTake}', [StockTakeController::class, 'destroy'])->name('stock-takes.destroy');
-    Route::post('/pos/stock-takes/{stockTake}/start', [StockTakeController::class, 'start'])->name('stock-takes.start');
-    Route::post('/pos/stock-takes/{stockTake}/complete', [StockTakeController::class, 'complete'])->name('stock-takes.complete');
-    Route::post('/pos/stock-takes/{stockTake}/cancel', [StockTakeController::class, 'cancel'])->name('stock-takes.cancel');
-    Route::post('/pos/stock-takes/{stockTake}/items/{item}/count', [StockTakeController::class, 'countItem'])->name('stock-takes.count-item');
-    Route::post('/pos/stock-takes/{stockTake}/scan', [StockTakeController::class, 'scanBarcode'])->name('stock-takes.scan');
-
-    // Statements (JSON responses for POS app)
-    Route::get('/pos/customers/{customer}/statement', [StatementController::class, 'customerStatement'])->name('statements.customer');
-    Route::get('/pos/customers/{customer}/statement/pdf', [StatementController::class, 'customerStatementPdf'])->name('statements.customer.pdf');
-    Route::get('/pos/customers/{customer}/credits', [StatementController::class, 'customerCredits'])->name('statements.customer.credits');
-    Route::post('/pos/customers/{customer}/credits', [StatementController::class, 'addCustomerCredit'])->name('statements.customer.credits.add');
-    Route::get('/pos/vendors/{vendor}/statement', [StatementController::class, 'vendorStatement'])->name('statements.vendor');
-    Route::get('/pos/vendors/{vendor}/statement/pdf', [StatementController::class, 'vendorStatementPdf'])->name('statements.vendor.pdf');
-    Route::get('/pos/vendors/{vendor}/credits', [StatementController::class, 'vendorCredits'])->name('statements.vendor.credits');
-    Route::post('/pos/vendors/{vendor}/credits', [StatementController::class, 'addVendorCredit'])->name('statements.vendor.credits.add');
+        // ------------------------------------------
+        // POS SPA Catch-all (MUST be last)
+        // Excludes API paths: dashboard/*, cart/*, products, orders/*, etc.
+        // ------------------------------------------
+        Route::get('/{path?}', function () {
+            return view('pos.app');
+        })->where('path', '^(?!dashboard/|cart|products|orders/|customers/|vendors/|expenses|returns|stock-takes|business-types|auth/).*$')->name('spa');
+    });
 });
-
-// Keep API routes in api.php, only web routes here
