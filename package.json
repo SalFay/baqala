@@ -4,9 +4,11 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "yarn --cwd resources/js/pos-app dev",
+    "build": "yarn --cwd resources/js/pos-app build",
+    "preview": "yarn --cwd resources/js/pos-app preview",
+    "dev:legacy": "vite",
+    "build:legacy": "vite build"
   },
   "dependencies": {
     "@ant-design/charts": "^2.0.0",
