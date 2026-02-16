@@ -8,10 +8,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class CustomerController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         $customers = Customer::query()
             ->when($request->search, function ($q, $term) {
@@ -26,19 +27,33 @@ class CustomerController extends Controller
             ->orderBy($request->sort_by ?? 'created_at', $request->sort_dir ?? 'desc')
             ->paginate($request->per_page ?? 20);
 
+        $customersData = $customers->map(fn($customer) => [
+            'id' => $customer->id,
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'full_name' => $customer->full_name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'loyalty_points' => $customer->loyalty_points,
+            'credit_balance' => $customer->credit_balance ?? 0,
+            'status' => $customer->status,
+            'created_at' => $customer->created_at,
+        ]);
+
+        // Return JSON for API requests (POS app)
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'data' => $customersData,
+                'current_page' => $customers->currentPage(),
+                'per_page' => $customers->perPage(),
+                'total' => $customers->total(),
+                'last_page' => $customers->lastPage(),
+            ]);
+        }
+
         return Inertia::render('Customers/Index', [
             'customers' => [
-                'data' => $customers->map(fn($customer) => [
-                    'id' => $customer->id,
-                    'first_name' => $customer->first_name,
-                    'last_name' => $customer->last_name,
-                    'full_name' => $customer->full_name,
-                    'email' => $customer->email,
-                    'phone' => $customer->phone,
-                    'loyalty_points' => $customer->loyalty_points,
-                    'status' => $customer->status,
-                    'created_at' => $customer->created_at,
-                ]),
+                'data' => $customersData,
                 'meta' => [
                     'total' => $customers->total(),
                     'per_page' => $customers->perPage(),
@@ -73,55 +88,81 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function show(Customer $customer): Response
+    public function show(Customer $customer, Request $request): Response|JsonResponse
     {
         $customer->load(['orders' => fn($q) => $q->latest()->limit(10)]);
 
+        $customerData = [
+            'id' => $customer->id,
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'full_name' => $customer->full_name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'address' => $customer->address,
+            'city' => $customer->city,
+            'loyalty_points' => $customer->loyalty_points,
+            'credit_limit' => $customer->credit_limit,
+            'credit_balance' => $customer->credit_balance ?? 0,
+            'status' => $customer->status,
+            'recent_orders' => $customer->orders->map(fn($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'total' => $order->total,
+                'status' => $order->status,
+                'created_at' => $order->created_at,
+            ]),
+            'created_at' => $customer->created_at,
+        ];
+
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['data' => $customerData]);
+        }
+
         return Inertia::render('Customers/Show', [
-            'customer' => [
-                'id' => $customer->id,
-                'first_name' => $customer->first_name,
-                'last_name' => $customer->last_name,
-                'full_name' => $customer->full_name,
-                'email' => $customer->email,
-                'phone' => $customer->phone,
-                'address' => $customer->address,
-                'city' => $customer->city,
-                'loyalty_points' => $customer->loyalty_points,
-                'credit_limit' => $customer->credit_limit,
-                'credit_balance' => $customer->credit_balance ?? 0,
-                'status' => $customer->status,
-                'recent_orders' => $customer->orders->map(fn($order) => [
-                    'id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'total' => $order->total,
-                    'status' => $order->status,
-                    'created_at' => $order->created_at,
-                ]),
-                'created_at' => $customer->created_at,
-            ],
+            'customer' => $customerData,
         ]);
     }
 
-    public function store(StoreCustomerRequest $request): RedirectResponse
+    public function store(StoreCustomerRequest $request): RedirectResponse|JsonResponse
     {
         $customer = Customer::create($request->validated());
+
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'data' => $customer,
+                'message' => 'Customer created successfully.',
+            ], 201);
+        }
 
         return redirect()->route('customers.index')
             ->with('success', 'Customer created successfully.');
     }
 
-    public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse|JsonResponse
     {
         $customer->update($request->validated());
+
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'data' => $customer->fresh(),
+                'message' => 'Customer updated successfully.',
+            ]);
+        }
 
         return redirect()->route('customers.index')
             ->with('success', 'Customer updated successfully.');
     }
 
-    public function destroy(Customer $customer): RedirectResponse
+    public function destroy(Customer $customer): RedirectResponse|JsonResponse
     {
         $customer->delete();
+
+        if (request()->wantsJson() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'message' => 'Customer deleted successfully.',
+            ]);
+        }
 
         return redirect()->route('customers.index')
             ->with('success', 'Customer deleted successfully.');

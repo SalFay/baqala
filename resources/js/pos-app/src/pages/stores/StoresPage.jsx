@@ -1,53 +1,55 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Table,
   Button,
+  Form,
   Input,
+  Select,
   Space,
   Tag,
-  Typography,
   message,
   Popconfirm,
-  Modal,
-  Form,
-  Switch,
-  Card,
   Row,
   Col,
+  Card,
   Statistic,
-  Tabs,
   Descriptions,
-  Select,
+  Tabs,
+  Table,
+  Switch,
+  Typography,
 } from 'antd';
 import {
-  PlusOutlined,
-  SearchOutlined,
   EditOutlined,
   DeleteOutlined,
-  ShopOutlined,
   EyeOutlined,
+  ShopOutlined,
   UserOutlined,
   EnvironmentOutlined,
   PhoneOutlined,
 } from '@ant-design/icons';
+import { DataGridTable } from '../../Components/DataGridTable';
+import CustomModal from '../../Components/CustomModal';
 import { storeService } from '../../api/services/store.service';
+import {
+  TIMEZONE_OPTIONS,
+  CURRENCY_OPTIONS,
+  DEFAULT_CURRENCY,
+  DEFAULT_TIMEZONE,
+  DEFAULT_LOW_STOCK_THRESHOLD,
+} from '../../constants';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function StoresPage() {
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [detailModal, setDetailModal] = useState(null);
-  const [editingStore, setEditingStore] = useState(null);
+  const gridRef = useRef(null);
   const [form] = Form.useForm();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [detailModal, setDetailModal] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const { data: stores, isLoading } = useQuery({
-    queryKey: ['stores', { search }],
-    queryFn: () => storeService.getStores({ search: search || undefined }),
-  });
-
+  // Store detail queries
   const { data: storeStats } = useQuery({
     queryKey: ['store-stats', detailModal?.id],
     queryFn: () => storeService.getStoreStats(detailModal.id),
@@ -60,222 +62,245 @@ export default function StoresPage() {
     enabled: !!detailModal,
   });
 
-  const createMutation = useMutation({
-    mutationFn: storeService.createStore,
-    onSuccess: () => {
-      message.success('Store created successfully');
-      queryClient.invalidateQueries({ queryKey: ['stores'] });
-      handleCloseModal();
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to create store');
-    },
-  });
+  // Fetch data for grid - stores don't support pagination
+  const fetchData = useCallback(async (params) => {
+    const result = await storeService.getStores({ search: params.search || undefined });
+    const data = Array.isArray(result) ? result : (result.data || []);
+    return {
+      data,
+      total: data.length,
+    };
+  }, []);
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => storeService.updateStore(id, data),
-    onSuccess: () => {
-      message.success('Store updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['stores'] });
-      handleCloseModal();
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to update store');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: storeService.deleteStore,
-    onSuccess: () => {
-      message.success('Store deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['stores'] });
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to delete store');
-    },
-  });
-
-  const toggleStatusMutation = useMutation({
-    mutationFn: storeService.toggleStatus,
-    onSuccess: () => {
-      message.success('Store status updated');
-      queryClient.invalidateQueries({ queryKey: ['stores'] });
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to update status');
-    },
-  });
-
-  const handleOpenModal = (store) => {
-    if (store) {
-      setEditingStore(store);
-      form.setFieldsValue(store);
-    } else {
-      setEditingStore(null);
-      form.resetFields();
-      form.setFieldsValue({
-        is_active: true,
-        is_warehouse: false,
-        currency_code: 'SAR',
-        timezone: 'Asia/Riyadh',
-      });
+  // Refresh grid
+  const handleRefresh = useCallback(() => {
+    if (gridRef.current?.reloadData) {
+      gridRef.current.reloadData();
     }
-    setModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setEditingStore(null);
+  // Open create modal
+  const handleCreate = useCallback(() => {
+    setEditingRecord(null);
     form.resetFields();
-  };
+    form.setFieldsValue({
+      is_active: true,
+      is_warehouse: false,
+      currency_code: DEFAULT_CURRENCY,
+      timezone: DEFAULT_TIMEZONE,
+    });
+    setModalVisible(true);
+  }, [form]);
 
-  const handleSubmit = (values) => {
-    if (editingStore) {
-      updateMutation.mutate({ id: editingStore.id, data: values });
-    } else {
-      createMutation.mutate(values);
+  // Open edit modal
+  const handleEdit = useCallback((record) => {
+    setEditingRecord(record);
+    form.setFieldsValue(record);
+    setModalVisible(true);
+  }, [form]);
+
+  // Close modal
+  const handleCancel = useCallback(() => {
+    setModalVisible(false);
+    setEditingRecord(null);
+    form.resetFields();
+  }, [form]);
+
+  // Submit form
+  const handleSubmit = useCallback(async (values) => {
+    setLoading(true);
+    try {
+      if (editingRecord) {
+        await storeService.updateStore(editingRecord.id, values);
+        message.success('Store updated successfully');
+      } else {
+        await storeService.createStore(values);
+        message.success('Store created successfully');
+      }
+      handleCancel();
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Operation failed');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [editingRecord, handleCancel, handleRefresh]);
 
-  const columns = [
+  // Delete store
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await storeService.deleteStore(id);
+      message.success('Store deleted successfully');
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Delete failed');
+    }
+  }, [handleRefresh]);
+
+  // Toggle status
+  const handleToggleStatus = useCallback(async (id) => {
+    try {
+      await storeService.toggleStatus(id);
+      message.success('Store status updated');
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Failed to update status');
+    }
+  }, [handleRefresh]);
+
+  // Column definitions for AG Grid (filterType is used by GlobalFilter)
+  const columns = useMemo(() => [
     {
-      title: 'Code',
-      dataIndex: 'code',
-      key: 'code',
-      width: 100,
-      render: (code) => <Tag>{code}</Tag>,
+      field: 'code',
+      headerName: 'Code',
+      minWidth: 100,
+      maxWidth: 100,
+      filterType: 'text',
+      cellRenderer: (params) => <Tag>{params.value}</Tag>,
     },
     {
-      title: 'Store',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name, record) => (
+      field: 'name',
+      headerName: 'Store',
+      minWidth: 200,
+      flex: 2,
+      filterType: 'text',
+      cellRenderer: (params) => (
         <Space>
           <ShopOutlined style={{ fontSize: 18 }} />
           <div>
-            <Text strong>{name}</Text>
-            {record.name_ar && (
+            <Text strong>{params.value}</Text>
+            {params.data.name_ar && (
               <div>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  {record.name_ar}
+                  {params.data.name_ar}
                 </Text>
               </div>
             )}
           </div>
-          {record.is_warehouse && <Tag color="purple">Warehouse</Tag>}
+          {params.data.is_warehouse && <Tag color="purple">Warehouse</Tag>}
         </Space>
       ),
     },
     {
-      title: 'Location',
-      key: 'location',
-      render: (_, record) => (
+      field: 'city',
+      headerName: 'Location',
+      minWidth: 180,
+      flex: 1,
+      filterType: 'text',
+      cellRenderer: (params) => (
         <Space direction="vertical" size={0}>
-          {record.city && (
+          {params.value && (
             <Space>
               <EnvironmentOutlined />
-              {record.city}
+              {params.value}
             </Space>
           )}
-          {record.phone && (
+          {params.data.phone && (
             <Space>
               <PhoneOutlined />
-              {record.phone}
+              {params.data.phone}
             </Space>
           )}
         </Space>
       ),
     },
     {
-      title: 'Manager',
-      dataIndex: 'manager_name',
-      key: 'manager_name',
-      render: (name) =>
-        name ? (
-          <Space>
-            <UserOutlined />
-            {name}
-          </Space>
-        ) : (
-          '-'
-        ),
+      field: 'manager_name',
+      headerName: 'Manager',
+      minWidth: 140,
+      flex: 1,
+      filterType: 'text',
+      cellRenderer: (params) => params.value ? (
+        <Space>
+          <UserOutlined />
+          {params.value}
+        </Space>
+      ) : '-',
     },
     {
-      title: 'Status',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      render: (isActive, record) => (
+      field: 'is_active',
+      headerName: 'Status',
+      minWidth: 100,
+      flex: 1,
+      filterType: 'select',
+      filterOptions: [
+        { value: true, label: 'Active' },
+        { value: false, label: 'Inactive' },
+      ],
+      cellRenderer: (params) => (
         <Tag
-          color={isActive ? 'green' : 'default'}
+          color={params.value ? 'green' : 'default'}
           style={{ cursor: 'pointer' }}
-          onClick={() => toggleStatusMutation.mutate(record.id)}
+          onClick={() => handleToggleStatus(params.data.id)}
         >
-          {isActive ? 'Active' : 'Inactive'}
+          {params.value ? 'Active' : 'Inactive'}
         </Tag>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 150,
-      render: (_, record) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} onClick={() => setDetailModal(record)} />
-          <Button type="text" icon={<EditOutlined />} onClick={() => handleOpenModal(record)} />
-          <Popconfirm
-            title="Delete Store"
-            description="Are you sure? This will affect all related inventory."
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  ], [handleToggleStatus]);
+
+  // Actions column
+  const actionsColumn = useMemo(() => ({
+    field: 'actions',
+    headerName: 'Actions',
+    minWidth: 140,
+    maxWidth: 140,
+    sortable: false,
+    cellRenderer: (params) => (
+      <Space>
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
+          onClick={() => setDetailModal(params.data)}
+        />
+        <Button
+          type="text"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(params.data)}
+        />
+        <Popconfirm
+          title="Delete this store?"
+          description="This will affect all related inventory."
+          onConfirm={() => handleDelete(params.data.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="text" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Space>
+    ),
+  }), [handleEdit, handleDelete]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          Stores
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
-          Add Store
-        </Button>
-      </div>
+    <div style={{ padding: 24 }}>
+      <DataGridTable
+        gridRef={gridRef}
+        columns={columns}
+        actionsColumn={actionsColumn}
+        fetchData={fetchData}
+        title="Stores"
+        onAdd={handleCreate}
+        addButtonText="Add Store"
+        searchPlaceholder="Search stores..."
+        height={500}
+        pageSize={50}
+        pagination={false}
+        showFilter={false}
+      />
 
-      <Card>
-        <Input
-          placeholder="Search stores by name, code, or city..."
-          prefix={<SearchOutlined />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 400, marginBottom: 16 }}
-          allowClear
-        />
-
-        <Table
-          dataSource={stores}
-          columns={columns}
-          rowKey="id"
-          loading={isLoading}
-          pagination={false}
-        />
-      </Card>
-
-      {/* Create/Edit Modal */}
-      <Modal
-        title={editingStore ? 'Edit Store' : 'New Store'}
-        open={modalOpen}
-        onCancel={handleCloseModal}
-        footer={null}
-        destroyOnClose
+      {/* Store Form Modal */}
+      <CustomModal
+        open={modalVisible}
+        onCancel={handleCancel}
+        title={editingRecord ? 'Edit Store' : 'Create Store'}
         width={650}
+        footer={null}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+        >
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
@@ -334,20 +359,12 @@ export default function StoresPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="timezone" label="Timezone">
-                <Select>
-                  <Select.Option value="Asia/Riyadh">Asia/Riyadh (UTC+3)</Select.Option>
-                  <Select.Option value="Asia/Dubai">Asia/Dubai (UTC+4)</Select.Option>
-                  <Select.Option value="UTC">UTC</Select.Option>
-                </Select>
+                <Select options={TIMEZONE_OPTIONS} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="currency_code" label="Currency">
-                <Select>
-                  <Select.Option value="SAR">SAR - Saudi Riyal</Select.Option>
-                  <Select.Option value="AED">AED - UAE Dirham</Select.Option>
-                  <Select.Option value="USD">USD - US Dollar</Select.Option>
-                </Select>
+                <Select options={CURRENCY_OPTIONS} />
               </Form.Item>
             </Col>
           </Row>
@@ -365,45 +382,30 @@ export default function StoresPage() {
             </Col>
           </Row>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={handleCloseModal}>Cancel</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={createMutation.isPending || updateMutation.isPending}
-            >
-              {editingStore ? 'Update' : 'Create'}
-            </Button>
+          {/* Form Actions */}
+          <div style={{ textAlign: 'right', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <Space>
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                {editingRecord ? 'Update' : 'Create'} Store
+              </Button>
+            </Space>
           </div>
         </Form>
-      </Modal>
+      </CustomModal>
 
       {/* Detail Modal */}
-      <Modal
+      <CustomModal
+        open={!!detailModal}
+        onCancel={() => setDetailModal(null)}
         title={
           <Space>
             <ShopOutlined />
-            {detailModal?.name}
+            {detailModal?.name || ''}
           </Space>
         }
-        open={!!detailModal}
-        onCancel={() => setDetailModal(null)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModal(null)}>
-            Close
-          </Button>,
-          <Button
-            key="edit"
-            type="primary"
-            onClick={() => {
-              setDetailModal(null);
-              handleOpenModal(detailModal);
-            }}
-          >
-            Edit
-          </Button>,
-        ]}
         width={800}
+        footer={null}
       >
         {detailModal && (
           <Tabs
@@ -486,6 +488,18 @@ export default function StoresPage() {
                       </Descriptions.Item>
                       <Descriptions.Item label="Timezone">{detailModal.timezone || 'Asia/Riyadh'}</Descriptions.Item>
                     </Descriptions>
+
+                    <div style={{ marginTop: 16, textAlign: 'right' }}>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setDetailModal(null);
+                          handleEdit(detailModal);
+                        }}
+                      >
+                        Edit Store
+                      </Button>
+                    </div>
                   </div>
                 ),
               },
@@ -526,7 +540,7 @@ export default function StoresPage() {
                         dataIndex: 'quantity',
                         render: (qty, record) => (
                           <Text
-                            type={qty <= (record.low_stock_threshold || 5) ? 'danger' : undefined}
+                            type={qty <= (record.low_stock_threshold || DEFAULT_LOW_STOCK_THRESHOLD) ? 'danger' : undefined}
                             strong
                           >
                             {qty}
@@ -536,7 +550,7 @@ export default function StoresPage() {
                       {
                         title: 'Threshold',
                         dataIndex: 'low_stock_threshold',
-                        render: (val) => val || 5,
+                        render: (val) => val || DEFAULT_LOW_STOCK_THRESHOLD,
                       },
                     ]}
                     pagination={false}
@@ -546,7 +560,7 @@ export default function StoresPage() {
             ]}
           />
         )}
-      </Modal>
+      </CustomModal>
     </div>
   );
 }

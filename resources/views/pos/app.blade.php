@@ -8,7 +8,7 @@
     <link rel="icon" href="/favicon.ico">
     @routes
     @viteReactRefresh
-    @vite(['resources/js/pos/main.jsx'])
+    @vite(['resources/js/pos-app/src/main.jsx'])
 </head>
 <body>
     <div id="root"></div>

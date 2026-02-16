@@ -1,56 +1,43 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Table,
   Button,
+  Form,
   Input,
+  Select,
   Space,
   Tag,
-  Typography,
   message,
   Popconfirm,
-  Modal,
-  Form,
-  Select,
-  Card,
   Row,
   Col,
+  Card,
   Statistic,
   Descriptions,
   Tabs,
+  Table,
 } from 'antd';
 import {
-  PlusOutlined,
-  SearchOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
   PhoneOutlined,
   EnvironmentOutlined,
 } from '@ant-design/icons';
+import { DataGridTable } from '../../Components/DataGridTable';
+import CustomModal from '../../Components/CustomModal';
 import { vendorService } from '../../api/services/vendor.service';
-
-const { Title, Text } = Typography;
+import { STATUS_COLORS } from '../../constants';
 
 export default function VendorsPage() {
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [detailModal, setDetailModal] = useState(null);
-  const [editingVendor, setEditingVendor] = useState(null);
+  const gridRef = useRef(null);
   const [form] = Form.useForm();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [detailModal, setDetailModal] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const { data: vendorsData, isLoading } = useQuery({
-    queryKey: ['vendors', { search, page }],
-    queryFn: () =>
-      vendorService.getVendors({
-        search: search || undefined,
-        page,
-        per_page: 20,
-      }),
-  });
-
+  // Vendor detail queries
   const { data: vendorBalance } = useQuery({
     queryKey: ['vendor-balance', detailModal?.id],
     queryFn: () => vendorService.getVendorBalance(detailModal.id),
@@ -63,191 +50,188 @@ export default function VendorsPage() {
     enabled: !!detailModal,
   });
 
-  const createMutation = useMutation({
-    mutationFn: vendorService.createVendor,
-    onSuccess: () => {
-      message.success('Vendor created successfully');
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-      handleCloseModal();
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to create vendor');
-    },
-  });
+  // Fetch data for grid
+  const fetchData = useCallback(async (params) => {
+    const result = await vendorService.getVendors({
+      page: params.page,
+      per_page: params.per_page,
+      search: params.search,
+    });
+    return {
+      data: result.data || result,
+      total: result.total || (result.data?.length || 0),
+    };
+  }, []);
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => vendorService.updateVendor(id, data),
-    onSuccess: () => {
-      message.success('Vendor updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-      handleCloseModal();
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to update vendor');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: vendorService.deleteVendor,
-    onSuccess: () => {
-      message.success('Vendor deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to delete vendor');
-    },
-  });
-
-  const handleOpenModal = (vendor) => {
-    if (vendor) {
-      setEditingVendor(vendor);
-      form.setFieldsValue(vendor);
-    } else {
-      setEditingVendor(null);
-      form.resetFields();
-      form.setFieldsValue({ status: 'active' });
+  // Refresh grid
+  const handleRefresh = useCallback(() => {
+    if (gridRef.current?.reloadData) {
+      gridRef.current.reloadData();
     }
-    setModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setEditingVendor(null);
+  // Open create modal
+  const handleCreate = useCallback(() => {
+    setEditingRecord(null);
     form.resetFields();
-  };
+    form.setFieldsValue({ status: 'active' });
+    setModalVisible(true);
+  }, [form]);
 
-  const handleSubmit = (values) => {
-    if (editingVendor) {
-      updateMutation.mutate({ id: editingVendor.id, data: values });
-    } else {
-      createMutation.mutate(values);
+  // Open edit modal
+  const handleEdit = useCallback((record) => {
+    setEditingRecord(record);
+    form.setFieldsValue(record);
+    setModalVisible(true);
+  }, [form]);
+
+  // Close modal
+  const handleCancel = useCallback(() => {
+    setModalVisible(false);
+    setEditingRecord(null);
+    form.resetFields();
+  }, [form]);
+
+  // Submit form
+  const handleSubmit = useCallback(async (values) => {
+    setLoading(true);
+    try {
+      if (editingRecord) {
+        await vendorService.updateVendor(editingRecord.id, values);
+        message.success('Vendor updated successfully');
+      } else {
+        await vendorService.createVendor(values);
+        message.success('Vendor created successfully');
+      }
+      handleCancel();
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Operation failed');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [editingRecord, handleCancel, handleRefresh]);
 
-  const columns = [
+  // Delete vendor
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await vendorService.deleteVendor(id);
+      message.success('Vendor deleted successfully');
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Delete failed');
+    }
+  }, [handleRefresh]);
+
+  // Column definitions for AG Grid (filterType is used by GlobalFilter)
+  const columns = useMemo(() => [
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name) => <Text strong>{name}</Text>,
+      field: 'name',
+      headerName: 'Name',
+      minWidth: 180,
+      flex: 2,
+      filterType: 'text',
     },
     {
-      title: 'Mobile',
-      dataIndex: 'mobile',
-      key: 'mobile',
-      render: (mobile) =>
-        mobile ? (
-          <Space>
-            <PhoneOutlined />
-            {mobile}
-          </Space>
-        ) : (
-          '-'
-        ),
+      field: 'mobile',
+      headerName: 'Mobile',
+      minWidth: 140,
+      flex: 1,
+      filterType: 'text',
+      cellRenderer: (params) => params.value ? (
+        <Space>
+          <PhoneOutlined />
+          {params.value}
+        </Space>
+      ) : '-',
     },
     {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-      ellipsis: true,
-      render: (address) =>
-        address ? (
-          <Space>
-            <EnvironmentOutlined />
-            {address}
-          </Space>
-        ) : (
-          '-'
-        ),
+      field: 'address',
+      headerName: 'Address',
+      minWidth: 200,
+      flex: 2,
+      filterType: 'text',
+      cellRenderer: (params) => params.value ? (
+        <Space>
+          <EnvironmentOutlined />
+          <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+            {params.value}
+          </span>
+        </Space>
+      ) : '-',
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'default'}>
-          {status === 'active' ? 'Active' : 'Inactive'}
+      field: 'status',
+      headerName: 'Status',
+      minWidth: 100,
+      flex: 1,
+      filterType: 'select',
+      filterOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+      ],
+      cellRenderer: (params) => (
+        <Tag color={STATUS_COLORS[params.value] || 'default'}>
+          {params.value === 'active' ? 'Active' : 'Inactive'}
         </Tag>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 150,
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="text"
-            icon={<EyeOutlined />}
-            onClick={() => setDetailModal(record)}
-          />
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => handleOpenModal(record)}
-          />
-          <Popconfirm
-            title="Delete Vendor"
-            description="Are you sure you want to delete this vendor?"
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  ], []);
+
+  // Actions column
+  const actionsColumn = useMemo(() => ({
+    field: 'actions',
+    headerName: 'Actions',
+    minWidth: 140,
+    maxWidth: 140,
+    sortable: false,
+    cellRenderer: (params) => (
+      <Space>
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
+          onClick={() => setDetailModal(params.data)}
+        />
+        <Button
+          type="text"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(params.data)}
+        />
+        <Popconfirm
+          title="Delete this vendor?"
+          description="This action cannot be undone."
+          onConfirm={() => handleDelete(params.data.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="text" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Space>
+    ),
+  }), [handleEdit, handleDelete]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          Vendors
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
-          Add Vendor
-        </Button>
-      </div>
+    <div style={{ padding: 24 }}>
+      <DataGridTable
+        gridRef={gridRef}
+        columns={columns}
+        actionsColumn={actionsColumn}
+        fetchData={fetchData}
+        title="Vendors"
+        onAdd={handleCreate}
+        addButtonText="Add Vendor"
+        searchPlaceholder="Search vendors..."
+        height={600}
+        pageSize={20}
+      />
 
-      <Card>
-        <Input
-          placeholder="Search vendors by name, mobile, or address..."
-          prefix={<SearchOutlined />}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          style={{ width: 400, marginBottom: 16 }}
-          allowClear
-        />
-
-        <Table
-          dataSource={vendorsData?.data}
-          columns={columns}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            current: vendorsData?.current_page || page,
-            total: vendorsData?.total,
-            pageSize: vendorsData?.per_page || 20,
-            onChange: setPage,
-            showSizeChanger: false,
-            showTotal: (total) => `Total ${total} vendors`,
-          }}
-        />
-      </Card>
-
-      {/* Create/Edit Modal */}
-      <Modal
-        title={editingVendor ? 'Edit Vendor' : 'New Vendor'}
-        open={modalOpen}
-        onCancel={handleCloseModal}
-        footer={null}
-        destroyOnClose
+      {/* Vendor Form Modal */}
+      <CustomModal
+        open={modalVisible}
+        onCancel={handleCancel}
+        title={editingRecord ? 'Edit Vendor' : 'Create Vendor'}
         width={500}
+        footer={null}
       >
         <Form
           form={form}
@@ -258,16 +242,22 @@ export default function VendorsPage() {
           <Form.Item
             name="name"
             label="Vendor Name"
-            rules={[{ required: true, message: 'Please enter vendor name' }]}
+            rules={[{ required: true, message: 'Vendor name is required' }]}
           >
             <Input placeholder="Enter vendor name" />
           </Form.Item>
 
-          <Form.Item name="mobile" label="Mobile Number">
+          <Form.Item
+            name="mobile"
+            label="Mobile Number"
+          >
             <Input placeholder="Enter mobile number" />
           </Form.Item>
 
-          <Form.Item name="address" label="Address">
+          <Form.Item
+            name="address"
+            label="Address"
+          >
             <Input.TextArea rows={3} placeholder="Enter address" />
           </Form.Item>
 
@@ -282,40 +272,25 @@ export default function VendorsPage() {
             </Select>
           </Form.Item>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={handleCloseModal}>Cancel</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={createMutation.isPending || updateMutation.isPending}
-            >
-              {editingVendor ? 'Update' : 'Create'}
-            </Button>
+          {/* Form Actions */}
+          <div style={{ textAlign: 'right', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <Space>
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                {editingRecord ? 'Update' : 'Create'} Vendor
+              </Button>
+            </Space>
           </div>
         </Form>
-      </Modal>
+      </CustomModal>
 
       {/* Detail Modal */}
-      <Modal
-        title={`Vendor Details - ${detailModal?.name}`}
+      <CustomModal
         open={!!detailModal}
         onCancel={() => setDetailModal(null)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModal(null)}>
-            Close
-          </Button>,
-          <Button
-            key="edit"
-            type="primary"
-            onClick={() => {
-              setDetailModal(null);
-              handleOpenModal(detailModal);
-            }}
-          >
-            Edit
-          </Button>,
-        ]}
+        title={`Vendor Details - ${detailModal?.name || ''}`}
         width={700}
+        footer={null}
       >
         {detailModal && (
           <Tabs
@@ -351,7 +326,7 @@ export default function VendorsPage() {
                       <Descriptions.Item label="Mobile">{detailModal.mobile || '-'}</Descriptions.Item>
                       <Descriptions.Item label="Address">{detailModal.address || '-'}</Descriptions.Item>
                       <Descriptions.Item label="Status">
-                        <Tag color={detailModal.status === 'active' ? 'green' : 'default'}>
+                        <Tag color={STATUS_COLORS[detailModal.status] || 'default'}>
                           {detailModal.status}
                         </Tag>
                       </Descriptions.Item>
@@ -359,6 +334,18 @@ export default function VendorsPage() {
                         {new Date(detailModal.created_at).toLocaleDateString()}
                       </Descriptions.Item>
                     </Descriptions>
+
+                    <div style={{ marginTop: 16, textAlign: 'right' }}>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setDetailModal(null);
+                          handleEdit(detailModal);
+                        }}
+                      >
+                        Edit Vendor
+                      </Button>
+                    </div>
                   </div>
                 ),
               },
@@ -391,7 +378,7 @@ export default function VendorsPage() {
             ]}
           />
         )}
-      </Modal>
+      </CustomModal>
     </div>
   );
 }

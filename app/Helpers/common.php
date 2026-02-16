@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\InventoryStatus;
 use App\Models\Account;
 use App\Models\Bank;
 use App\Models\Category;
@@ -26,7 +27,7 @@ function format_date( $format = 'm/d/Y', $date = 'now' )
 function StockChecking( $id, $stock )
 {
   $stockCount = Inventory::where( 'product_id', $id )
-                         ->where( 'status', 'Available' )->count();
+                         ->where( 'status', InventoryStatus::AVAILABLE->value )->count();
   if( $stockCount !== null ) {
     if( $stockCount < $stock ) {
       return 0;
@@ -87,15 +88,15 @@ function calculateVat( $amount ) : float
 function stockSold( $id )
 {
   return Inventory::where( 'product_id', $id )
-                  ->where( 'status', 'Sold' )->count();
-  
+                  ->where( 'status', InventoryStatus::SOLD->value )->count();
+
 }// stock_count
 
 function stockReturn( $id )
 {
   return Inventory::where( 'product_id', $id )
-                  ->where( 'status', 'Returned Order' )->count();
-  
+                  ->where( 'status', InventoryStatus::ORDER_RETURNED->value )->count();
+
 }// stock_count
 
 function totalStock( $id )
@@ -179,9 +180,9 @@ function name( $type, $id )
 function averageCost( $id )
 {
   $stock = Inventory::where( 'product_id', $id )
-                    ->where( 'status', 'Available' )->count();
+                    ->where( 'status', InventoryStatus::AVAILABLE->value )->count();
   $amount = Inventory::where( 'product_id', $id )
-                     ->where( 'status', 'Available' )->sum( 'cost' );
+                     ->where( 'status', InventoryStatus::AVAILABLE->value )->sum( 'cost' );
   $cost = 0;
   if( $amount > 0 ) {
     $cost = round( $amount / $stock, 2 );

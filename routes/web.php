@@ -72,17 +72,15 @@ Route::middleware('auth')->group(function () {
     });
 
     // ==========================================
-    // Customers
+    // Customers - API routes only (UI handled by POS SPA)
     // ==========================================
-    Route::controller(CustomerController::class)->prefix('customers')->name('customers.')->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/{customer}', 'show')->name('show');
-        Route::get('/{customer}/edit', 'edit')->name('edit');
-        Route::put('/{customer}', 'update')->name('update');
-        Route::delete('/{customer}', 'destroy')->name('destroy');
-    });
+    // Note: GET routes commented out for V2 - SPA handles UI
+    // Route::controller(CustomerController::class)->prefix('customers')->name('customers.')->group(function () {
+    //     Route::get('/', 'index')->name('index');
+    //     Route::get('/create', 'create')->name('create');
+    //     Route::get('/{customer}', 'show')->name('show');
+    //     Route::get('/{customer}/edit', 'edit')->name('edit');
+    // });
 
     // ==========================================
     // Orders
@@ -187,6 +185,17 @@ Route::middleware('auth')->group(function () {
     // POS API Routes (JSON responses for React SPA)
     // ==========================================
     Route::prefix('pos')->name('pos.')->group(function () {
+
+        // ------------------------------------------
+        // POS: Customers CRUD
+        // ------------------------------------------
+        Route::controller(CustomerController::class)->prefix('customers')->name('customers.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{customer}', 'show')->name('show');
+            Route::put('/{customer}', 'update')->name('update');
+            Route::delete('/{customer}', 'destroy')->name('destroy');
+        });
 
         // ------------------------------------------
         // POS: Products & Cart
@@ -297,12 +306,13 @@ Route::middleware('auth')->group(function () {
             Route::post('/vendors/{vendor}/credits', 'addVendorCredit')->name('statements.vendor.credits.add');
         });
 
-        // ------------------------------------------
-        // POS SPA Catch-all (MUST be last)
-        // Excludes API paths: dashboard/*, cart/*, products, orders/*, etc.
-        // ------------------------------------------
-        Route::get('/{path?}', function () {
-            return view('pos.app');
-        })->where('path', '^(?!dashboard/|cart|products|orders/|customers/|vendors/|expenses|returns|stock-takes|business-types|auth/).*$')->name('spa');
     });
+
+    // ------------------------------------------
+    // V2: SPA Catch-all (MUST be last in auth group)
+    // Handles all UI routes - SPA takes over from here
+    // ------------------------------------------
+    Route::get('/{path?}', function () {
+        return view('pos.app');
+    })->where('path', '.*')->name('spa');
 });

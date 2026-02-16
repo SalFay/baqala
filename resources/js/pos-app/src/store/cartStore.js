@@ -7,6 +7,8 @@ export const useCartStore = create((set, get) => ({
   heldCarts: [],
   isLoading: false,
   error: null,
+  heldCartsLoading: false,
+  heldCartsError: null,
 
   fetchCart: async (storeId) => {
     try {
@@ -20,10 +22,10 @@ export const useCartStore = create((set, get) => ({
     }
   },
 
-  addItem: async (product, quantity = 1, variant = null) => {
+  addItem: async (product, quantity = 1, variant = null, storeId = null) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await cartService.addItem(product.id, quantity, variant?.id);
+      const response = await cartService.addItem(product.id, quantity, variant?.id, storeId);
       set({ cart: response.cart, summary: response.summary });
     } catch (error) {
       set({ error: error.message });
@@ -163,10 +165,13 @@ export const useCartStore = create((set, get) => ({
 
   fetchHeldCarts: async (storeId) => {
     try {
+      set({ heldCartsLoading: true, heldCartsError: null });
       const carts = await cartService.getHeldCarts(storeId);
       set({ heldCarts: carts });
     } catch (error) {
-      console.error('Failed to fetch held carts:', error);
+      set({ heldCartsError: error.message });
+    } finally {
+      set({ heldCartsLoading: false });
     }
   },
 
@@ -182,4 +187,7 @@ export const useCartStore = create((set, get) => ({
       set({ isLoading: false });
     }
   },
+
+  // Clear error state
+  clearError: () => set({ error: null, heldCartsError: null }),
 }));

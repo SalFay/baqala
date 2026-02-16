@@ -3,28 +3,44 @@
 namespace App\Enums;
 
 /**
- * Class InventoryStatus
- * @package App\Enums
+ * Inventory status enum for tracking product availability
  */
-class InventoryStatus
+enum InventoryStatus: string
 {
-  /**
-   *
-   */
-  public const AVAILABLE = 'Available';
-  
-  /**
-   *
-   */
-  public const SOLD = 'Sold';
-  
-  /**
-   *
-   */
-  public const VENDOR_RETURNED = 'Returned Vendor';
-  
-  /**
-   *
-   */
-  public const ORDER_RETURNED = 'Returned Order';
-}// InventoryStatus
+    case AVAILABLE = 'Available';
+    case SOLD = 'Sold';
+    case VENDOR_RETURNED = 'Returned Vendor';
+    case ORDER_RETURNED = 'Returned Order';
+
+    /**
+     * Get human-readable label
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::AVAILABLE => 'Available',
+            self::SOLD => 'Sold',
+            self::VENDOR_RETURNED => 'Returned to Vendor',
+            self::ORDER_RETURNED => 'Returned from Order',
+        };
+    }
+
+    /**
+     * Get all possible values as array
+     */
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * Get options for select dropdowns
+     */
+    public static function options(): array
+    {
+        return array_map(
+            fn(self $status) => ['value' => $status->value, 'label' => $status->label()],
+            self::cases()
+        );
+    }
+}

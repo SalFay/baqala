@@ -3,7 +3,8 @@ import api from '../axios';
 export const categoryService = {
   async getCategories(search) {
     const response = await api.get('/categories', { params: { search } });
-    return response.data;
+    // API returns { data: [...] }, unwrap to return the array directly
+    return response.data?.data || response.data || [];
   },
 
   async getCategory(id) {

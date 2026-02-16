@@ -1,6 +1,7 @@
 import { Button, List, InputNumber, Typography, Divider, Empty, Space } from 'antd';
 import { DeleteOutlined, UserOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { useCartStore } from '../../../store/cartStore';
+import { VAT_PERCENTAGE } from '../../../constants';
 
 const { Text, Title } = Typography;
 
@@ -102,7 +103,7 @@ export default function Cart({ onCheckout, onCustomerClick }) {
           <Text>{(summary?.subtotal || 0).toFixed(2)} SAR</Text>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <Text>Tax (VAT 15%)</Text>
+          <Text>Tax (VAT {VAT_PERCENTAGE}%)</Text>
           <Text>{(summary?.tax_amount || 0).toFixed(2)} SAR</Text>
         </div>
         {summary?.discount > 0 && (

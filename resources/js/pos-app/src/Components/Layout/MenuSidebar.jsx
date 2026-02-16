@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Drawer, Menu, Typography } from 'antd';
-import { useThemeStore } from '@/Helpers/atom';
+import { useThemeStore } from '../../Helpers/atom';
 
 const { Text } = Typography;
 

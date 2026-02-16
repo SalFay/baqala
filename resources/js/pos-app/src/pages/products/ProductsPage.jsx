@@ -1,196 +1,195 @@
-import { useState } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Table,
   Button,
-  Input,
-  Select,
   Space,
   Tag,
-  Typography,
   message,
   Popconfirm,
   Image,
 } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { DataGridTable } from '../../Components/DataGridTable';
 import { productService } from '../../api/services/product.service';
-import { categoryService } from '../../api/services/category.service';
-
-const { Title } = Typography;
+import { PRODUCT_TYPE_COLORS, STATUS_COLORS, formatCurrency } from '../../constants';
 
 export default function ProductsPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState(undefined);
-  const [page, setPage] = useState(1);
+  const gridRef = useRef(null);
 
-  const { data: productsData, isLoading } = useQuery({
-    queryKey: ['products', { search, categoryId, page }],
-    queryFn: () =>
-      productService.getProducts({
-        search: search || undefined,
-        category_id: categoryId,
-        page,
-        per_page: 20,
-      }),
-  });
+  // Fetch data for grid
+  const fetchData = useCallback(async (params) => {
+    const result = await productService.getProducts({
+      page: params.page,
+      per_page: params.per_page,
+      search: params.search,
+      ...params.filters,
+    });
+    return {
+      data: result.data || result,
+      total: result.total || (result.data?.length || 0),
+    };
+  }, []);
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoryService.getCategories(),
-  });
+  // Refresh grid
+  const handleRefresh = useCallback(() => {
+    if (gridRef.current?.reloadData) {
+      gridRef.current.reloadData();
+    }
+  }, []);
 
-  const deleteMutation = useMutation({
-    mutationFn: productService.deleteProduct,
-    onSuccess: () => {
-      message.success('Product deleted');
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-    },
-    onError: () => {
-      message.error('Failed to delete product');
-    },
-  });
+  // Delete product
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await productService.deleteProduct(id);
+      message.success('Product deleted successfully');
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Delete failed');
+    }
+  }, [handleRefresh]);
 
-  const columns = [
+  // Column definitions for AG Grid (filterType is used by GlobalFilter)
+  const columns = useMemo(() => [
     {
-      title: 'Image',
-      dataIndex: 'image',
-      key: 'image',
-      width: 80,
-      render: (image) => (
+      field: 'image',
+      headerName: '',
+      minWidth: 70,
+      maxWidth: 70,
+      sortable: false,
+      cellRenderer: (params) => (
         <Image
-          src={image}
+          src={params.value}
           alt="Product"
-          width={50}
-          height={50}
+          width={40}
+          height={40}
           style={{ objectFit: 'cover', borderRadius: 4 }}
           fallback="/assets/no-prod-image.jpg"
+          preview={false}
         />
       ),
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name, record) => (
+      field: 'name',
+      headerName: 'Product',
+      minWidth: 200,
+      flex: 2,
+      filterType: 'text',
+      cellRenderer: (params) => (
         <div>
-          <div>{name}</div>
-          {record.sku && (
+          <div>{params.value}</div>
+          {params.data.sku && (
             <Tag color="default" style={{ fontSize: 10 }}>
-              {record.sku}
+              {params.data.sku}
             </Tag>
           )}
         </div>
       ),
     },
     {
-      title: 'Category',
-      dataIndex: ['category', 'name'],
-      key: 'category',
+      field: 'category',
+      headerName: 'Category',
+      minWidth: 140,
+      flex: 1,
+      filterType: 'text',
+      valueGetter: (params) => params.data.category?.name || '-',
     },
     {
-      title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type) => (
-        <Tag color={type === 'variable' ? 'purple' : 'blue'}>{type}</Tag>
+      field: 'type',
+      headerName: 'Type',
+      minWidth: 100,
+      flex: 1,
+      cellRenderer: (params) => (
+        <Tag color={PRODUCT_TYPE_COLORS[params.value] || 'blue'}>
+          {params.value}
+        </Tag>
       ),
+      filterType: 'select',
+      filterOptions: [
+        { value: 'standard', label: 'Standard' },
+        { value: 'variable', label: 'Variable' },
+        { value: 'service', label: 'Service' },
+      ],
     },
     {
-      title: 'Purchase Price',
-      dataIndex: 'purchase_price',
-      key: 'purchase_price',
-      render: (val) => `${val.toFixed(2)} SAR`,
+      field: 'purchase_price',
+      headerName: 'Purchase',
+      minWidth: 100,
+      flex: 1,
+      valueFormatter: (params) => formatCurrency(params.value),
+      filterType: 'number',
     },
     {
-      title: 'Sale Price',
-      dataIndex: 'sale_price',
-      key: 'sale_price',
-      render: (val) => `${val.toFixed(2)} SAR`,
+      field: 'sale_price',
+      headerName: 'Sale',
+      minWidth: 100,
+      flex: 1,
+      valueFormatter: (params) => formatCurrency(params.value),
+      filterType: 'number',
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'default'}>{status}</Tag>
+      field: 'status',
+      headerName: 'Status',
+      minWidth: 100,
+      flex: 1,
+      cellRenderer: (params) => (
+        <Tag color={STATUS_COLORS[params.value] || 'default'}>
+          {params.value}
+        </Tag>
       ),
+      filterType: 'select',
+      filterOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+      ],
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/products/${record.id}/edit`)}
-          />
-          <Popconfirm
-            title="Delete this product?"
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  ], []);
+
+  // Actions column
+  const actionsColumn = useMemo(() => ({
+    field: 'actions',
+    headerName: 'Actions',
+    minWidth: 120,
+    maxWidth: 120,
+    sortable: false,
+    cellRenderer: (params) => (
+      <Space>
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
+          onClick={() => navigate(`/products/${params.data.id}`)}
+        />
+        <Button
+          type="text"
+          icon={<EditOutlined />}
+          onClick={() => navigate(`/products/${params.data.id}/edit`)}
+        />
+        <Popconfirm
+          title="Delete this product?"
+          description="This action cannot be undone."
+          onConfirm={() => handleDelete(params.data.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button type="text" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Space>
+    ),
+  }), [navigate, handleDelete]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          Products
-        </Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/products/new')}
-        >
-          Add Product
-        </Button>
-      </div>
-
-      <Space style={{ marginBottom: 16 }}>
-        <Input
-          placeholder="Search products..."
-          prefix={<SearchOutlined />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 250 }}
-          allowClear
-        />
-        <Select
-          placeholder="All Categories"
-          value={categoryId}
-          onChange={setCategoryId}
-          allowClear
-          style={{ width: 200 }}
-          options={categories.map((cat) => ({
-            label: cat.name,
-            value: cat.id,
-          }))}
-        />
-      </Space>
-
-      <Table
-        dataSource={productsData?.data}
+    <div style={{ padding: 24 }}>
+      <DataGridTable
+        gridRef={gridRef}
         columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{
-          current: productsData?.current_page,
-          total: productsData?.total,
-          pageSize: productsData?.per_page,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
+        actionsColumn={actionsColumn}
+        fetchData={fetchData}
+        title="Products"
+        onAdd={() => navigate('/products/new')}
+        addButtonText="Add Product"
+        searchPlaceholder="Search products..."
+        height={600}
+        pageSize={20}
       />
     </div>
   );

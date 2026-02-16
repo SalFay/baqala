@@ -10,7 +10,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.jsx',
-                'resources/js/pos/main.jsx',
+                'resources/js/pos-app/src/main.jsx',
             ],
             refresh: true,
         }),
@@ -91,16 +91,16 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': resolve(__dirname, 'resources/js'),
-            '@pos': resolve(__dirname, 'resources/js/pos'),
+            '@pos': resolve(__dirname, 'resources/js/pos-app/src'),
         },
     },
     build: {
         rollupOptions: {
             output: {
                 manualChunks: {
-                    vendor: ['react', 'react-dom'],
+                    vendor: ['react', 'react-dom', 'react-router-dom'],
                     antd: ['antd', '@ant-design/icons'],
-                    state: ['recoil', '@tanstack/react-query'],
+                    state: ['zustand', '@tanstack/react-query'],
                     inertia: ['@inertiajs/react'],
                 },
             },

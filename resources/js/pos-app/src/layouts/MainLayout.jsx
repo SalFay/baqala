@@ -9,11 +9,11 @@ import {
   SunOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
-import { useThemeStore, useMenuStore, useUIStore } from '@/Helpers/atom';
-import { useAuthStore } from '@/store/authStore';
-import { authService } from '@/api/services/auth.service';
-import useMenuManagement from '@/Hooks/useMenuManagement.jsx';
-import MenuSidebar from '@/Components/Layout/MenuSidebar';
+import { useThemeStore, useMenuStore, useUIStore } from '../Helpers/atom';
+import { useAuthStore } from '../store/authStore';
+import { authService } from '../api/services/auth.service';
+import useMenuManagement from '../Hooks/useMenuManagement.jsx';
+import MenuSidebar from '../Components/Layout/MenuSidebar';
 
 const { Header, Sider, Content } = Layout;
 const { useToken } = theme;

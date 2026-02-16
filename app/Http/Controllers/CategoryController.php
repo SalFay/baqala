@@ -60,7 +60,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -69,12 +69,19 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        Category::create($validated);
+        $category = Category::create($validated);
+
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'data' => $category,
+                'message' => 'Category created successfully.',
+            ], 201);
+        }
 
         return redirect()->back()->with('success', 'Category created successfully.');
     }
 
-    public function update(Request $request, Category $category): RedirectResponse
+    public function update(Request $request, Category $category): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -84,14 +91,27 @@ class CategoryController extends Controller
         ]);
 
         // Prevent setting parent to self or own children
-        if ($validated['parent_id']) {
+        if ($validated['parent_id'] ?? null) {
             $descendantIds = $this->getDescendantIds($category);
             if (in_array($validated['parent_id'], $descendantIds) || $validated['parent_id'] == $category->id) {
+                if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                    return response()->json([
+                        'message' => 'Cannot set parent to self or descendant.',
+                        'errors' => ['parent_id' => ['Cannot set parent to self or descendant.']],
+                    ], 422);
+                }
                 return redirect()->back()->withErrors(['parent_id' => 'Cannot set parent to self or descendant.']);
             }
         }
 
         $category->update($validated);
+
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'data' => $category->fresh(),
+                'message' => 'Category updated successfully.',
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Category updated successfully.');
     }
@@ -106,12 +126,18 @@ class CategoryController extends Controller
         return $ids;
     }
 
-    public function destroy(Category $category): RedirectResponse
+    public function destroy(Category $category): RedirectResponse|JsonResponse
     {
         // Move children to parent (or make them root)
         Category::where('parent_id', $category->id)->update(['parent_id' => $category->parent_id]);
 
         $category->delete();
+
+        if (request()->wantsJson() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'message' => 'Category deleted successfully.',
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Category deleted successfully.');
     }

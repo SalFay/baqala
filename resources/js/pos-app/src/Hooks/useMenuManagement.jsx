@@ -13,7 +13,7 @@ import {
   WalletOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
-import { useMenuStore } from '@/Helpers/atom';
+import { useMenuStore } from '../Helpers/atom';
 
 // Helper to create menu items - SparkCRM pattern
 const createMenuItem = (key, label, icon, children) => ({

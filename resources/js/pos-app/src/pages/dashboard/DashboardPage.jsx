@@ -9,6 +9,7 @@ import {
   WarningOutlined,
 } from '@ant-design/icons';
 import { dashboardService } from '../../api/services/dashboard.service';
+import { ORDER_STATUS_COLORS, DEFAULT_LOW_STOCK_THRESHOLD } from '../../constants';
 
 const { Title } = Typography;
 
@@ -50,14 +51,11 @@ export default function DashboardPage() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => {
-        const colors = {
-          completed: 'green',
-          pending: 'orange',
-          cancelled: 'red',
-        };
-        return <Tag color={colors[status] || 'default'}>{(status || 'unknown').toUpperCase()}</Tag>;
-      },
+      render: (status) => (
+        <Tag color={ORDER_STATUS_COLORS[status] || 'default'}>
+          {(status || 'unknown').toUpperCase()}
+        </Tag>
+      ),
     },
   ];
 
@@ -72,7 +70,7 @@ export default function DashboardPage() {
       dataIndex: 'quantity',
       key: 'quantity',
       render: (qty) => (
-        <span style={{ color: qty <= 0 ? 'red' : qty <= 5 ? 'orange' : 'inherit' }}>
+        <span style={{ color: qty <= 0 ? 'red' : qty <= DEFAULT_LOW_STOCK_THRESHOLD ? 'orange' : 'inherit' }}>
           {qty}
         </span>
       ),
@@ -81,7 +79,7 @@ export default function DashboardPage() {
       title: 'Threshold',
       dataIndex: 'low_stock_threshold',
       key: 'threshold',
-      render: (val) => val || 5,
+      render: (val) => val || DEFAULT_LOW_STOCK_THRESHOLD,
     },
   ];
 

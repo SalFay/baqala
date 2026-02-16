@@ -1,159 +1,235 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState, useCallback, useMemo } from 'react';
 import {
-  Table,
   Button,
-  Modal,
   Form,
   Input,
   Space,
-  Typography,
+  Tag,
   message,
   Popconfirm,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DataGridTable } from '../../Components/DataGridTable';
+import CustomModal from '../../Components/CustomModal';
 import { categoryService } from '../../api/services/category.service';
 
-const { Title } = Typography;
-
 export default function CategoriesPage() {
-  const queryClient = useQueryClient();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
+  const gridRef = useRef(null);
   const [form] = Form.useForm();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoryService.getCategories(),
-  });
+  // Fetch data for grid - wrap non-paginated API
+  const fetchData = useCallback(async (params) => {
+    const data = await categoryService.getCategories(params.search);
+    // Filter client-side if search provided (for non-paginated APIs)
+    let filtered = data;
+    if (params.search) {
+      const searchLower = params.search.toLowerCase();
+      filtered = data.filter(cat =>
+        cat.name?.toLowerCase().includes(searchLower) ||
+        cat.code?.toLowerCase().includes(searchLower)
+      );
+    }
+    return {
+      data: filtered,
+      total: filtered.length,
+    };
+  }, []);
 
-  const saveMutation = useMutation({
-    mutationFn: (data) =>
-      editingCategory
-        ? categoryService.updateCategory(editingCategory.id, data)
-        : categoryService.createCategory(data),
-    onSuccess: () => {
-      message.success(`Category ${editingCategory ? 'updated' : 'created'}`);
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setIsModalOpen(false);
-      setEditingCategory(null);
-      form.resetFields();
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to save category');
-    },
-  });
+  // Refresh grid
+  const handleRefresh = useCallback(() => {
+    if (gridRef.current?.reloadData) {
+      gridRef.current.reloadData();
+    }
+  }, []);
 
-  const deleteMutation = useMutation({
-    mutationFn: categoryService.deleteCategory,
-    onSuccess: () => {
-      message.success('Category deleted');
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-    },
-    onError: (error) => {
-      message.error(error.response?.data?.message || 'Failed to delete category');
-    },
-  });
-
-  const handleEdit = (category) => {
-    setEditingCategory(category);
-    form.setFieldsValue(category);
-    setIsModalOpen(true);
-  };
-
-  const handleAdd = () => {
-    setEditingCategory(null);
+  // Open create modal
+  const handleCreate = useCallback(() => {
+    setEditingRecord(null);
     form.resetFields();
-    setIsModalOpen(true);
-  };
+    setModalVisible(true);
+  }, [form]);
 
-  const columns = [
+  // Open edit modal
+  const handleEdit = useCallback((record) => {
+    setEditingRecord(record);
+    form.setFieldsValue(record);
+    setModalVisible(true);
+  }, [form]);
+
+  // Close modal
+  const handleCancel = useCallback(() => {
+    setModalVisible(false);
+    setEditingRecord(null);
+    form.resetFields();
+  }, [form]);
+
+  // Submit form
+  const handleSubmit = useCallback(async (values) => {
+    setLoading(true);
+    try {
+      if (editingRecord) {
+        await categoryService.updateCategory(editingRecord.id, values);
+        message.success('Category updated successfully');
+      } else {
+        await categoryService.createCategory(values);
+        message.success('Category created successfully');
+      }
+      handleCancel();
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Operation failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [editingRecord, handleCancel, handleRefresh]);
+
+  // Delete category
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await categoryService.deleteCategory(id);
+      message.success('Category deleted successfully');
+      handleRefresh();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Delete failed');
+    }
+  }, [handleRefresh]);
+
+  // Column definitions for AG Grid (filterType is used by GlobalFilter)
+  const columns = useMemo(() => [
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      field: 'name',
+      headerName: 'Name',
+      minWidth: 200,
+      flex: 2,
+      filterType: 'text',
     },
     {
-      title: 'Code',
-      dataIndex: 'code',
-      key: 'code',
+      field: 'code',
+      headerName: 'Code',
+      minWidth: 120,
+      flex: 1,
+      filterType: 'text',
+      cellRenderer: (params) => params.value ? <Tag>{params.value}</Tag> : '-',
     },
     {
-      title: 'Products',
-      dataIndex: 'products_count',
-      key: 'products_count',
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
-          <Popconfirm
-            title="Delete this category?"
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={record.products_count && record.products_count > 0}
-            />
-          </Popconfirm>
-        </Space>
+      field: 'products_count',
+      headerName: 'Products',
+      minWidth: 100,
+      flex: 1,
+      filterType: 'number',
+      cellRenderer: (params) => (
+        <Tag color={params.value > 0 ? 'blue' : 'default'}>
+          {params.value || 0}
+        </Tag>
       ),
     },
-  ];
+    {
+      field: 'description',
+      headerName: 'Description',
+      minWidth: 200,
+      flex: 2,
+      filterType: 'text',
+      cellRenderer: (params) => params.value || '-',
+    },
+  ], []);
+
+  // Actions column
+  const actionsColumn = useMemo(() => ({
+    field: 'actions',
+    headerName: 'Actions',
+    minWidth: 120,
+    maxWidth: 120,
+    sortable: false,
+    cellRenderer: (params) => (
+      <Space>
+        <Button
+          type="text"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(params.data)}
+        />
+        <Popconfirm
+          title="Delete this category?"
+          description="This cannot be undone. Products will be unassigned."
+          onConfirm={() => handleDelete(params.data.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            disabled={params.data.products_count > 0}
+          />
+        </Popconfirm>
+      </Space>
+    ),
+  }), [handleEdit, handleDelete]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          Categories
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          Add Category
-        </Button>
-      </div>
-
-      <Table
-        dataSource={categories}
+    <div style={{ padding: 24 }}>
+      <DataGridTable
+        gridRef={gridRef}
         columns={columns}
-        rowKey="id"
-        loading={isLoading}
+        actionsColumn={actionsColumn}
+        fetchData={fetchData}
+        title="Categories"
+        onAdd={handleCreate}
+        addButtonText="Add Category"
+        searchPlaceholder="Search categories..."
+        height={500}
+        pageSize={50}
         pagination={false}
       />
 
-      <Modal
-        title={editingCategory ? 'Edit Category' : 'Add Category'}
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onOk={() => form.submit()}
-        confirmLoading={saveMutation.isPending}
+      {/* Category Form Modal */}
+      <CustomModal
+        open={modalVisible}
+        onCancel={handleCancel}
+        title={editingRecord ? 'Edit Category' : 'Create Category'}
+        width={500}
+        footer={null}
       >
-        <Form form={form} layout="vertical" onFinish={(data) => saveMutation.mutate(data)}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+        >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter category name' }]}
+            label="Category Name"
+            rules={[{ required: true, message: 'Category name is required' }]}
           >
-            <Input />
+            <Input placeholder="Enter category name" />
           </Form.Item>
-          <Form.Item name="code" label="Code">
-            <Input />
+
+          <Form.Item
+            name="code"
+            label="Code"
+          >
+            <Input placeholder="Enter category code (optional)" />
           </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} />
+
+          <Form.Item
+            name="description"
+            label="Description"
+          >
+            <Input.TextArea rows={3} placeholder="Enter description (optional)" />
           </Form.Item>
+
+          {/* Form Actions */}
+          <div style={{ textAlign: 'right', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <Space>
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                {editingRecord ? 'Update' : 'Create'} Category
+              </Button>
+            </Space>
+          </div>
         </Form>
-      </Modal>
+      </CustomModal>
     </div>
   );
 }
