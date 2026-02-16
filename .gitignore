@@ -1,19 +1,14 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
-/resources/js/pos-app/node_modules
-/resources/js/pos-app/node_modules/*
-/public/pos
 /public/build
 /public/hot
+/public/pos
+resources/js/pos-app/node_modules/
 /public/storage
-/public/themes/default/*
+/public/reports
 /storage/*.key
 /storage/crm
-/storage/framework/sessions
-/storage/framework/views
-/storage/framework/cache
-/storage/framework/testing
 /vendor
 .env
 .env.backup
@@ -29,23 +24,10 @@ yarn-error.log
 /.vscode
 .codiumai
 *~
-.htaccess
+.DS_Store
 
-# Claude/AI settings
 .qodo
 tmpclaude-*
 .claude/settings.local.json
 claude.json
 .playwright-mcp/
-
-# Screenshots
-*.png
-
-# Nested node_modules
-**/node_modules
-
-# Reports
-/public/reports
-
-
-

@@ -37,6 +37,7 @@
     33 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
     34 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
     35 => 'Spatie\\Permission\\PermissionServiceProvider',
+    36 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
   ),
   'eager' => 
   array (
@@ -61,6 +62,7 @@
     18 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
     19 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
     20 => 'Spatie\\Permission\\PermissionServiceProvider',
+    21 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
   ),
   'deferred' => 
   array (
