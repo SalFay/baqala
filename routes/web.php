@@ -198,6 +198,38 @@ Route::middleware('auth')->group(function () {
         });
 
         // ------------------------------------------
+        // POS: Products CRUD
+        // ------------------------------------------
+        Route::controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{product}', 'edit')->name('show');
+            Route::put('/{product}', 'update')->name('update');
+            Route::delete('/{product}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Categories CRUD
+        // ------------------------------------------
+        Route::controller(CategoryController::class)->prefix('categories')->name('categories.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{category}', 'update')->name('update');
+            Route::delete('/{category}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Vendors CRUD
+        // ------------------------------------------
+        Route::controller(VendorController::class)->prefix('vendors')->name('vendors.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{vendor}', 'show')->name('show');
+            Route::put('/{vendor}', 'update')->name('update');
+            Route::delete('/{vendor}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
         // POS: Products & Cart
         // ------------------------------------------
         Route::controller(POSController::class)->group(function () {

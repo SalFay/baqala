@@ -2,12 +2,12 @@ import api from '../axios';
 
 export const productService = {
   async getProducts(filters = {}) {
-    const response = await api.get('/pos/products', { params: filters });
+    const response = await api.get(route('pos.products'), { params: filters });
     return response.data;
   },
 
   async getProduct(id) {
-    const response = await api.get(`/products/${id}`);
+    const response = await api.get(route('pos.products.show', { product: id }));
     return response.data;
   },
 
@@ -18,7 +18,7 @@ export const productService = {
         formData.append(key, value);
       }
     });
-    const response = await api.post('/products', formData, {
+    const response = await api.post(route('pos.products.store'), formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
@@ -32,33 +32,23 @@ export const productService = {
       }
     });
     formData.append('_method', 'PUT');
-    const response = await api.post(`/products/${id}`, formData, {
+    const response = await api.post(route('pos.products.show', { product: id }), formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   },
 
   async deleteProduct(id) {
-    await api.delete(`/products/${id}`);
+    await api.delete(route('pos.products.destroy', { product: id }));
   },
 
   async searchProducts(query) {
-    const response = await api.get('/pos/products', { params: { search: query } });
+    const response = await api.get(route('pos.products'), { params: { search: query } });
     return response.data.data;
   },
 
   async findByBarcode(barcode) {
-    const response = await api.get(`/products/barcode/${barcode}`);
-    return response.data;
-  },
-
-  async createVariant(productId, data) {
-    const response = await api.post(`/products/${productId}/variants`, data);
-    return response.data;
-  },
-
-  async updateVariant(productId, variantId, data) {
-    const response = await api.put(`/products/${productId}/variants/${variantId}`, data);
+    const response = await api.get(route('pos.cart.scan'), { params: { barcode } });
     return response.data;
   },
 };
