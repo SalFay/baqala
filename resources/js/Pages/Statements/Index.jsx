@@ -3,13 +3,13 @@ import { Typography, Card } from 'antd'
 
 const { Title } = Typography
 
-export default function Orders() {
+export default function Statements() {
   return (
     <>
-      <Head title="Orders" />
-      <Title level={3}>Orders</Title>
+      <Head title="Statements" />
+      <Title level={3}>Statements</Title>
       <Card>
-        <p>Orders management content goes here.</p>
+        <p>Statements content goes here.</p>
       </Card>
     </>
   )

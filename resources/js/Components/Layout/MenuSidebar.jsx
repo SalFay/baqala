@@ -1,95 +1,89 @@
-import { memo } from 'react';
-import { Drawer, Menu, Typography } from 'antd';
-import { useRecoilValue } from 'recoil';
-import { themeAtom } from '@/Helpers/atoms/uiAtom';
+import { memo } from 'react'
+import { Drawer, Menu, Typography } from 'antd'
+import { useRecoilValue } from 'recoil'
+import { themeAtom } from '@/Helpers/atom'
 
-const { Text } = Typography;
+const { Text } = Typography
 
 // Memoized MenuSidebar - SparkCRM pattern
 const MenuSidebar = memo(({
-    menuItems,
-    selectedKeys,
-    openKeys,
-    onOpenChange,
-    onClick,
-    collapsed,
-    isMobile,
-    drawerVisible,
-    onDrawerClose,
-    siderColor,
+  menuItems,
+  selectedKeys,
+  openKeys,
+  onOpenChange,
+  onClick,
+  collapsed,
+  isMobile,
+  drawerVisible,
+  onDrawerClose,
 }) => {
-    const currentTheme = useRecoilValue(themeAtom);
+  const currentTheme = useRecoilValue(themeAtom)
 
-    // Close drawer on mobile after menu click
-    const handleMobileMenuClick = (e) => {
-        onClick?.(e);
-        if (e.key && e.key.startsWith('/')) {
-            setTimeout(() => onDrawerClose?.(), 150);
-        }
-    };
-
-    if (isMobile) {
-        return (
-            <Drawer
-                placement="left"
-                onClose={onDrawerClose}
-                open={drawerVisible}
-                width="70%"
-                styles={{ body: { padding: 0 } }}
-            >
-                <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0' }}>
-                    <Text strong style={{ fontSize: 18 }}>Baqala POS</Text>
-                </div>
-                <Menu
-                    theme={currentTheme}
-                    mode="inline"
-                    selectedKeys={selectedKeys}
-                    openKeys={openKeys}
-                    onOpenChange={onOpenChange}
-                    onClick={handleMobileMenuClick}
-                    items={menuItems}
-                />
-            </Drawer>
-        );
+  // Close drawer on mobile after menu click
+  const handleMobileMenuClick = (e) => {
+    onClick?.(e)
+    if (e.key && e.key.startsWith('/')) {
+      setTimeout(() => onDrawerClose?.(), 150)
     }
+  }
 
+  if (isMobile) {
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ flex: 1, overflow: 'auto' }}>
-                <Menu
-                    theme={currentTheme}
-                    mode="inline"
-                    selectedKeys={selectedKeys}
-                    openKeys={openKeys}
-                    onOpenChange={onOpenChange}
-                    onClick={onClick}
-                    items={menuItems}
-                    inlineCollapsed={collapsed}
-                    style={{ border: 'none', background: siderColor }}
-                />
-            </div>
-            {!collapsed && (
-                <div style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f0f0f0' }}>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                        Baqala POS v2.0
-                    </Text>
-                </div>
-            )}
+      <Drawer
+        placement="left"
+        onClose={onDrawerClose}
+        open={drawerVisible}
+        width="70%"
+        styles={{ body: { padding: 0 } }}
+      >
+        <Menu
+          theme={currentTheme}
+          mode="inline"
+          selectedKeys={selectedKeys}
+          openKeys={openKeys}
+          onOpenChange={onOpenChange}
+          onClick={handleMobileMenuClick}
+          items={menuItems}
+        />
+      </Drawer>
+    )
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <Menu
+          theme={currentTheme}
+          mode="inline"
+          selectedKeys={selectedKeys}
+          openKeys={openKeys}
+          onOpenChange={onOpenChange}
+          onClick={onClick}
+          items={menuItems}
+          inlineCollapsed={collapsed}
+          style={{ border: 'none' }}
+        />
+      </div>
+      {!collapsed && (
+        <div style={{ padding: '10px', textAlign: 'center', borderTop: '1px solid #f0f0f0' }}>
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            Baqala POS v2.0
+          </Text>
         </div>
-    );
+      )}
+    </div>
+  )
 }, (prevProps, nextProps) => {
-    // Custom comparison - SparkCRM pattern
-    return (
-        prevProps.selectedKeys === nextProps.selectedKeys &&
-        prevProps.openKeys === nextProps.openKeys &&
-        prevProps.menuItems === nextProps.menuItems &&
-        prevProps.collapsed === nextProps.collapsed &&
-        prevProps.isMobile === nextProps.isMobile &&
-        prevProps.drawerVisible === nextProps.drawerVisible &&
-        prevProps.siderColor === nextProps.siderColor
-    );
-});
+  return (
+    prevProps.selectedKeys === nextProps.selectedKeys &&
+    prevProps.openKeys === nextProps.openKeys &&
+    prevProps.menuItems === nextProps.menuItems &&
+    prevProps.collapsed === nextProps.collapsed &&
+    prevProps.isMobile === nextProps.isMobile &&
+    prevProps.drawerVisible === nextProps.drawerVisible
+  )
+})
 
-MenuSidebar.displayName = 'MenuSidebar';
+MenuSidebar.displayName = 'MenuSidebar'
 
-export default MenuSidebar;
+export default MenuSidebar

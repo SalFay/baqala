@@ -1,122 +1,143 @@
-import { useCallback, useMemo } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { useCallback, useMemo } from 'react'
+import { Link, usePage } from '@inertiajs/react'
 import {
-    DashboardOutlined,
-    ShoppingCartOutlined,
-    AppstoreOutlined,
-    TeamOutlined,
-    ShopOutlined,
-    SwapOutlined,
-    FileTextOutlined,
-    BarChartOutlined,
-    SettingOutlined,
-    InboxOutlined,
-    ContactsOutlined,
-    SafetyCertificateOutlined,
-    UserOutlined,
-} from '@ant-design/icons';
-import { useRecoilState } from 'recoil';
-import { menuOpenKeysAtom, menuSelectedKeysAtom } from '@/Helpers/atoms/uiAtom';
+  DashboardOutlined,
+  ShoppingCartOutlined,
+  AppstoreOutlined,
+  UserOutlined,
+  ShoppingOutlined,
+  InboxOutlined,
+  BarChartOutlined,
+  SettingOutlined,
+  SwapOutlined,
+  WalletOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons'
+import { useRecoilState } from 'recoil'
+import { menuStateAtom } from '@/Helpers/atom'
 
 // Helper to create menu items - SparkCRM pattern
 const createMenuItem = (key, label, icon, children) => ({
-    key,
-    icon,
-    label,
-    children,
-});
+  key,
+  icon,
+  label,
+  children,
+})
 
 // Helper for route links
-const safeRouteLink = (path, label) => <Link href={path}>{label}</Link>;
+const routeLink = (path, label) => <Link href={path}>{label}</Link>
 
 const useMenuManagement = () => {
-    const { url } = usePage();
-    const [openKeys, setOpenKeys] = useRecoilState(menuOpenKeysAtom);
-    const [selectedKeys, setSelectedKeys] = useRecoilState(menuSelectedKeysAtom);
+  const { url } = usePage()
+  const [menuState, setMenuState] = useRecoilState(menuStateAtom)
+  const { openKeys } = menuState
 
-    const getMenuItems = useCallback(() => {
-        const items = [];
+  const getMenuItems = useCallback(() => {
+    const items = []
 
-        // Dashboard
-        items.push(
-            createMenuItem('/dashboard', safeRouteLink('/dashboard', 'Dashboard'), <DashboardOutlined />)
-        );
+    // Dashboard
+    items.push(
+      createMenuItem('/dashboard', routeLink('/dashboard', 'Dashboard'), <DashboardOutlined />)
+    )
 
-        // POS
-        items.push(
-            createMenuItem('/pos', safeRouteLink('/pos', 'Point of Sale'), <ShoppingCartOutlined />)
-        );
+    // POS
+    items.push(
+      createMenuItem('/pos', routeLink('/pos', 'Point of Sale'), <ShoppingCartOutlined />)
+    )
 
-        // Catalog
-        items.push(
-            createMenuItem('catalog', 'Catalog', <AppstoreOutlined />, [
-                createMenuItem('/products', safeRouteLink('/products', 'Products')),
-                createMenuItem('/categories', safeRouteLink('/categories', 'Categories')),
-            ])
-        );
+    // Products & Categories
+    items.push(
+      createMenuItem('products-group', 'Products', <AppstoreOutlined />, [
+        createMenuItem('/products', routeLink('/products', 'All Products')),
+        createMenuItem('/categories', routeLink('/categories', 'Categories')),
+      ])
+    )
 
-        // Sales
-        items.push(
-            createMenuItem('sales', 'Sales', <FileTextOutlined />, [
-                createMenuItem('/orders', safeRouteLink('/orders', 'Orders')),
-                createMenuItem('/customers', safeRouteLink('/customers', 'Customers')),
-            ])
-        );
+    // Customers
+    items.push(
+      createMenuItem('/customers', routeLink('/customers', 'Customers'), <UserOutlined />)
+    )
 
-        // Inventory
-        items.push(
-            createMenuItem('inventory', 'Inventory', <InboxOutlined />, [
-                createMenuItem('/inventory', safeRouteLink('/inventory', 'Stock Levels')),
-                createMenuItem('/purchase-orders', safeRouteLink('/purchase-orders', 'Purchase Orders')),
-                createMenuItem('/stock-transfers', safeRouteLink('/stock-transfers', 'Stock Transfers')),
-                createMenuItem('/vendors', safeRouteLink('/vendors', 'Vendors')),
-            ])
-        );
+    // Orders
+    items.push(
+      createMenuItem('orders-group', 'Orders', <ShoppingOutlined />, [
+        createMenuItem('/orders', routeLink('/orders', 'All Orders')),
+        createMenuItem('/returns', routeLink('/returns', 'Returns')),
+      ])
+    )
 
-        // Reports
-        items.push(
-            createMenuItem('/reports', safeRouteLink('/reports', 'Reports'), <BarChartOutlined />)
-        );
+    // Inventory
+    items.push(
+      createMenuItem('inventory-group', 'Inventory', <InboxOutlined />, [
+        createMenuItem('/inventory', routeLink('/inventory', 'Stock Levels')),
+        createMenuItem('/stock-takes', routeLink('/stock-takes', 'Stock Takes')),
+        createMenuItem('/purchase-orders', routeLink('/purchase-orders', 'Purchase Orders')),
+        createMenuItem('/stock-transfers', routeLink('/stock-transfers', 'Stock Transfers')),
+      ])
+    )
 
-        // Settings
-        items.push(
-            createMenuItem('settings', 'Settings', <SettingOutlined />, [
-                createMenuItem('/settings', safeRouteLink('/settings', 'General')),
-                createMenuItem('/users', safeRouteLink('/users', 'Users')),
-                createMenuItem('/roles', safeRouteLink('/roles', 'Roles')),
-                createMenuItem('/stores', safeRouteLink('/stores', 'Stores')),
-            ])
-        );
+    // Vendors
+    items.push(
+      createMenuItem('/vendors', routeLink('/vendors', 'Vendors'), <SwapOutlined />)
+    )
 
-        return items;
-    }, []);
+    // Reports
+    items.push(
+      createMenuItem('/reports', routeLink('/reports', 'Reports'), <BarChartOutlined />)
+    )
 
-    const handleMenuClick = useCallback((e) => {
-        const { key } = e;
-        setSelectedKeys([key]);
+    // Expenses
+    items.push(
+      createMenuItem('/expenses', routeLink('/expenses', 'Expenses'), <WalletOutlined />)
+    )
 
-        const menuItems = getMenuItems();
-        const parentKey = menuItems.find(item =>
-            item.children?.some(child => child.key === key)
-        )?.key;
+    // Statements
+    items.push(
+      createMenuItem('/statements', routeLink('/statements', 'Statements'), <FileTextOutlined />)
+    )
 
-        setOpenKeys(parentKey ? [parentKey] : []);
-    }, [getMenuItems, setSelectedKeys, setOpenKeys]);
+    // Settings
+    items.push(
+      createMenuItem('settings-group', 'Settings', <SettingOutlined />, [
+        createMenuItem('/settings', routeLink('/settings', 'General')),
+        createMenuItem('/users', routeLink('/users', 'Users')),
+        createMenuItem('/roles', routeLink('/roles', 'Roles')),
+        createMenuItem('/stores', routeLink('/stores', 'Stores')),
+      ])
+    )
 
-    const handleOpenChange = useCallback((keys) => {
-        const latestOpenKey = keys.find(key => !openKeys.includes(key));
-        setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
-    }, [openKeys, setOpenKeys]);
+    return items
+  }, [])
 
-    const menuItems = useMemo(() => getMenuItems(), [getMenuItems]);
+  const handleMenuClick = useCallback((e) => {
+    const { key } = e
+    setMenuState(prev => ({ ...prev, selectedKeys: [key] }))
 
-    return {
-        menuItems,
-        selectedKeys: [url],
-        openKeys,
-        handleMenuClick,
-        handleOpenChange,
-    };
-};
+    const menuItems = getMenuItems()
+    const parentKey = menuItems.find(item =>
+      item.children?.some(child => child.key === key)
+    )?.key
 
-export default useMenuManagement;
+    setMenuState(prev => ({ ...prev, openKeys: parentKey ? [parentKey] : [] }))
+  }, [getMenuItems, setMenuState])
+
+  const handleOpenChange = useCallback((keys) => {
+    const latestOpenKey = keys.find(key => !openKeys.includes(key))
+    setMenuState(prev => ({ ...prev, openKeys: latestOpenKey ? [latestOpenKey] : [] }))
+  }, [openKeys, setMenuState])
+
+  const menuItems = useMemo(() => getMenuItems(), [getMenuItems])
+
+  // Get current path from URL
+  const currentPath = '/' + (url?.split('?')[0] || '').replace(/^\//, '')
+
+  return {
+    menuItems,
+    selectedKeys: [currentPath],
+    openKeys,
+    handleMenuClick,
+    handleOpenChange,
+  }
+}
+
+export default useMenuManagement

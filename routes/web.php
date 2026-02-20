@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BusinessTypeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ExpenseController;
@@ -276,10 +277,28 @@ Route::middleware('auth')->group(function () {
     });
 
     // ==========================================
-    // SPA Catch-all (MUST be last)
-    // All UI routes are handled by React SPA
+    // Inertia Page Routes
     // ==========================================
-    Route::get('/{path?}', function () {
-        return view('pos.app');
-    })->where('path', '.*')->name('spa');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/pos', fn () => inertia('POS/Index'))->name('pos');
+    Route::get('/products', fn () => inertia('Products/Index'))->name('products.page');
+    Route::get('/categories', fn () => inertia('Categories/Index'))->name('categories.page');
+    Route::get('/customers', fn () => inertia('Customers/Index'))->name('customers.page');
+    Route::get('/orders', fn () => inertia('Orders/Index'))->name('orders.page');
+    Route::get('/returns', fn () => inertia('Returns/Index'))->name('returns.page');
+    Route::get('/inventory', fn () => inertia('Inventory/Index'))->name('inventory.page');
+    Route::get('/stock-takes', fn () => inertia('StockTakes/Index'))->name('stock-takes.page');
+    Route::get('/purchase-orders', fn () => inertia('PurchaseOrders/Index'))->name('purchase-orders.page');
+    Route::get('/stock-transfers', fn () => inertia('StockTransfers/Index'))->name('stock-transfers.page');
+    Route::get('/vendors', fn () => inertia('Vendors/Index'))->name('vendors.page');
+    Route::get('/reports', fn () => inertia('Reports/Index'))->name('reports.page');
+    Route::get('/expenses', fn () => inertia('Expenses/Index'))->name('expenses.page');
+    Route::get('/statements', fn () => inertia('Statements/Index'))->name('statements.page');
+    Route::get('/settings', fn () => inertia('Settings/Index'))->name('settings.page');
+    Route::get('/users', fn () => inertia('Users/Index'))->name('users.page');
+    Route::get('/roles', fn () => inertia('Roles/Index'))->name('roles.page');
+    Route::get('/stores', fn () => inertia('Stores/Index'))->name('stores.page');
+
+    // Redirect root to dashboard
+    Route::get('/', fn () => redirect()->route('dashboard'));
 });
