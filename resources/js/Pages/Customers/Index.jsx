@@ -1,5 +1,5 @@
-import { useRef, useState, useCallback } from 'react'
-import { Head, usePage } from '@inertiajs/react'
+import { useRef, useState } from 'react'
+import { Head } from '@inertiajs/react'
 import { Button, Dropdown, Modal, message } from 'antd'
 import {
   EditOutlined,
@@ -25,22 +25,6 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState(null)
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState(null)
-
-  // Fetch customers
-  const fetchCustomers = useCallback(async (params) => {
-    const response = await axios.get('/pos/customers', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-      },
-    })
-    return {
-      data: response.data.data,
-      total: response.data.total,
-    }
-  }, [])
 
   // Create mutation
   const createMutation = useMutation({
@@ -215,19 +199,6 @@ export default function Customers() {
     ),
   }
 
-  // Filter fields
-  const filterFields = [
-    {
-      field: 'status',
-      label: 'Status',
-      filterType: 'select',
-      options: [
-        { label: 'Active', value: 'active' },
-        { label: 'Inactive', value: 'inactive' },
-      ],
-    },
-  ]
-
   return (
     <>
       <Head title="Customers" />
@@ -248,15 +219,12 @@ export default function Customers() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchCustomers}
-        title="Customers"
-        searchPlaceholder="Search customers..."
-        actionsColumn={actionsColumn}
-        filterFields={filterFields}
+        routeName="pos.customers.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="customers"
         pageSize={20}
         height="calc(100vh - 260px)"
+        showSoftDeleted={false}
       />
 
       <CustomerFormModal

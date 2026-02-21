@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from 'react'
-import { Head, usePage } from '@inertiajs/react'
-import { Typography, Button, Dropdown, Modal, message, DatePicker } from 'antd'
+import { useRef, useState } from 'react'
+import { Head } from '@inertiajs/react'
+import { Typography, Button, Dropdown, Modal, message } from 'antd'
 import {
   EyeOutlined,
   CloseCircleOutlined,
@@ -9,7 +9,6 @@ import {
 } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
-import dayjs from 'dayjs'
 import DataGridTable from '@/Components/DataGridTable/DataGridTable'
 import StatusBadge from '@/Components/StatusBadge'
 import GlobalPageHeader from '@/Components/GlobalPageHeader'
@@ -17,10 +16,8 @@ import OrderDetailModal from './Components/OrderDetailModal'
 import { formatCurrency, formatDateTime } from '@/Helpers/formatters'
 
 const { Text } = Typography
-const { RangePicker } = DatePicker
 
 export default function Orders() {
-  const { filters } = usePage().props
   const gridRef = useRef()
 
   // Modal state
@@ -29,25 +26,6 @@ export default function Orders() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(null)
-
-  // Fetch orders
-  const fetchOrders = useCallback(async (params) => {
-    const response = await axios.get('/pos/orders', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-        payment_status: params.filterTree?.payment_status,
-        from_date: params.filterTree?.from_date,
-        to_date: params.filterTree?.to_date,
-      },
-    })
-    return {
-      data: response.data.data,
-      total: response.data.total,
-    }
-  }, [])
 
   // Cancel mutation
   const cancelMutation = useMutation({
@@ -187,30 +165,6 @@ export default function Orders() {
     ),
   }
 
-  // Filter fields
-  const filterFields = [
-    {
-      field: 'status',
-      label: 'Order Status',
-      filterType: 'select',
-      options: [
-        { label: 'Pending', value: 'pending' },
-        { label: 'Completed', value: 'completed' },
-        { label: 'Cancelled', value: 'cancelled' },
-      ],
-    },
-    {
-      field: 'payment_status',
-      label: 'Payment Status',
-      filterType: 'select',
-      options: [
-        { label: 'Paid', value: 'paid' },
-        { label: 'Unpaid', value: 'unpaid' },
-        { label: 'Partial', value: 'partial' },
-      ],
-    },
-  ]
-
   return (
     <>
       <Head title="Orders" />
@@ -223,12 +177,8 @@ export default function Orders() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchOrders}
-        title="Orders"
-        searchPlaceholder="Search orders..."
-        actionsColumn={actionsColumn}
-        filterFields={filterFields}
+        routeName="pos.orders.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="orders"
         pageSize={20}
         height="calc(100vh - 260px)"

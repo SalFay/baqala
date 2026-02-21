@@ -20,6 +20,57 @@ class StockTakeController extends Controller
     ) {}
 
     /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): JsonResponse
+    {
+        $store = Store::first();
+
+        $query = StockTake::with(['creator', 'category'])
+            ->forStore($store->id);
+
+        // Search
+        if ($request->search) {
+            $query->where('stock_take_number', 'like', "%{$request->search}%");
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $stockTakes = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($st) => [
+                'id' => $st->id,
+                'stock_take_number' => $st->stock_take_number,
+                'type' => $st->type,
+                'category' => $st->category?->name,
+                'status' => $st->status,
+                'items_count' => $st->items_count ?? 0,
+                'variance_count' => $st->variance_count ?? 0,
+                'created_by' => $st->creator?->name,
+                'created_at' => $st->created_at,
+                'completed_at' => $st->completed_at,
+            ]);
+
+        return response()->json([
+            'data' => $stockTakes,
+            'total' => $total,
+        ]);
+    }
+
+    /**
      * List stock takes with filters.
      */
     public function index(Request $request): JsonResponse

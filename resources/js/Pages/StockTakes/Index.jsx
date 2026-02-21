@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState } from 'react'
 import { Head } from '@inertiajs/react'
 import { Typography, Button, Dropdown, Modal, message, Form, Input, Select, DatePicker } from 'antd'
 import { EyeOutlined, MoreOutlined, PlusOutlined, CheckCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
@@ -19,18 +19,6 @@ export default function StockTakes() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedStockTake, setSelectedStockTake] = useState(null)
   const [form] = Form.useForm()
-
-  const fetchStockTakes = useCallback(async (params) => {
-    const response = await axios.get('/stock-takes', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-      },
-    })
-    return { data: response.data.data, total: response.data.meta?.total || 0 }
-  }, [])
 
   const createMutation = useMutation({
     mutationFn: (data) => axios.post('/stock-takes', data),
@@ -182,11 +170,8 @@ export default function StockTakes() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchStockTakes}
-        title="Stock Takes"
-        searchPlaceholder="Search stock takes..."
-        actionsColumn={actionsColumn}
+        routeName="pos.stock-takes.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="stock-takes"
         pageSize={20}
         height="calc(100vh - 260px)"

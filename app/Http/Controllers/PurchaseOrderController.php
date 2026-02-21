@@ -13,6 +13,52 @@ use Inertia\Response;
 
 class PurchaseOrderController extends Controller
 {
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = PurchaseOrder::with(['vendor', 'store', 'currentStatus']);
+
+        // Search
+        if ($request->search) {
+            $query->where('po_number', 'like', "%{$request->search}%");
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $orders = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($po) => [
+                'id' => $po->id,
+                'po_number' => $po->po_number,
+                'vendor' => $po->vendor?->name,
+                'store' => $po->store?->name,
+                'total' => $po->total,
+                'status' => $po->currentStatus?->code ?? $po->status,
+                'expected_date' => $po->expected_date,
+                'created_at' => $po->created_at,
+            ]);
+
+        return response()->json([
+            'data' => $orders,
+            'total' => $total,
+        ]);
+    }
+
     public function index(Request $request): Response
     {
         $orders = PurchaseOrder::query()

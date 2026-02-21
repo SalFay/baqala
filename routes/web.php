@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(CustomerController::class)->prefix('customers')->name('customers.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::post('/', 'store')->name('store');
             Route::get('/{customer}', 'show')->name('show');
             Route::put('/{customer}', 'update')->name('update');
@@ -81,6 +82,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(CategoryController::class)->prefix('categories')->name('categories.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::post('/', 'store')->name('store');
             Route::put('/{category}', 'update')->name('update');
             Route::delete('/{category}', 'destroy')->name('destroy');
@@ -91,6 +93,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(VendorController::class)->prefix('vendors')->name('vendors.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::post('/', 'store')->name('store');
             Route::get('/{vendor}', 'show')->name('show');
             Route::put('/{vendor}', 'update')->name('update');
@@ -123,6 +126,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/dashboard/recent-orders', 'dashboardRecentOrders')->name('dashboard.recent-orders');
             // Orders
             Route::get('/orders', 'orders')->name('orders.index');
+            Route::post('/orders/listing', 'ordersListing')->name('orders.listing');
             Route::get('/orders/today', 'todayOrders')->name('orders.today');
             Route::get('/orders/recent', 'recentOrders')->name('orders.recent');
             Route::get('/orders/{id}', 'orderDetail')->name('orders.show');
@@ -146,6 +150,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(ExpenseController::class)->prefix('expenses')->name('expenses.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::get('/summary', 'summary')->name('summary');
             Route::get('/categories', 'categories')->name('categories');
             Route::get('/categories/flat', 'categoriesFlat')->name('categories.flat');
@@ -165,6 +170,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(ReturnController::class)->prefix('returns')->name('returns.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::get('/reasons', 'reasons')->name('reasons');
             Route::get('/order/{order}', 'getReturnableItems')->name('returnable');
             Route::post('/', 'store')->name('store');
@@ -179,6 +185,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(StockTakeController::class)->prefix('stock-takes')->name('stock-takes.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::get('/summary', 'summary')->name('summary');
             Route::post('/', 'store')->name('store');
             Route::get('/{stockTake}', 'show')->name('show');
@@ -251,6 +258,7 @@ Route::middleware('auth')->group(function () {
     // ==========================================
     Route::controller(PurchaseOrderController::class)->prefix('purchase-orders')->name('purchase-orders.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::post('/listing', 'listing')->name('listing');
         Route::post('/', 'store')->name('store');
         Route::get('/{purchaseOrder}', 'show')->name('show');
         Route::put('/{purchaseOrder}', 'update')->name('update');
@@ -262,6 +270,7 @@ Route::middleware('auth')->group(function () {
     // ==========================================
     Route::controller(StockTransferController::class)->prefix('stock-transfers')->name('stock-transfers.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::post('/listing', 'listing')->name('listing');
         Route::post('/', 'store')->name('store');
         Route::get('/{stockTransfer}', 'show')->name('show');
         Route::post('/{stockTransfer}/ship', 'ship')->name('ship');

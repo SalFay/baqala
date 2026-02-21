@@ -1,7 +1,7 @@
-import { useRef, useState, useCallback } from 'react'
-import { Head, usePage } from '@inertiajs/react'
+import { useRef, useState } from 'react'
+import { Head } from '@inertiajs/react'
 import { Button, Dropdown, Modal, message, Form, Input, InputNumber, Select, DatePicker, Row, Col } from 'antd'
-import { EditOutlined, DeleteOutlined, MoreOutlined, PlusOutlined, EyeOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
@@ -18,19 +18,6 @@ export default function Expenses() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   const [form] = Form.useForm()
-
-  const fetchExpenses = useCallback(async (params) => {
-    const response = await axios.get('/expenses', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-        category_id: params.filterTree?.category_id,
-      },
-    })
-    return { data: response.data.data, total: response.data.meta?.total || 0 }
-  }, [])
 
   const createMutation = useMutation({
     mutationFn: (data) => axios.post('/expenses', data),
@@ -183,11 +170,8 @@ export default function Expenses() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchExpenses}
-        title="Expenses"
-        searchPlaceholder="Search expenses..."
-        actionsColumn={actionsColumn}
+        routeName="pos.expenses.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="expenses"
         pageSize={20}
         height="calc(100vh - 260px)"

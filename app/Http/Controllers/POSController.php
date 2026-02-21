@@ -386,6 +386,58 @@ class POSController extends Controller
         return response()->json($orders);
     }
 
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function ordersListing(Request $request): JsonResponse
+    {
+        $query = \App\Models\Order::with('customer:id,first_name,last_name');
+
+        // Search
+        if ($request->search) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('order_number', 'like', "%{$term}%")
+                    ->orWhereHas('customer', function ($q) use ($term) {
+                        $q->where('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%");
+                    });
+            });
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $orders = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'customer_name' => $order->customer?->full_name ?? 'Walk-in',
+                'total' => $order->total,
+                'current_status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'created_at' => $order->created_at,
+            ]);
+
+        return response()->json([
+            'data' => $orders,
+            'total' => $total,
+        ]);
+    }
+
     public function orderDetail($id): JsonResponse
     {
         $order = \App\Models\Order::with(['customer', 'items.product', 'payments'])

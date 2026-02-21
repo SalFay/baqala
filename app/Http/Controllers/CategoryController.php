@@ -11,6 +11,51 @@ use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): JsonResponse
+    {
+        $query = Category::withCount('products');
+
+        // Search
+        if ($request->search) {
+            $term = $request->search;
+            $query->where('name', 'like', "%{$term}%");
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderBy('sort_order')->orderBy('name');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $categories = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'parent_id' => $cat->parent_id,
+                'products_count' => $cat->products_count,
+                'is_active' => $cat->is_active,
+                'sort_order' => $cat->sort_order,
+            ]);
+
+        return response()->json([
+            'data' => $categories,
+            'total' => $total,
+        ]);
+    }
+
     public function index(Request $request): Response|JsonResponse
     {
         // Get categories with hierarchy
@@ -36,8 +81,8 @@ class CategoryController extends Controller
                 'is_active' => $cat->is_active,
             ]);
 
-        // Return JSON for API requests (POS app)
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        // Return JSON only for non-Inertia API requests
+        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest')) {
             return response()->json(['data' => $flatCategories]);
         }
 

@@ -1,7 +1,7 @@
-import { useRef, useState, useCallback } from 'react'
-import { Head, usePage } from '@inertiajs/react'
+import { useRef, useState } from 'react'
+import { Head } from '@inertiajs/react'
 import { Typography, Button, Dropdown, Modal, message, Form, Input, Select, DatePicker, Row, Col } from 'antd'
-import { EyeOutlined, MoreOutlined, PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { EyeOutlined, MoreOutlined, PlusOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
@@ -19,18 +19,6 @@ export default function PurchaseOrders() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedPO, setSelectedPO] = useState(null)
   const [form] = Form.useForm()
-
-  const fetchPurchaseOrders = useCallback(async (params) => {
-    const response = await axios.get('/purchase-orders', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-      },
-    })
-    return { data: response.data.data, total: response.data.meta?.total || 0 }
-  }, [])
 
   const createMutation = useMutation({
     mutationFn: (data) => axios.post('/purchase-orders', data),
@@ -189,11 +177,8 @@ export default function PurchaseOrders() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchPurchaseOrders}
-        title="Purchase Orders"
-        searchPlaceholder="Search purchase orders..."
-        actionsColumn={actionsColumn}
+        routeName="purchase-orders.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="purchase-orders"
         pageSize={20}
         height="calc(100vh - 260px)"

@@ -17,6 +17,55 @@ class ReturnController extends Controller
         protected ReturnService $returnService
     ) {}
 
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): JsonResponse
+    {
+        $store = Store::first();
+
+        $query = OrderReturn::with(['order', 'customer', 'processedBy'])
+            ->where('store_id', $store->id);
+
+        // Search
+        if ($request->search) {
+            $query->where('return_number', 'like', "%{$request->search}%");
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $returns = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($return) => [
+                'id' => $return->id,
+                'return_number' => $return->return_number,
+                'order_number' => $return->order?->order_number,
+                'customer' => $return->customer?->full_name,
+                'type' => $return->type,
+                'status' => $return->status,
+                'refund_amount' => $return->refund_amount,
+                'created_at' => $return->created_at,
+            ]);
+
+        return response()->json([
+            'data' => $returns,
+            'total' => $total,
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $store = Store::first();

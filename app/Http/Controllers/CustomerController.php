@@ -40,8 +40,8 @@ class CustomerController extends Controller
             'created_at' => $customer->created_at,
         ]);
 
-        // Return JSON for API requests (POS app)
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        // Return JSON only for non-Inertia API requests
+        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest')) {
             return response()->json([
                 'data' => $customersData,
                 'current_page' => $customers->currentPage(),
@@ -62,6 +62,65 @@ class CustomerController extends Controller
                 ],
             ],
             'filters' => $request->only(['search', 'status']),
+        ]);
+    }
+
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): JsonResponse
+    {
+        $query = Customer::query();
+
+        // Search
+        if ($request->search) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('first_name', 'like', "%{$term}%")
+                    ->orWhere('last_name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%");
+            });
+        }
+
+        // Soft deleted filter
+        if ($request->soft_deleted) {
+            $query->onlyTrashed();
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $customers = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($customer) => [
+                'id' => $customer->id,
+                'first_name' => $customer->first_name,
+                'last_name' => $customer->last_name,
+                'full_name' => $customer->full_name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'loyalty_points' => $customer->loyalty_points,
+                'credit_balance' => $customer->credit_balance ?? 0,
+                'status' => $customer->status,
+                'created_at' => $customer->created_at,
+            ]);
+
+        return response()->json([
+            'data' => $customers,
+            'total' => $total,
         ]);
     }
 

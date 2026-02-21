@@ -12,6 +12,51 @@ use Inertia\Response;
 
 class StockTransferController extends Controller
 {
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = StockTransfer::with(['fromStore', 'toStore', 'currentStatus']);
+
+        // Search
+        if ($request->search) {
+            $query->where('transfer_number', 'like', "%{$request->search}%");
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $transfers = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'transfer_number' => $t->transfer_number,
+                'from_store' => $t->fromStore?->name,
+                'to_store' => $t->toStore?->name,
+                'status' => $t->currentStatus?->code ?? $t->status,
+                'items_count' => $t->items_count,
+                'created_at' => $t->created_at,
+            ]);
+
+        return response()->json([
+            'data' => $transfers,
+            'total' => $total,
+        ]);
+    }
+
     public function index(Request $request): Response
     {
         $transfers = StockTransfer::query()

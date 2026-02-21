@@ -13,6 +13,57 @@ use Illuminate\Support\Facades\Storage;
 class ExpenseController extends Controller
 {
     /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): JsonResponse
+    {
+        $store = Store::first();
+
+        $query = Expense::with(['category', 'vendor', 'creator'])
+            ->forStore($store->id);
+
+        // Search
+        if ($request->search) {
+            $query->search($request->search);
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderBy('expense_date', 'desc');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $expenses = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($expense) => [
+                'id' => $expense->id,
+                'expense_date' => $expense->expense_date,
+                'category' => $expense->category?->name,
+                'vendor' => $expense->vendor?->name,
+                'amount' => $expense->amount,
+                'total' => $expense->total,
+                'status' => $expense->status,
+                'payment_method' => $expense->payment_method,
+                'description' => $expense->description,
+                'created_by' => $expense->creator?->name,
+            ]);
+
+        return response()->json([
+            'data' => $expenses,
+            'total' => $total,
+        ]);
+    }
+
+    /**
      * List expenses with filters.
      */
     public function index(Request $request): JsonResponse

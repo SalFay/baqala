@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState } from 'react'
 import { Head } from '@inertiajs/react'
 import { Typography, Button, Dropdown, Modal, message } from 'antd'
 import { EyeOutlined, MoreOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
@@ -15,18 +15,6 @@ export default function Returns() {
   const gridRef = useRef()
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedReturn, setSelectedReturn] = useState(null)
-
-  const fetchReturns = useCallback(async (params) => {
-    const response = await axios.get('/returns', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-      },
-    })
-    return { data: response.data.data, total: response.data.meta?.total || 0 }
-  }, [])
 
   const approveMutation = useMutation({
     mutationFn: (id) => axios.post(`/returns/${id}/approve`),
@@ -152,11 +140,8 @@ export default function Returns() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchReturns}
-        title="Returns"
-        searchPlaceholder="Search returns..."
-        actionsColumn={actionsColumn}
+        routeName="pos.returns.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="returns"
         pageSize={20}
         height="calc(100vh - 260px)"

@@ -1,5 +1,5 @@
-import { useRef, useState, useCallback } from 'react'
-import { Head, usePage } from '@inertiajs/react'
+import { useRef, useState } from 'react'
+import { Head } from '@inertiajs/react'
 import { Button, Dropdown, Modal, message, Form, Input, Select, Row, Col } from 'antd'
 import { EditOutlined, DeleteOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
@@ -16,18 +16,6 @@ export default function Vendors() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingVendor, setEditingVendor] = useState(null)
   const [form] = Form.useForm()
-
-  const fetchVendors = useCallback(async (params) => {
-    const response = await axios.get('/pos/vendors', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-      },
-    })
-    return { data: response.data.data, total: response.data.total }
-  }, [])
 
   const createMutation = useMutation({
     mutationFn: (data) => axios.post('/pos/vendors', data),
@@ -160,11 +148,8 @@ export default function Vendors() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchVendors}
-        title="Vendors"
-        searchPlaceholder="Search vendors..."
-        actionsColumn={actionsColumn}
+        routeName="pos.vendors.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="vendors"
         pageSize={20}
         height="calc(100vh - 260px)"

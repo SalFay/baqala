@@ -13,6 +13,61 @@ use Inertia\Response;
 
 class VendorController extends Controller
 {
+    /**
+     * Server-side listing for DataGridTable
+     */
+    public function listing(Request $request): JsonResponse
+    {
+        $query = Vendor::query();
+
+        // Search
+        if ($request->search) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%");
+            });
+        }
+
+        // Soft deleted filter
+        if ($request->soft_deleted) {
+            $query->onlyTrashed();
+        }
+
+        // Sorting
+        if ($request->sort && count($request->sort) > 0) {
+            foreach ($request->sort as $sort) {
+                $query->orderBy($sort['colId'], $sort['sort']);
+            }
+        } else {
+            $query->orderBy('name', 'asc');
+        }
+
+        $total = $query->count();
+        $page = $request->current ?? 1;
+        $pageSize = $request->pageSize ?? 20;
+
+        $vendors = $query
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(fn($vendor) => [
+                'id' => $vendor->id,
+                'name' => $vendor->name,
+                'email' => $vendor->email,
+                'phone' => $vendor->phone,
+                'address' => $vendor->address,
+                'status' => $vendor->status,
+                'created_at' => $vendor->created_at,
+            ]);
+
+        return response()->json([
+            'data' => $vendors,
+            'total' => $total,
+        ]);
+    }
+
     public function index(Request $request): Response|JsonResponse
     {
         $vendors = Vendor::query()

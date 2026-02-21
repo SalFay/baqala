@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState } from 'react'
 import { Head } from '@inertiajs/react'
-import { Typography, Button, Dropdown, Modal, message, Form, Input, Select, Table } from 'antd'
+import { Typography, Button, Dropdown, Modal, message, Form, Input, Select } from 'antd'
 import { EyeOutlined, MoreOutlined, PlusOutlined, CheckCircleOutlined, SendOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
@@ -18,18 +18,6 @@ export default function StockTransfers() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [form] = Form.useForm()
-
-  const fetchTransfers = useCallback(async (params) => {
-    const response = await axios.get('/stock-transfers', {
-      params: {
-        page: params.page,
-        per_page: params.per_page,
-        search: params.search,
-        status: params.filterTree?.status,
-      },
-    })
-    return { data: response.data.data, total: response.data.meta?.total || 0 }
-  }, [])
 
   const createMutation = useMutation({
     mutationFn: (data) => axios.post('/stock-transfers', data),
@@ -178,11 +166,8 @@ export default function StockTransfers() {
 
       <DataGridTable
         gridRef={gridRef}
-        columns={columns}
-        fetchData={fetchTransfers}
-        title="Stock Transfers"
-        searchPlaceholder="Search transfers..."
-        actionsColumn={actionsColumn}
+        routeName="stock-transfers.listing"
+        columns={[...columns, actionsColumn]}
         instanceId="stock-transfers"
         pageSize={20}
         height="calc(100vh - 260px)"

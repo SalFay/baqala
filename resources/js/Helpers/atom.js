@@ -3,7 +3,19 @@ import { atom, selector, useRecoilState } from 'recoil'
 // Theme atom - SparkCRM pattern
 const getInitialTheme = () => {
   if (typeof window === 'undefined') return 'light'
-  return localStorage.getItem('baqala-theme') || 'light'
+  const stored = localStorage.getItem('baqala-theme')
+  if (!stored) return 'light'
+  // Handle both simple string ('light'/'dark') and JSON format
+  if (stored === 'light' || stored === 'dark') return stored
+  try {
+    const parsed = JSON.parse(stored)
+    // Handle zustand-style format: {"state":{"theme":"dark"},"version":0}
+    if (parsed?.state?.theme) return parsed.state.theme
+    if (parsed?.theme) return parsed.theme
+  } catch {
+    // Not JSON, just use as-is or default to light
+  }
+  return 'light'
 }
 
 export const themeAtom = atom({
