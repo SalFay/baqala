@@ -1,14 +1,23 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AgGridReact } from 'ag-grid-react';
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AgGridReact } from 'ag-grid-react'
+import 'ag-grid-community/styles/ag-grid.css'
+import 'ag-grid-community/styles/ag-theme-alpine.css'
+import axios from 'axios'
 import {
   ModuleRegistry,
-  ClientSideRowModelModule,
   NumberFilterModule,
   TextFilterModule,
+  TooltipModule,
   ValidationModule,
-} from 'ag-grid-community';
+} from 'ag-grid-community'
+import {
+  AdvancedFilterModule,
+  ColumnMenuModule,
+  ContextMenuModule,
+  ExcelExportModule,
+  PaginationModule,
+  ServerSideRowModelModule,
+} from 'ag-grid-enterprise'
 import {
   Button,
   Checkbox,
@@ -21,432 +30,512 @@ import {
   Switch,
   theme,
   Typography,
-  Badge,
-} from 'antd';
-import {
-  FilterOutlined,
-  ReloadOutlined,
-  SettingOutlined,
-  MenuOutlined,
-  CloseOutlined,
-  DownloadOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import { useThemeStore } from '../../Helpers/atom';
-import GlobalFilter from '../GlobalFilter/GlobalFilter';
-import * as XLSX from 'xlsx';
+} from 'antd'
+import { IconFileExport, IconFilter, IconMenu2, IconReload, IconSettings, IconX } from '@tabler/icons-react'
+import usePermissions from '@/Helpers/Context/usePermissions.js'
+import { useRecoilValue } from 'recoil'
+import { themeAtom } from '@/Helpers/atom.js'
+import { handleApiError } from '@/Helpers/CONSTANT.js'
+import GlobalFilter from '@/Components/GlobalFilter.jsx'
+import useIsMobile from '@/Hooks/useIsMobile.js'
+import Button1 from '@/Components/Buttons/Button1.jsx'
+import '@css/ag-grid-custom.scss'
+import DataGridTableMobileView from '@/Components/DataGridTable/DataGridTableMobileView.jsx'
 
-const { Text } = Typography;
-const { useToken } = theme;
+const { Text } = Typography
 
-// Register AG Grid Community modules (required for v35+)
 ModuleRegistry.registerModules([
-  ClientSideRowModelModule,
+  PaginationModule,
   TextFilterModule,
   NumberFilterModule,
+  AdvancedFilterModule,
+  ColumnMenuModule,
+  ContextMenuModule,
+  ServerSideRowModelModule,
+  ExcelExportModule,
   ValidationModule,
-]);
+  TooltipModule,
+])
 
-/**
- * DataGridTable - AG Grid wrapper component (SparkCRM pattern)
- *
- * Features:
- * - Column visibility with localStorage persistence
- * - Export to Excel
- * - Global filter integration
- * - Mobile responsive with drawer
- * - Theme-aware styling (light/dark)
- * - Soft deleted toggle
- */
+const { useToken } = theme
+
+// Stable empty function to prevent re-renders when setIsActive is not provided
+const noop = () => {}
+
 const DataGridTable = ({
+  showResetFilter = true,
   gridRef,
+  routeName,
   columns = [],
-  fetchData,
+  setIsActive = noop,
   pageSize = 20,
   pagination = true,
-  height = '70vh',
-  title = 'Data',
-  onAdd,
-  addButtonText = 'Add New',
-  searchPlaceholder = 'Search...',
-  showSoftDeleted = false,
-  filterFields,
-  defaultHiddenColumns = [],
-  actionsColumn,
-  showSearch = true,
-  showFilters = true,
-  showExport = true,
-  showColumnSettings = true,
-  showActions = true,
+  paginationAutoPageSize = false,
+  suppressPaginationPanel = false,
+  enableCellTextSelection = true,
+  rowHeight = undefined,
   customParams = {},
+  args,
+  showSoftDeleted = true,
+  height = undefined,
+  width = undefined,
+  filterFields,
+  taskView = false,
+  compactView = false,
+  showModal,
+  defaultFilter,
   instanceId,
-  rowHeight = 48,
+  defaultHiddenColumns = [],
+  showActions = true
 }) => {
-  const { theme: currentTheme } = useThemeStore();
-  const { token } = useToken();
-  const themeClass = currentTheme === 'light' ? 'ag-theme-alpine' : 'ag-theme-alpine-dark';
-  const moduleName = instanceId || title.toLowerCase().replace(/\s+/g, '-');
-  const storageKey = `${moduleName}Filters`;
-  const columnVisibilityStorageKey = `${moduleName}ColumnVisibility`;
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  // Validate required props
+  if (!routeName) {
+    console.error('DataGridTable: routeName prop is required')
+  }
+  if (!columns || columns.length === 0) {
+    console.warn('DataGridTable: columns prop is empty or not provided')
+  }
 
-  const internalGridRef = useRef(null);
-  const [gridApi, setGridApi] = useState(null);
-  const [rowData, setRowData] = useState([]);
-  const [totalRows, setTotalRows] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
-  const searchRef = useRef('');
-  const [isSwitchChecked, setIsSwitchChecked] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [filterTree, setFilterTree] = useState({});
-  const filterTreeRef = useRef({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const searchTimeoutRef = useRef(null);
-
-  // Column visibility state with localStorage persistence
+  const currentTheme = useRecoilValue(themeAtom)
+  const { token } = useToken()
+  const themeClass = currentTheme === 'light' ? 'ag-theme-alpine' : 'ag-theme-alpine-dark'
+  const { hasPermission } = usePermissions()
+  const moduleName = routeName ? routeName.split('.')[0].replace(/-/g, ' ') : 'data'
+  const storageKey = instanceId ? `${instanceId}Filters` : `${moduleName}Filters`
+  const columnVisibilityStorageKey = instanceId ? `${instanceId}ColumnVisibility` : `${moduleName}ColumnVisibility`
+  const isMobile = useIsMobile()
+  const [mobileLoading, setMobileLoading] = useState(false)
+  const [gridApi, setGridApi] = useState(null)
+  const [searchInput, setSearchInput] = useState('')
+  const searchRef = useRef('')
+  const [isSwitchChecked, setIsSwitchChecked] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState(() => {
     try {
-      const stored = localStorage.getItem(columnVisibilityStorageKey);
-      if (stored) return JSON.parse(stored);
+      const stored = localStorage.getItem(columnVisibilityStorageKey)
+      if (stored) {
+        return JSON.parse(stored)
+      }
     } catch (error) {
-      console.error('Error loading column visibility:', error);
+      console.error('Error loading column visibility from localStorage:', error)
     }
-    const initialVisibility = {};
-    columns.forEach((col) => {
-      initialVisibility[col.field] = !defaultHiddenColumns.includes(col.field);
-    });
-    return initialVisibility;
-  });
 
+    const initialVisibility = {}
+    columns.forEach((col) => {
+      initialVisibility[col.field] = !defaultHiddenColumns.includes(col.field)
+    })
+    return initialVisibility
+  })
   const [allColumnsVisible, setAllColumnsVisible] = useState(() => {
-    return Object.values(visibleColumns).every((v) => v);
-  });
+    try {
+      const stored = localStorage.getItem(columnVisibilityStorageKey)
+      if (stored) {
+        const parsedVisibility = JSON.parse(stored)
+        return Object.values(parsedVisibility).every(v => v)
+      }
+    } catch (error) {
+      console.error('Error checking column visibility:', error)
+    }
+    return defaultHiddenColumns.length === 0
+  })
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
+  const [filterTree, setFilterTree] = useState(defaultFilter ? defaultFilter : {})
+  const [rowData, setRowData] = useState([])
+  const [totalRows, setTotalRows] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const isInitialMount = useRef(true)
+  const filterTreeRef = useRef({})
+  const switchRef = useRef(false)
+  const [showResetingFilter, setShowResetingFilter] = useState(showResetFilter)
 
   // Sync visibleColumns with columns prop
   useEffect(() => {
-    setVisibleColumns((prevVisibility) => {
-      const newVisibility = { ...prevVisibility };
-      let hasChanges = false;
+    setVisibleColumns(prevVisibility => {
+      const newVisibility = { ...prevVisibility }
+      let hasChanges = false
 
-      columns.forEach((col) => {
+      columns.forEach(col => {
         if (!(col.field in newVisibility)) {
-          newVisibility[col.field] = !defaultHiddenColumns.includes(col.field);
-          hasChanges = true;
+          newVisibility[col.field] = !defaultHiddenColumns.includes(col.field)
+          hasChanges = true
         }
-      });
+      })
 
-      Object.keys(newVisibility).forEach((field) => {
-        if (!columns.find((col) => col.field === field)) {
-          delete newVisibility[field];
-          hasChanges = true;
+      Object.keys(newVisibility).forEach(field => {
+        if (!columns.find(col => col.field === field)) {
+          delete newVisibility[field]
+          hasChanges = true
         }
-      });
+      })
 
       if (hasChanges) {
         try {
-          localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(newVisibility));
+          localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(newVisibility))
         } catch (error) {
-          console.error('Error saving column visibility:', error);
+          console.error('Error saving column visibility to localStorage:', error)
         }
       }
 
-      return hasChanges ? newVisibility : prevVisibility;
-    });
-  }, [columns, defaultHiddenColumns, columnVisibilityStorageKey]);
+      return hasChanges ? newVisibility : prevVisibility
+    })
+  }, [columns, defaultHiddenColumns, columnVisibilityStorageKey])
 
-  // Load stored filters
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsedFilters = JSON.parse(stored);
-        if (parsedFilters && Object.keys(parsedFilters).length > 0) {
-          setFilterTree(parsedFilters);
-          filterTreeRef.current = parsedFilters;
+    const loadStoredFilters = () => {
+      try {
+        let parsedFilters = null
+        if (defaultFilter) {
+          parsedFilters = defaultFilter
+        } else if (args) {
+          const nestedFormat = {
+            type: 'AND',
+            conditions: [
+              {
+                type: 'AND',
+                conditions: args.map((c) => ({
+                  field: c.column,
+                  operator: c.operator === '=' ? 'is' : c.operator,
+                  value: [String(c.value)],
+                })),
+              },
+            ],
+          }
+          parsedFilters = nestedFormat
+        } else {
+          const stored = localStorage.getItem(storageKey)
+          if (stored) {
+            parsedFilters = JSON.parse(stored)
+          }
         }
+
+        if (parsedFilters && Object.keys(parsedFilters).length > 0) {
+          setFilterTree(parsedFilters)
+          filterTreeRef.current = parsedFilters
+        }
+      } catch (error) {
+        console.error('Error loading stored filters:', error)
+        localStorage.removeItem(storageKey)
       }
-    } catch (error) {
-      console.error('Error loading stored filters:', error);
-      localStorage.removeItem(storageKey);
     }
-  }, [storageKey]);
 
-  // Build filter fields from columns if not provided
-  const resolvedFilterFields = useMemo(() => {
-    if (filterFields && Object.keys(filterFields).length > 0) return filterFields;
+    loadStoredFilters()
+  }, [storageKey, args, defaultFilter])
 
-    // Auto-generate filter fields from columns
-    return columns
-      .filter((col) => col.field && col.field !== 'actions' && col.filterType)
-      .map((col) => ({
-        field: col.field,
-        label: col.headerName || col.field,
-        filterType: col.filterType || 'text',
-        options: col.filterOptions || [],
-      }));
-  }, [filterFields, columns]);
+  const hasActiveFilters = useCallback((filterTree) => {
+    const refHasFilters = filterTreeRef.current &&
+      Object.keys(filterTreeRef.current).length > 0 &&
+      filterTreeRef.current.conditions?.length > 0
 
-  // Check if has filterable fields
-  const hasFilterableFields = useMemo(() => {
-    if (Array.isArray(resolvedFilterFields)) {
-      return resolvedFilterFields.length > 0;
+    const stateHasFilters = filterTree &&
+      Object.keys(filterTree).length > 0 &&
+      filterTree.conditions?.length > 0
+
+    if (refHasFilters || stateHasFilters) {
+      return true
     }
-    return (
-      Object.keys(resolvedFilterFields.DATES || {}).length > 0 ||
-      Object.keys(resolvedFilterFields.SELECTS || {}).length > 0 ||
-      Object.keys(resolvedFilterFields.RANGES || {}).length > 0 ||
-      Object.keys(resolvedFilterFields.TEXTS || {}).length > 0
-    );
-  }, [resolvedFilterFields]);
 
-  // Default column settings
-  const defaultColDef = useMemo(
-    () => ({
-      sortable: true,
-      resizable: true,
-      filter: false,
+    try {
+      const storedFilters = localStorage.getItem(storageKey)
+      if (storedFilters) {
+        const parsedFilters = JSON.parse(storedFilters)
+        return parsedFilters &&
+          Object.keys(parsedFilters).length > 0 &&
+          parsedFilters.conditions?.length > 0
+      }
+    } catch {
+      return false
+    }
+    return false
+  }, [storageKey])
+
+  const defaultColDef = useMemo(() => {
+    return {
       flex: 1,
       minWidth: 100,
-    }),
-    []
-  );
+    }
+  }, [])
 
-  // Filter columns by visibility
   const filteredColumns = useMemo(() => {
-    return columns
-      .filter((col) => visibleColumns[col.field] !== false && col.field !== 'actions')
-      .map((col) => ({ ...col, suppressHeaderMenuButton: true }));
-  }, [columns, visibleColumns]);
+    const columnsWithSuppressedMenu = columns.map(col => ({
+      ...col,
+      suppressHeaderMenuButton: true,
+    }))
+    return columnsWithSuppressedMenu.filter(col => visibleColumns[col.field] && col.field !== 'actions')
+  }, [columns, visibleColumns])
 
-  // Combine columns with actions column
-  const allColumns = useMemo(() => {
-    const cols = [...filteredColumns];
-    if (actionsColumn && visibleColumns.actions !== false) {
-      cols.push(actionsColumn);
-    }
-    return cols;
-  }, [filteredColumns, actionsColumn, visibleColumns]);
+  const actionsColumn = useMemo(() => {
+    return columns.find(col => col.field === 'actions')
+  }, [columns])
+  const showActionsColumn = !!actionsColumn && visibleColumns.actions !== false
 
-  // Fetch data function
-  const loadData = useCallback(
-    async (page = 1, search = '', filters = null) => {
-      if (!fetchData) return;
+  const hasFilterableFields = useMemo(() => {
+    const hasFilterFields = filterFields && (
+      Object.keys(filterFields.DATES || {}).length > 0 ||
+      Object.keys(filterFields.SELECTS || {}).length > 0 ||
+      Object.keys(filterFields.RANGES || {}).length > 0
+    )
+    const hasFilterableColumns = columns.some((col) => col.context?.filterType)
+    return hasFilterFields || hasFilterableColumns
+  }, [filterFields, columns])
 
-      setLoading(true);
-      try {
-        const params = {
-          page,
-          per_page: pageSize,
-          search: search || undefined,
-          soft_deleted: isSwitchChecked,
-          filterTree: filters || filterTreeRef.current,
-          ...customParams,
-        };
-
-        const result = await fetchData(params);
-        setRowData(result.data || []);
-        setTotalRows(result.total || 0);
-      } catch (error) {
-        console.error('DataGridTable fetch error:', error);
-        message.error('Failed to load data');
-        setRowData([]);
-        setTotalRows(0);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [fetchData, pageSize, customParams, isSwitchChecked]
-  );
-
-  // Initial load
-  useEffect(() => {
-    loadData(1, '', filterTreeRef.current);
-  }, []);
-
-  // Refresh function exposed via ref
-  const handleReload = useCallback(
-    (resetSearch = false, resetFilters = false) => {
-      if (resetSearch) {
-        searchRef.current = '';
-        setSearchInput('');
-      }
-      if (resetFilters) {
-        filterTreeRef.current = {};
-        setFilterTree({});
-        localStorage.removeItem(storageKey);
-      }
-      setCurrentPage(1);
-      loadData(1, resetSearch ? '' : searchRef.current, resetFilters ? {} : filterTreeRef.current);
-    },
-    [loadData, storageKey]
-  );
-
-  // Expose reload to parent via ref
-  useEffect(() => {
-    const ref = gridRef || internalGridRef;
-    if (ref) {
-      ref.current = {
-        reloadData: handleReload,
-        api: gridApi,
-        clearFilters: () => {
-          filterTreeRef.current = {};
-          setFilterTree({});
-          localStorage.removeItem(storageKey);
-          loadData(currentPage, searchRef.current, {});
-        },
-      };
-    }
-  }, [gridRef, gridApi, handleReload, storageKey, loadData, currentPage]);
-
-  // Check if has active filters
-  const hasActiveFilters = useMemo(() => {
-    return filterTree && Object.keys(filterTree).length > 0 && filterTree.conditions?.length > 0;
-  }, [filterTree]);
-
-  // Grid ready handler
-  const onGridReady = useCallback((params) => {
-    setGridApi(params.api);
-  }, []);
-
-  // Handle search with debounce
-  const handleSearchChange = useCallback(
-    (e) => {
-      const value = e.target.value;
-      setSearchInput(value);
-      searchRef.current = value;
-
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      searchTimeoutRef.current = setTimeout(() => {
-        setCurrentPage(1);
-        loadData(1, value, filterTreeRef.current);
-      }, 300);
-    },
-    [loadData]
-  );
-
-  // Soft deleted toggle
-  const handleSwitchChange = useCallback(
-    (checked) => {
-      setIsSwitchChecked(checked);
-      setCurrentPage(1);
-      loadData(1, searchRef.current, filterTreeRef.current);
-    },
-    [loadData]
-  );
-
-  // Filter reset
-  const handleFilterReset = useCallback(() => {
-    filterTreeRef.current = {};
-    setFilterTree({});
-    localStorage.removeItem(storageKey);
-    setCurrentPage(1);
-    loadData(1, searchRef.current, {});
-  }, [loadData, storageKey]);
-
-  // Export to Excel
-  const handleExport = useCallback(() => {
-    if (rowData.length === 0) {
-      message.warning('No data to export');
-      return;
+  const fetchData = useCallback(async (page = currentPage, sortModel = [], filterModel) => {
+    if (isMobile) {
+      setMobileLoading(true)
     }
     try {
-      const exportData = rowData.map((row) => {
-        const exportRow = {};
-        filteredColumns.forEach((col) => {
-          if (col.field && col.field !== 'actions') {
-            exportRow[col.headerName || col.field] = row[col.field];
-          }
-        });
-        return exportRow;
-      });
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, title);
-      XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}_export.xlsx`);
-      message.success('Export completed successfully!');
+      const response = await axios.post(route(routeName), {
+        ...args,
+        current: page,
+        pageSize: pageSize,
+        sort: sortModel,
+        filter: filterModel,
+        search: searchRef.current,
+        soft_deleted: switchRef.current,
+        ...customParams,
+        filterTree: filterTreeRef.current,
+      })
+      const { data, total } = response.data
+      setRowData(data || [])
+      setTotalRows(total || 0)
+      return { data, total }
     } catch (error) {
-      console.error('Export error:', error);
-      message.error('Export failed');
+      handleApiError(error)
+      return { data: [], total: 0 }
+    } finally {
+      if (isMobile) {
+        setMobileLoading(false)
+      }
     }
-  }, [rowData, filteredColumns, title]);
+  }, [routeName, pageSize, customParams, args, isMobile, currentPage])
 
-  // Handle pagination
-  const handlePageChange = useCallback(
-    (newPage) => {
-      setCurrentPage(newPage);
-      loadData(newPage, searchRef.current, filterTreeRef.current);
-    },
-    [loadData]
-  );
+  const createDataSource = useCallback(() => {
+    return {
+      getRows: async (params) => {
+        const page = params.request.startRow / pageSize + 1
+        const filterModel = params.request.filterModel
+        const sortModel = params.request.sortModel
+        params.api.setGridOption("loading", true)
 
-  // Column visibility toggle
-  const toggleColumnVisibility = useCallback(
-    (field) => {
-      const newVisibility = { ...visibleColumns, [field]: !visibleColumns[field] };
-      setVisibleColumns(newVisibility);
-      setAllColumnsVisible(Object.values(newVisibility).every((v) => v));
-      try {
-        localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(newVisibility));
-      } catch (error) {
-        console.error('Error saving column visibility:', error);
+        const { data, total } = await fetchData(page, sortModel, filterModel)
+        params.api.setGridOption("loading", false)
+        if (!data || data.length === 0 || total === 0) {
+          params.api.showNoRowsOverlay()
+          params.success({ rowData: [], rowCount: 0 })
+        } else {
+          params.api.setGridOption("loading", false)
+          params.success({ rowData: data, rowCount: total })
+        }
+      },
+    }
+  }, [fetchData, pageSize])
+
+  const onGridReady = useCallback((params) => {
+    setGridApi(params.api)
+    if (params.api) {
+      const datasource = createDataSource()
+      params.api.setGridOption('serverSideDatasource', datasource)
+    }
+  }, [createDataSource])
+
+  const refreshGrid = useCallback(() => {
+    if (isMobile) {
+      fetchData(currentPage, [])
+    } else if (gridApi) {
+      const datasource = createDataSource()
+      gridApi.setGridOption('serverSideDatasource', datasource)
+      gridApi.refreshServerSide({ purge: true })
+    }
+  }, [gridApi, createDataSource, isMobile, currentPage, fetchData])
+
+  const handleExport = async () => {
+    setExportLoading(true)
+    try {
+      const exportParams = {
+        ...args,
+        sort: [],
+        filter: {},
+        search: searchRef.current || '',
+        soft_deleted: switchRef.current || false,
+        ...customParams,
+        filterTree: filterTreeRef.current || {},
+        export: true,
       }
-    },
-    [visibleColumns, columnVisibilityStorageKey]
-  );
-
-  const toggleAllColumns = useCallback(
-    (checked) => {
-      const newVisibility = {};
-      columns.forEach((col) => {
-        newVisibility[col.field] = checked;
-      });
-      setVisibleColumns(newVisibility);
-      setAllColumnsVisible(checked);
-      try {
-        localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(newVisibility));
-      } catch (error) {
-        console.error('Error saving column visibility:', error);
+      const response = await axios.post(route(routeName), exportParams, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'text/csv,application/octet-stream',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'text/csv',
+      })
+      let filename = 'export.csv'
+      const contentDisposition = response.headers['content-disposition']
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '')
+        }
       }
-    },
-    [columns, columnVisibilityStorageKey]
-  );
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(link)
+      }, 100)
+      message.success('Export completed successfully!')
+    } catch (error) {
+      console.error('Export error:', error)
+      message.error('Export failed. Please try again.')
+      handleApiError(error)
+    } finally {
+      setExportLoading(false)
+    }
+  }
 
-  const resetColumnVisibility = useCallback(() => {
-    const newVisibility = {};
-    columns.forEach((col) => {
-      newVisibility[col.field] = !defaultHiddenColumns.includes(col.field);
-    });
-    setVisibleColumns(newVisibility);
-    setAllColumnsVisible(defaultHiddenColumns.length === 0);
-    localStorage.removeItem(columnVisibilityStorageKey);
-  }, [columns, defaultHiddenColumns, columnVisibilityStorageKey]);
+  const handleSearchChange = (event) => {
+    const value = event.target.value
+    setSearchInput(value)
+    searchRef.current = value
+    setShowResetingFilter(true)
+    setCurrentPage(1)
+    refreshGrid()
+  }
 
-  // Calculate pagination info
-  const totalPages = Math.ceil(totalRows / pageSize);
-  const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endRow = Math.min(currentPage * pageSize, totalRows);
-  const filterCount = filterTree?.conditions?.length || 0;
+  const handleSwitchChange = (checked) => {
+    setIsSwitchChecked(checked)
+    switchRef.current = checked
+    setIsActive(!checked)
+    setCurrentPage(1)
+    refreshGrid()
+  }
 
-  // Column settings content
+  const handleFilterReset = () => {
+    filterTreeRef.current = {}
+    setFilterTree({})
+    localStorage.removeItem(storageKey)
+    localStorage.removeItem(`${moduleName}Filters`)
+
+    if (gridApi && !isMobile) {
+      gridApi.setFilterModel(null)
+    }
+
+    setCurrentPage(1)
+    setShowResetingFilter(false)
+    refreshGrid()
+  }
+
+  const handleReload = useCallback((resetSearch = false, resetFilters = false) => {
+    if (resetSearch) {
+      searchRef.current = ''
+      setSearchInput('')
+    }
+    if (resetFilters) {
+      filterTreeRef.current = {}
+      setFilterTree({})
+      localStorage.removeItem(storageKey)
+      if (gridApi && !isMobile) {
+        gridApi.setFilterModel(null)
+      }
+    }
+    switchRef.current = false
+    setIsSwitchChecked(false)
+    setIsActive(true)
+    setCurrentPage(1)
+    refreshGrid()
+  }, [gridApi, storageKey, refreshGrid, setIsActive, isMobile])
+
+  useEffect(() => {
+    if (gridRef && gridRef.current) {
+      gridRef.current.reloadData = handleReload
+      gridRef.current.api = gridApi
+    }
+  }, [gridRef, gridApi, handleReload])
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      if (isMobile) {
+        fetchData(1)
+      } else if (gridApi) {
+        refreshGrid()
+      }
+    }
+  }, [gridApi, refreshGrid, isMobile, fetchData])
+
+  const toggleColumnVisibility = (field) => {
+    const newVisibility = {
+      ...visibleColumns,
+      [field]: !visibleColumns[field],
+    }
+    setVisibleColumns(newVisibility)
+    const allVisible = Object.values(newVisibility).every(v => v)
+    setAllColumnsVisible(allVisible)
+
+    try {
+      localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(newVisibility))
+    } catch (error) {
+      console.error('Error saving column visibility to localStorage:', error)
+    }
+  }
+
+  const toggleAllColumns = (checked) => {
+    const newVisibility = {}
+    columns.forEach(col => {
+      newVisibility[col.field] = checked
+    })
+    setVisibleColumns(newVisibility)
+    setAllColumnsVisible(checked)
+
+    try {
+      localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(newVisibility))
+    } catch (error) {
+      console.error('Error saving column visibility to localStorage:', error)
+    }
+  }
+
+  const resetColumnVisibility = () => {
+    const newVisibility = {}
+    columns.forEach(col => {
+      newVisibility[col.field] = !defaultHiddenColumns.includes(col.field)
+    })
+    setVisibleColumns(newVisibility)
+    setAllColumnsVisible(defaultHiddenColumns.length === 0)
+
+    try {
+      localStorage.removeItem(columnVisibilityStorageKey)
+    } catch (error) {
+      console.error('Error removing column visibility from localStorage:', error)
+    }
+  }
+
   const columnSettingsContent = (
     <div style={{ maxHeight: '400px', overflowY: 'auto', width: '250px' }}>
-      <div
-        style={{
-          padding: '8px 12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Checkbox checked={allColumnsVisible} onChange={(e) => toggleAllColumns(e.target.checked)}>
+      <div style={{
+        padding: '8px 12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <Checkbox
+          checked={allColumnsVisible}
+          onChange={(e) => toggleAllColumns(e.target.checked)}
+        >
           <strong>Column Display</strong>
         </Checkbox>
-        <Button type="text" onClick={resetColumnVisibility} size="small">
+        <Button
+          type="text"
+          onClick={resetColumnVisibility}
+          size="small"
+          title="Reset to default"
+        >
           Reset
         </Button>
       </div>
@@ -463,248 +552,270 @@ const DataGridTable = ({
         ))}
       </div>
     </div>
-  );
+  )
 
-  // Filter badge
   const FilterBadge = ({ onReset }) => (
     <Space>
-      {!isMobile && (
+      {!isMobile &&
         <Text type="secondary" style={{ fontSize: '12px' }}>
-          Filters active
+          Showing data based on your filters
         </Text>
-      )}
-      <Button size="small" icon={<CloseOutlined />} onClick={onReset}>
+      }
+      <Button
+        size="small"
+        icon={<IconX size={16} />}
+        onClick={onReset}
+      >
         Reset
       </Button>
     </Space>
-  );
+  )
+
+  const handleMobilePrev = useCallback(() => {
+    setCurrentPage((prev) => prev - 1)
+    fetchData(currentPage - 1)
+  }, [fetchData, currentPage])
+
+  const handleMobileNext = useCallback(() => {
+    setCurrentPage((prev) => prev + 1)
+    fetchData(currentPage + 1)
+  }, [fetchData, currentPage])
 
   return (
-    <Flex
-      vertical
-      style={{
-        background: currentTheme === 'dark' ? '#191919' : '#f6f6f6',
-        borderRadius: '10px',
-        padding: isMobile ? '10px' : '10px 20px',
-        border: `1px solid ${token.colorBorderSecondary}`,
-      }}
-    >
-      {/* Toolbar */}
-      {showActions && (
-        <Flex
-          justify="space-between"
-          align="center"
-          style={{ padding: isMobile ? '6px 0' : '10px 0', borderRadius: '8px 8px 0 0' }}
-          gap={10}
-          wrap={!isMobile}
-        >
-          {/* Left side - Search */}
-          {showSearch && (
+    <>
+      <Flex
+        vertical={true}
+        style={{
+          background: currentTheme === 'dark' ? '#191919' : '#f6f6f6',
+          borderRadius: '10px',
+          padding: '10px 20px',
+          border: `1px solid ${token.colorBorderSecondary}`,
+          margin: isMobile ? '10px' : 0
+        }}
+      >
+        {showActions &&
+          <Flex
+            justify={'space-between'}
+            align={'center'}
+            style={{
+              padding: isMobile ? '6px 0' : '10px 0',
+              borderRadius: '8px 8px 0 0',
+            }}
+            gap={10}
+            wrap={!isMobile && true}
+          >
             <Input
+              id="searchInput"
               value={searchInput}
               onChange={handleSearchChange}
-              placeholder={searchPlaceholder}
-              prefix={<SearchOutlined />}
-              style={{ width: isMobile ? '100%' : 250 }}
+              placeholder="Quick Search..."
+              style={{ width: 250 }}
               allowClear
               onClear={() => {
-                searchRef.current = '';
-                setSearchInput('');
-                setCurrentPage(1);
-                loadData(1, '', filterTreeRef.current);
+                searchRef.current = ''
+                setSearchInput('')
+                setCurrentPage(1)
+                refreshGrid()
               }}
             />
-          )}
-
-          {/* Right side - Actions */}
-          <div>
-            <Space wrap>
-              {hasActiveFilters && <FilterBadge onReset={handleFilterReset} />}
-
-              {!isMobile ? (
-                <>
-                  {showFilters && hasFilterableFields && (
-                    <Badge count={filterCount} size="small">
-                      <Button icon={<FilterOutlined />} onClick={() => setIsFilterModalVisible(true)}>
-                        Filter
-                      </Button>
-                    </Badge>
-                  )}
-                  <Button icon={<ReloadOutlined />} onClick={() => handleReload(true, true)} loading={loading}>
-                    Refresh
-                  </Button>
-                  {showExport && (
-                    <Button icon={<DownloadOutlined />} onClick={handleExport}>
-                      Export
-                    </Button>
-                  )}
-                  {showColumnSettings && (
+            <div>
+              <Space>
+                {!isMobile ? (
+                  <>
+                    {showResetingFilter && hasActiveFilters(filterTree) && (
+                      <FilterBadge onReset={handleFilterReset} />
+                    )}
+                    {hasFilterableFields && (
+                      <Button1
+                        icon={<IconFilter size={16} />}
+                        onClick={() => setIsFilterModalVisible(true)}
+                        title="Filters"
+                      />
+                    )}
+                    <Button1
+                      icon={<IconReload size={16} />}
+                      onClick={() => handleReload(true, true)}
+                      title="Refresh"
+                    />
+                    {hasPermission(`access export ${moduleName}`) && (
+                      <Button1
+                        icon={<IconFileExport size={16} />}
+                        onClick={handleExport}
+                        loading={exportLoading}
+                        title="Export to Excel"
+                      />
+                    )}
                     <Popover
                       content={columnSettingsContent}
                       title={null}
                       trigger="click"
                       placement="bottomRight"
+                      overlayStyle={{ padding: 0 }}
                     >
-                      <Button icon={<SettingOutlined />} />
+                      <Button1
+                        icon={<IconSettings size={16} />}
+                        title="Column Settings"
+                      />
                     </Popover>
-                  )}
-                  {onAdd && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-                      {addButtonText}
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <>
-                  {onAdd && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-                      Add
-                    </Button>
-                  )}
-                  <Button icon={<MenuOutlined />} onClick={() => setMobileMenuOpen(true)} />
-                </>
-              )}
+                  </>
+                ) : (
+                  <Button1
+                    icon={<IconMenu2 size={16} />}
+                    onClick={() => setMobileMenuOpen(true)}
+                    title="Options"
+                  />
+                )}
+                {showSoftDeleted && hasPermission(`access deleted ${moduleName}`) && (
+                  <Switch
+                    checked={isSwitchChecked}
+                    onChange={handleSwitchChange}
+                    title="Toggle Option"
+                    checkedChildren="Hide Deleted"
+                    unCheckedChildren="Show Deleted"
+                  />
+                )}
+              </Space>
+            </div>
+          </Flex>
+        }
 
-              {showSoftDeleted && (
-                <Switch
-                  checked={isSwitchChecked}
-                  onChange={handleSwitchChange}
-                  checkedChildren="Hide Deleted"
-                  unCheckedChildren="Show Deleted"
-                />
-              )}
-            </Space>
-          </div>
-        </Flex>
-      )}
-
-      {/* Mobile Menu Drawer */}
-      <Drawer
-        title="Table Options"
-        placement="bottom"
-        onClose={() => setMobileMenuOpen(false)}
-        open={mobileMenuOpen}
-        height="auto"
-        styles={{ body: { padding: '16px' } }}
-      >
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          {showFilters && hasFilterableFields && (
+        <Drawer
+          title="Table Options"
+          placement="bottom"
+          onClose={() => setMobileMenuOpen(false)}
+          open={mobileMenuOpen}
+          height="auto"
+          styles={{
+            body: { padding: '16px' },
+          }}
+        >
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            {hasFilterableFields && (
+              <Button
+                block
+                icon={<IconFilter size={16} />}
+                onClick={() => {
+                  setIsFilterModalVisible(true)
+                  setMobileMenuOpen(false)
+                }}
+              >
+                Apply Filters
+              </Button>
+            )}
             <Button
               block
-              icon={<FilterOutlined />}
+              icon={<IconReload size={16} />}
               onClick={() => {
-                setIsFilterModalVisible(true);
-                setMobileMenuOpen(false);
+                handleReload(true, true)
+                setMobileMenuOpen(false)
               }}
             >
-              Apply Filters
+              Reload Table
             </Button>
-          )}
-          <Button
-            block
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              handleReload(true, true);
-              setMobileMenuOpen(false);
-            }}
-          >
-            Reload Table
-          </Button>
-          {showExport && (
-            <Button
-              block
-              icon={<DownloadOutlined />}
-              onClick={() => {
-                handleExport();
-                setMobileMenuOpen(false);
+            {hasPermission(`access export ${moduleName}`) && (
+              <Button
+                block
+                icon={<IconFileExport size={16} />}
+                onClick={() => {
+                  handleExport()
+                  setMobileMenuOpen(false)
+                }}
+                loading={exportLoading}
+              >
+                Export to Excel
+              </Button>
+            )}
+            <Popover
+              content={columnSettingsContent}
+              title={null}
+              trigger="click"
+              placement="top"
+              overlayStyle={{ padding: 0 }}
+              onOpenChange={(visible) => {
+                if (!visible) setMobileMenuOpen(false)
               }}
             >
-              Export to Excel
-            </Button>
-          )}
-          {showColumnSettings && (
-            <Popover content={columnSettingsContent} title={null} trigger="click" placement="top">
-              <Button block icon={<SettingOutlined />}>
+              <Button
+                block
+                icon={<IconSettings size={16} />}
+              >
                 Column Settings
               </Button>
             </Popover>
-          )}
-        </Space>
-      </Drawer>
+          </Space>
+        </Drawer>
 
-      {/* AG Grid */}
-      <div style={{ width: '100%', height }}>
-        <AgGridReact
-          theme="legacy"
-          className={themeClass}
-          ref={gridRef || internalGridRef}
-          rowData={rowData}
-          columnDefs={allColumns}
-          defaultColDef={defaultColDef}
-          rowHeight={rowHeight}
-          headerHeight={48}
-          onGridReady={onGridReady}
-          suppressCellFocus={true}
-          animateRows={true}
-          domLayout="normal"
-          loading={loading}
-          overlayNoRowsTemplate={`<span style="padding: 10px; background-color: ${token.colorBgContainer}; border: 1px solid ${token.colorBorder}; border-radius: 4px;">No data found</span>`}
-          overlayLoadingTemplate='<span style="padding: 10px;">Loading...</span>'
-        />
-      </div>
+        {isMobile ? (
+          <DataGridTableMobileView
+            rowData={rowData}
+            filteredColumns={filteredColumns}
+            actionsColumn={actionsColumn}
+            showActionsColumn={showActionsColumn}
+            token={token}
+            theme={currentTheme}
+            pagination={pagination}
+            totalRows={totalRows}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            mobileLoading={mobileLoading}
+            onPrevPage={handleMobilePrev}
+            onNextPage={handleMobileNext}
+          />
+        ) : (
+          <div style={{ width: '100%', height: height ? height : '76vh' }}>
+            <AgGridReact
+              theme={'legacy'}
+              className={themeClass}
+              ref={gridRef}
+              defaultColDef={defaultColDef}
+              rowHeight={rowHeight}
+              columnDefs={filteredColumns.concat(actionsColumn ? [actionsColumn] : [])}
+              pagination={pagination}
+              paginationPageSize={pageSize}
+              rowModelType="serverSide"
+              cacheBlockSize={pageSize}
+              paginationAutoPageSize={paginationAutoPageSize}
+              onGridReady={onGridReady}
+              suppressPaginationPanel={suppressPaginationPanel}
+              enableCellTextSelection={enableCellTextSelection}
+              overlayNoRowsTemplate={`<span style="padding: 10px; background-color: ${token.colorBorderSecondary}; border: 1px solid ${token.colorBorder};">No data found</span>`}
+            />
+          </div>
+        )}
 
-      {/* Pagination */}
-      {pagination && (
-        <Flex justify="space-between" align="center" style={{ marginTop: 16 }}>
-          <Text type="secondary">
-            {totalRows === 0 ? 'No entries' : `Showing ${startRow} to ${endRow} of ${totalRows} entries`}
-          </Text>
-          {totalRows > 0 && (
-            <Space>
-              <Button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>
-                Previous
-              </Button>
-              <Text>
-                Page {currentPage} of {totalPages}
-              </Text>
-              <Button disabled={currentPage >= totalPages} onClick={() => handlePageChange(currentPage + 1)}>
-                Next
-              </Button>
-            </Space>
-          )}
-        </Flex>
-      )}
-
-      {/* Global Filter Modal */}
-      {showFilters && hasFilterableFields && (
-        <GlobalFilter
-          visible={isFilterModalVisible}
-          onCancel={() => setIsFilterModalVisible(false)}
-          onApply={(filters) => {
-            searchRef.current = '';
-            setSearchInput('');
-            filterTreeRef.current = filters || {};
-            setFilterTree(filters || {});
-            setIsFilterModalVisible(false);
-            setCurrentPage(1);
-            try {
-              if (filters && Object.keys(filters).length > 0) {
-                localStorage.setItem(storageKey, JSON.stringify(filters));
-              } else {
-                localStorage.removeItem(storageKey);
+        {hasFilterableFields && (
+          <GlobalFilter
+            visible={isFilterModalVisible}
+            handleCancel={() => setIsFilterModalVisible(false)}
+            onApplyFilters={(filters) => {
+              searchRef.current = ''
+              setSearchInput('')
+              filterTreeRef.current = filters
+              setFilterTree(filters)
+              setIsFilterModalVisible(false)
+              setShowResetingFilter(true)
+              setCurrentPage(1)
+              try {
+                if (filters && Object.keys(filters).length > 0) {
+                  localStorage.setItem(storageKey, JSON.stringify(filters))
+                } else {
+                  localStorage.removeItem(storageKey)
+                }
+              } catch (error) {
+                console.error('Error saving filters to localStorage:', error)
               }
-            } catch (error) {
-              console.error('Error saving filters:', error);
-            }
-            loadData(1, '', filters || {});
-          }}
-          filterFields={Array.isArray(resolvedFilterFields) ? resolvedFilterFields : []}
-          initialFilters={filterTree}
-          title={`Filter ${title}`}
-        />
-      )}
-    </Flex>
-  );
-};
+              refreshGrid()
+            }}
+            columns={columns}
+            filterFields={filterFields}
+            moduleName={moduleName}
+            storageKey={storageKey}
+            initialFilters={filterTree}
+          />
+        )}
+      </Flex>
+    </>
+  )
+}
 
-export default DataGridTable;
+export default DataGridTable

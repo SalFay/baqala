@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = window.axios;
 
 export const vendorService = {
     getAll: (params = {}) => axios.get('/vendors', { params }),

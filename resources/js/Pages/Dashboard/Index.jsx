@@ -1,18 +1,17 @@
 import { useState } from 'react'
 import { Head, usePage, router } from '@inertiajs/react'
-import { Row, Col, Card, Statistic, Table, Typography, Tag, DatePicker, Empty, Spin } from 'antd'
+import { Row, Col, Card, Statistic, Table, Tag, DatePicker, Empty, Spin } from 'antd'
 import {
   ShoppingCartOutlined,
   DollarOutlined,
   RiseOutlined,
-  InboxOutlined,
   WarningOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { Column, Pie } from '@ant-design/charts'
 import dayjs from 'dayjs'
+import GlobalPageHeader from '@/Components/GlobalPageHeader'
 
-const { Title } = Typography
 const { RangePicker } = DatePicker
 
 const ORDER_STATUS_COLORS = {
@@ -127,18 +126,18 @@ export default function Dashboard() {
       <Head title="Dashboard" />
 
       <Spin spinning={loading}>
-        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-          <Col>
-            <Title level={4} style={{ margin: 0 }}>Dashboard</Title>
-          </Col>
-          <Col>
+        <GlobalPageHeader
+          title="Dashboard"
+          parentPageTitle="Home"
+          parentPageRoute="dashboard"
+          extraContent={
             <RangePicker
               value={dateRange}
               onChange={handleDateChange}
               allowClear={false}
             />
-          </Col>
-        </Row>
+          }
+        />
 
         {/* Stats Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

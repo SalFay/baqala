@@ -1,15 +1,20 @@
 import { Head } from '@inertiajs/react'
-import { Typography, Card } from 'antd'
-
-const { Title } = Typography
+import { Card, Empty } from 'antd'
+import GlobalPageHeader from '@/Components/GlobalPageHeader'
 
 export default function Stores() {
   return (
     <>
       <Head title="Stores" />
-      <Title level={3}>Stores</Title>
+
+      <GlobalPageHeader
+        title="Stores"
+        parentPageTitle="Dashboard"
+        parentPageRoute="dashboard"
+      />
+
       <Card>
-        <p>Stores management content goes here.</p>
+        <Empty description="Stores management coming soon" />
       </Card>
     </>
   )

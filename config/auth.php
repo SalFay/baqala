@@ -13,8 +13,7 @@ return [
     */
 
     'super_users' => [
-        // Add admin emails here, e.g.:
-        // 'admin@baqala.com',
+        'admin@admin.com',
     ],
 
     /*

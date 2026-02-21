@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = window.axios;
 
 export const stockTransferService = {
     getAll: (params = {}) => axios.get('/stock-transfers', { params }),

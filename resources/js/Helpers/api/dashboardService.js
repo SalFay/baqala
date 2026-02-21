@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = window.axios;
 
 export const dashboardService = {
     getStats: () => axios.get('/dashboard/stats'),

@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = window.axios;
 
 export const purchaseOrderService = {
     getAll: (params = {}) => axios.get('/purchase-orders', { params }),

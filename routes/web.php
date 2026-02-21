@@ -18,6 +18,8 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StatementController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,6 +69,7 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
             Route::post('/', 'store')->name('store');
             Route::get('/{product}', 'edit')->name('show');
             Route::put('/{product}', 'update')->name('update');
@@ -281,8 +284,8 @@ Route::middleware('auth')->group(function () {
     // ==========================================
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/pos', fn () => inertia('POS/Index'))->name('pos');
-    Route::get('/products', fn () => inertia('Products/Index'))->name('products.page');
-    Route::get('/categories', fn () => inertia('Categories/Index'))->name('categories.page');
+    Route::get('/products', [ProductController::class, 'index'])->name('products.page');
+    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.page');
     Route::get('/customers', fn () => inertia('Customers/Index'))->name('customers.page');
     Route::get('/orders', fn () => inertia('Orders/Index'))->name('orders.page');
     Route::get('/returns', fn () => inertia('Returns/Index'))->name('returns.page');
@@ -295,9 +298,37 @@ Route::middleware('auth')->group(function () {
     Route::get('/expenses', fn () => inertia('Expenses/Index'))->name('expenses.page');
     Route::get('/statements', fn () => inertia('Statements/Index'))->name('statements.page');
     Route::get('/settings', fn () => inertia('Settings/Index'))->name('settings.page');
-    Route::get('/users', fn () => inertia('Users/Index'))->name('users.page');
-    Route::get('/roles', fn () => inertia('Roles/Index'))->name('roles.page');
     Route::get('/stores', fn () => inertia('Stores/Index'))->name('stores.page');
+
+    // ==========================================
+    // Roles Management
+    // ==========================================
+    Route::controller(RoleController::class)->prefix('roles')->name('role.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/listing', 'listing')->name('listing');
+        Route::get('/permissions', 'permissions')->name('permissions');
+        Route::post('/permissions', 'storePermissions')->name('storePermissions');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{role}', 'edit')->name('edit');
+        Route::put('/{role}', 'update')->name('update');
+        Route::delete('/{role}', 'destroy')->name('delete');
+        Route::post('/{role}/clone', 'clone')->name('clone');
+        Route::get('/all/permissions', 'getPermissions')->name('getPermissions');
+    });
+
+    // ==========================================
+    // Users Management
+    // ==========================================
+    Route::controller(UserController::class)->prefix('users')->name('user.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/listing', 'listing')->name('listing');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{user}', 'edit')->name('edit');
+        Route::put('/{user}', 'update')->name('update');
+        Route::delete('/{user}', 'destroy')->name('delete');
+        Route::put('/{user}/password', 'updatePassword')->name('updatePassword');
+        Route::post('/{id}/restore', 'restore')->name('restore');
+    });
 
     // Redirect root to dashboard
     Route::get('/', fn () => redirect()->route('dashboard'));

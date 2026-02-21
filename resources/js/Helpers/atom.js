@@ -1,4 +1,4 @@
-import { atom, selector } from 'recoil'
+import { atom, selector, useRecoilState } from 'recoil'
 
 // Theme atom - SparkCRM pattern
 const getInitialTheme = () => {
@@ -65,3 +65,13 @@ export const uiStateAtom = atom({
     drawerVisible: false,
   },
 })
+
+// Custom hook for theme (for components that need object return)
+export const useThemeStore = () => {
+  const [theme, setTheme] = useRecoilState(themeAtom)
+  return {
+    theme,
+    setTheme,
+    toggleTheme: () => setTheme((current) => (current === 'light' ? 'dark' : 'light')),
+  }
+}

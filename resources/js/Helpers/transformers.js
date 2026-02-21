@@ -313,6 +313,18 @@ export const buildQueryString = (obj) => {
         .join('&');
 };
 
+/**
+ * Transform permissions state to API format
+ * @param {Object} checkedPermissions - Object with roleId as keys and permission arrays as values
+ * @returns {Array} Array of { role_id, permissions } objects
+ */
+export const transformPermissions = (checkedPermissions) => {
+    return Object.entries(checkedPermissions).map(([roleId, permissions]) => ({
+        role_id: parseInt(roleId, 10),
+        permissions: permissions || [],
+    }));
+};
+
 export default {
     hexToRgba,
     rgbToHex,
@@ -330,4 +342,5 @@ export default {
     uniqueId,
     parseQueryString,
     buildQueryString,
+    transformPermissions,
 };

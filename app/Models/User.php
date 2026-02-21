@@ -61,8 +61,16 @@ class User extends Authenticatable
 
     public function isRootUser(): bool
     {
-        $rootUsers = Config::get('app.root_users', []);
-        return in_array($this->email, $rootUsers);
+        $superUsers = Config::get('auth.super_users', []);
+        return in_array($this->email, $superUsers, true);
+    }
+
+    /**
+     * Alias for isRootUser for SparkCRM compatibility
+     */
+    public function isSuperUser(): bool
+    {
+        return $this->isRootUser();
     }
 
     /**

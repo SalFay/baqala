@@ -1,0 +1,139 @@
+/* ===========================================================
+   AG Grid Custom Theme Overrides
+   Compatible with ag-theme-alpine & ag-theme-alpine-dark
+   =========================================================== */
+
+/* Remove all borders from the grid wrapper */
+.ag-theme-alpine .ag-root-wrapper,
+.ag-theme-alpine-dark .ag-root-wrapper {
+  border: none !important;
+}
+
+/* ===========================================================
+   Background & Viewport Colors
+   =========================================================== */
+
+/* Light Mode Backgrounds */
+.ag-theme-alpine {
+  .ag-header {
+    border: none;
+    background-color: #f6f6f6 !important;
+  }
+
+  .ag-center-cols-viewport,
+  .ag-body-viewport {
+    background-color: #f6f6f6 !important;
+  }
+
+  .ag-row {
+    background-color: #f6f6f6 !important;
+  }
+
+  .ag-paging-panel {
+    background-color: #f6f6f6 !important;
+    border-top: 1px solid #d9d9d9 !important;
+  }
+}
+
+/* Dark Mode Backgrounds */
+.ag-theme-alpine-dark {
+  .ag-header {
+    border: none;
+    background-color: #191919 !important;
+  }
+
+  .ag-center-cols-viewport,
+  .ag-body-viewport {
+    background-color: #191919 !important;
+  }
+
+  .ag-row {
+    background-color: #191919 !important;
+  }
+
+  .ag-paging-panel {
+    background-color: #191919 !important;
+    border-top: 1px solid #303030 !important;
+  }
+}
+
+/* ===========================================================
+   Header & Cell Padding
+   =========================================================== */
+.ag-theme-alpine,
+.ag-theme-alpine-dark {
+  .ag-header-cell,
+  .ag-cell {
+    padding-left: 0 !important;
+  }
+}
+
+/* ===========================================================
+   Header Resize Handles (match header background color)
+   =========================================================== */
+
+/* Light mode resize handle */
+.ag-theme-alpine {
+  .ag-header-cell-resize {
+    background-color: #f6f6f6 !important;
+    border-color: #f6f6f6 !important;
+    opacity: 1 !important;
+    width: 6px !important;
+    cursor: col-resize !important;
+  }
+
+  .ag-ltr .ag-header-viewport .ag-header-cell-resize::after {
+    background-color: #f6f6f6 !important;
+    left: 40% !important;
+  }
+}
+
+/* Dark mode resize handle */
+.ag-theme-alpine-dark {
+  .ag-ltr .ag-header-viewport .ag-header-cell-resize::after {
+    background-color: #191919 !important;
+  }
+}
+
+/* ===========================================================
+   Remove Unwanted Borders
+   =========================================================== */
+
+/* Remove border on pinned right header and body */
+.ag-theme-alpine,
+.ag-theme-alpine-dark {
+  .ag-pinned-right-header,
+  .ag-pinned-right-cols-container {
+    border-left: none !important;
+  }
+}
+
+/* Remove border-right on pinned left BODY cell */
+.ag-theme-alpine .ag-cell.ag-cell-last-left-pinned,
+.ag-theme-alpine-dark .ag-cell.ag-cell-last-left-pinned {
+  border-right: none !important;
+}
+
+/* Remove border-right on pinned left HEADER cell */
+.ag-theme-alpine .ag-header-cell.ag-header-cell-last-left-pinned,
+.ag-theme-alpine-dark .ag-header-cell.ag-header-cell-last-left-pinned {
+  border-right: none !important;
+}
+
+/* Remove container-level border */
+.ag-theme-alpine .ag-pinned-left-cols-container,
+.ag-theme-alpine-dark .ag-pinned-left-cols-container,
+.ag-theme-alpine .ag-pinned-left-header,
+.ag-theme-alpine-dark .ag-pinned-left-header {
+  border-right: none !important;
+}
+
+/* Light mode */
+.ag-theme-alpine .ag-header-cell-resize::after {
+  left: 0 !important;
+}
+
+/* Dark mode */
+.ag-theme-alpine-dark .ag-header-cell-resize::after {
+  left: 0 !important;
+}
