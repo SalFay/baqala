@@ -31,6 +31,13 @@ export const posService = {
     scanBarcode: (barcode) =>
         axios.post('/pos/cart/scan', { barcode }),
 
+    // Discount
+    applyDiscount: (amount, type, reason) =>
+        axios.post('/pos/cart/discount', { amount, type, reason }),
+
+    removeDiscount: () =>
+        axios.delete('/pos/cart/discount'),
+
     // Hold Cart
     holdCart: (name) =>
         axios.post('/pos/cart/hold', { name }),
@@ -52,6 +59,12 @@ export const posService = {
     searchCustomers: (query) =>
         axios.get('/pos/customers/search', { params: { q: query } }),
 
+    quickCreateCustomer: (data) =>
+        axios.post('/pos/customers', data),
+
+    getCustomerLoyalty: (customerId) =>
+        axios.get(`/pos/customers/${customerId}/loyalty`),
+
     // Orders
     getOrders: (params = {}) =>
         axios.get('/pos/orders', { params }),
@@ -70,6 +83,16 @@ export const posService = {
 
     getRecentOrders: (limit = 10) =>
         axios.get('/pos/recent-orders', { params: { limit } }),
+
+    // Returns
+    searchOrdersForReturn: (query) =>
+        axios.get('/pos/orders/search', { params: { q: query } }),
+
+    processReturn: (orderId, data) =>
+        axios.post(`/pos/orders/${orderId}/return`, data),
+
+    processExchange: (orderId, data) =>
+        axios.post(`/pos/orders/${orderId}/exchange`, data),
 };
 
 export default posService;

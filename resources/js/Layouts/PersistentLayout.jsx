@@ -10,7 +10,8 @@ import {
 } from '@ant-design/icons'
 import { router, usePage } from '@inertiajs/react'
 import { useRecoilState, useSetRecoilState } from 'recoil'
-import { themeAtom, userAtom, permissionsAtom, menuStateAtom } from '@/Helpers/atom'
+import { themeAtom, userAtom, permissionsAtom, menuStateAtom, appSettingsAtom } from '@/Helpers/atom'
+import { updateFormatterSettings } from '@/Helpers/formatters'
 import useMenuManagement from '@/Hooks/useMenuManagement'
 import MenuSidebar from '@/Components/Layout/MenuSidebar'
 
@@ -24,13 +25,14 @@ const getInitials = (name) => {
 }
 
 const PersistentLayout = ({ children }) => {
-  const { auth } = usePage().props
+  const { auth, appSettings } = usePage().props
   const authUser = auth?.user
   const { token } = useToken()
   const [currentTheme, setTheme] = useRecoilState(themeAtom)
   const [menuState, setMenuState] = useRecoilState(menuStateAtom)
   const setUser = useSetRecoilState(userAtom)
   const setPermissions = useSetRecoilState(permissionsAtom)
+  const setAppSettings = useSetRecoilState(appSettingsAtom)
   const [isMobile, setIsMobile] = useState(false)
   const [drawerVisible, setDrawerVisible] = useState(false)
 
@@ -41,6 +43,14 @@ const PersistentLayout = ({ children }) => {
     handleMenuClick,
     handleOpenChange,
   } = useMenuManagement()
+
+  // Initialize app settings from backend
+  useEffect(() => {
+    if (appSettings) {
+      setAppSettings(appSettings)
+      updateFormatterSettings(appSettings)
+    }
+  }, [appSettings, setAppSettings])
 
   useEffect(() => {
     if (authUser) {

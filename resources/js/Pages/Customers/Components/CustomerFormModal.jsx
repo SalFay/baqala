@@ -9,6 +9,7 @@ import {
   Col,
   Divider,
 } from 'antd'
+import { getCurrency } from '@/Helpers/formatters'
 
 const { Option } = Select
 
@@ -139,7 +140,7 @@ export default function CustomerFormModal({
           </Col>
         </Row>
 
-        <Form.Item name="credit_limit" label="Credit Limit (SAR)">
+        <Form.Item name="credit_limit" label={`Credit Limit (${getCurrency()})`}>
           <InputNumber
             placeholder="0.00"
             min={0}

@@ -1,4 +1,4 @@
-import { atom, selector, useRecoilState } from 'recoil'
+import { atom, selector, useRecoilState, useRecoilValue } from 'recoil'
 
 // Theme atom - SparkCRM pattern
 const getInitialTheme = () => {
@@ -29,6 +29,37 @@ export const themeAtom = atom({
     },
   ],
 })
+
+// App Settings atom - stores global app settings from backend
+export const appSettingsAtom = atom({
+  key: 'appSettingsAtom',
+  default: {
+    store_name: 'Baqala POS',
+    store_address: '',
+    store_phone: '',
+    store_email: '',
+    tax_number: '',
+    currency: 'SAR',
+    currency_symbol: '',
+    currency_position: 'before',
+    default_tax_rate: 15,
+    tax_name: 'VAT',
+    prices_include_tax: false,
+    receipt_header: '',
+    receipt_footer: 'Thank you for your purchase!',
+    auto_print_receipt: false,
+    low_stock_threshold: 10,
+    allow_negative_stock: false,
+    loyalty_enabled: false,
+    loyalty_points_per_currency: 1,
+    loyalty_point_value: 0.01,
+  },
+})
+
+// Hook to use app settings
+export const useAppSettings = () => {
+  return useRecoilValue(appSettingsAtom)
+}
 
 // User atom
 export const userAtom = atom({

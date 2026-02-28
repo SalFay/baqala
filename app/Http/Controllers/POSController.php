@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Services\Cart\CartService;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Order\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class POSController extends Controller
 {
     public function __construct(
         protected CartService $cartService,
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected LoyaltyService $loyaltyService
     ) {}
 
     public function me(): JsonResponse
@@ -72,6 +74,19 @@ class POSController extends Controller
         $cart = $this->cartService->getCart()->load(['items.product', 'customer']);
         $cartData = $cart->toApiArray();
 
+        $subtotal = (float) ($cartData['subtotal'] ?? 0);
+        $taxAmount = (float) ($cartData['tax_amount'] ?? 0);
+        // Calculate effective tax rate from amounts
+        $taxRate = $subtotal > 0 ? round(($taxAmount / $subtotal) * 100, 1) : 0;
+
+        // Calculate actual discount amount
+        $discountAmount = 0;
+        if ($cart->discount > 0) {
+            $discountAmount = $cart->discount_type === 'percentage'
+                ? ($subtotal * $cart->discount) / 100
+                : $cart->discount;
+        }
+
         return response()->json([
             'cart' => [
                 'id' => $cartData['id'],
@@ -79,9 +94,13 @@ class POSController extends Controller
                 'customer' => $cartData['customer'],
             ],
             'summary' => [
-                'subtotal' => (float) ($cartData['subtotal'] ?? 0),
-                'tax_amount' => (float) ($cartData['tax_amount'] ?? 0),
-                'discount' => (float) ($cartData['discount'] ?? 0),
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'tax_rate' => $taxRate,
+                'discount' => $discountAmount,
+                'discount_value' => (float) ($cart->discount ?? 0),
+                'discount_type' => $cart->discount_type,
+                'discount_reason' => $cart->discount_reason,
                 'total' => (float) ($cartData['total'] ?? 0),
             ],
         ]);
@@ -95,13 +114,17 @@ class POSController extends Controller
             'quantity' => 'integer|min:1',
         ]);
 
-        $this->cartService->addItem(
-            Product::find($data['product_id']),
-            $data['quantity'] ?? 1,
-            ($data['variant_id'] ?? null) ? \App\Models\ProductVariant::find($data['variant_id']) : null
-        );
+        try {
+            $this->cartService->addItem(
+                Product::find($data['product_id']),
+                $data['quantity'] ?? 1,
+                ($data['variant_id'] ?? null) ? \App\Models\ProductVariant::find($data['variant_id']) : null
+            );
 
-        return $this->getCart();
+            return $this->getCart();
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function updateItem(Request $request, $itemId): JsonResponse
@@ -141,6 +164,32 @@ class POSController extends Controller
         return $this->getCart();
     }
 
+    public function applyDiscount(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'type' => 'required|in:percentage,fixed',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $this->cartService->applyDiscount(
+                (float) $data['amount'],
+                $data['type'],
+                $data['reason'] ?? null
+            );
+            return $this->getCart();
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function removeDiscount(): JsonResponse
+    {
+        $this->cartService->removeDiscount();
+        return $this->getCart();
+    }
+
     public function holdCart(Request $request): JsonResponse
     {
         $this->cartService->holdCart($request->validate(['name' => 'required|string|max:255'])['name']);
@@ -169,17 +218,53 @@ class POSController extends Controller
 
     public function checkout(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'payment_method' => 'required|in:cash,card,mobile,bank_transfer',
+        $hasSplitPayments = is_array($request->payments) && count($request->payments) > 0;
+
+        $rules = [
+            'payment_method' => $hasSplitPayments ? 'nullable' : 'required|in:cash,card,mobile,bank_transfer',
             'cash_received' => 'nullable|numeric|min:0',
             'payment_reference' => 'nullable|string',
-        ]);
+            'notes' => 'nullable|string|max:500',
+            'payments' => 'nullable|array',
+            'payments.*.method' => 'required_with:payments|in:cash,card,mobile,bank_transfer',
+            'payments.*.amount' => 'required_with:payments|numeric|min:0.01',
+            'payments.*.reference' => 'nullable|string',
+        ];
+
+        // Require payment reference for non-cash single payments
+        if (!$hasSplitPayments && $request->payment_method && $request->payment_method !== 'cash') {
+            $rules['payment_reference'] = 'required|string|min:3';
+        }
+
+        $data = $request->validate($rules);
 
         try {
             $cart = $this->cartService->getCart()->load(['items.product', 'customer']);
 
             if ($cart->items->isEmpty()) {
                 return response()->json(['message' => 'Cart is empty'], 422);
+            }
+
+            // Handle split payments
+            $splitPayments = [];
+            if ($hasSplitPayments) {
+                $totalPaid = array_sum(array_column($data['payments'], 'amount'));
+                if (abs($totalPaid - $cart->total) > 0.01) {
+                    return response()->json([
+                        'message' => 'Split payment total must equal the cart total'
+                    ], 422);
+                }
+
+                // Validate references for non-cash payments
+                foreach ($data['payments'] as $payment) {
+                    if ($payment['method'] !== 'cash' && empty($payment['reference'])) {
+                        return response()->json([
+                            'message' => 'Reference is required for ' . ucfirst($payment['method']) . ' payment'
+                        ], 422);
+                    }
+                }
+
+                $splitPayments = $data['payments'];
             }
 
             $paymentDetails = [];
@@ -192,8 +277,10 @@ class POSController extends Controller
 
             $order = $this->orderService->createOrderFromCart(
                 $cart,
-                $data['payment_method'],
-                $paymentDetails
+                $data['payment_method'] ?? 'split',
+                $paymentDetails,
+                $data['notes'] ?? null,
+                $splitPayments
             );
 
             return response()->json([
@@ -213,6 +300,60 @@ class POSController extends Controller
                 ->limit(20)
                 ->get()
                 ->map(fn($c) => $c->only(['id', 'first_name', 'last_name', 'full_name', 'phone', 'email', 'loyalty_points']))
+        ]);
+    }
+
+    public function getCustomerLoyalty(int $customerId): JsonResponse
+    {
+        $customer = Customer::find($customerId);
+
+        if (!$customer) {
+            return response()->json(['message' => 'Customer not found'], 404);
+        }
+
+        $loyaltyInfo = $this->loyaltyService->getCustomerLoyaltyInfo($customer);
+
+        // Add points to be earned on current cart
+        $cart = $this->cartService->getCart();
+        $pointsToEarn = $this->loyaltyService->calculatePointsForPurchase($cart->total);
+        $maxRedeemable = $this->loyaltyService->getMaxRedeemablePoints($customer, $cart->total);
+
+        return response()->json([
+            ...$loyaltyInfo,
+            'points_to_earn' => $pointsToEarn,
+            'max_redeemable' => $maxRedeemable,
+            'point_value' => $this->loyaltyService->getPointValue(),
+        ]);
+    }
+
+    public function quickCreateCustomer(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'phone' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        // Check for duplicate phone
+        if (Customer::where('phone', $data['phone'])->exists()) {
+            return response()->json([
+                'message' => 'A customer with this phone number already exists'
+            ], 422);
+        }
+
+        $customer = Customer::create([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'] ?? '',
+            'phone' => $data['phone'],
+            'email' => $data['email'] ?? null,
+            'status' => 'active',
+            'user_id' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'customer' => $customer->only(['id', 'first_name', 'last_name', 'full_name', 'phone', 'email']),
+            'message' => 'Customer created successfully',
         ]);
     }
 
@@ -483,5 +624,215 @@ class POSController extends Controller
     public function recentOrders(Request $request): JsonResponse
     {
         return $this->dashboardRecentOrders($request);
+    }
+
+    /**
+     * Search orders for return/exchange
+     */
+    public function searchOrdersForReturn(Request $request): JsonResponse
+    {
+        $query = $request->q;
+
+        if (!$query || strlen($query) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $orders = \App\Models\Order::with('customer:id,first_name,last_name,phone')
+            ->where(function ($q) use ($query) {
+                $q->where('order_number', 'like', "%{$query}%")
+                    ->orWhereHas('customer', function ($q) use ($query) {
+                        $q->where('first_name', 'like', "%{$query}%")
+                            ->orWhere('last_name', 'like', "%{$query}%")
+                            ->orWhere('phone', 'like', "%{$query}%");
+                    });
+            })
+            ->whereIn('status', ['completed', 'partially_returned'])
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'customer_name' => $order->customer?->full_name ?? 'Walk-in',
+                'customer_phone' => $order->customer?->phone,
+                'total' => (float) $order->total,
+                'status' => $order->status?->value ?? $order->status,
+                'payment_type' => $order->payment_type,
+                'created_at' => $order->created_at,
+            ]);
+
+        return response()->json(['data' => $orders]);
+    }
+
+    /**
+     * Get order details with items for return
+     */
+    public function orderDetailForReturn($id): JsonResponse
+    {
+        $order = \App\Models\Order::with(['customer', 'items.product', 'payments'])
+            ->findOrFail($id);
+
+        return response()->json([
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'customer_name' => $order->customer?->full_name ?? 'Walk-in',
+            'total' => (float) $order->total,
+            'sub_total' => (float) $order->sub_total,
+            'tax_amount' => (float) $order->tax_amount,
+            'discount' => (float) $order->discount,
+            'status' => $order->status?->value ?? $order->status,
+            'payment_type' => $order->payment_type,
+            'created_at' => $order->created_at,
+            'items' => $order->items->map(fn($item) => [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'product_name' => $item->product?->name ?? $item->display_name,
+                'variant_name' => $item->variant?->name,
+                'quantity' => (int) $item->quantity,
+                'returned_quantity' => (int) ($item->returned_quantity ?? 0),
+                'unit_price' => (float) $item->unit_price,
+                'line_total' => (float) $item->line_total,
+                'sku' => $item->product?->sku,
+            ]),
+        ]);
+    }
+
+    /**
+     * Process a return
+     */
+    public function processReturn(Request $request, $orderId): JsonResponse
+    {
+        $data = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.order_item_id' => 'required|exists:order_items,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'reason' => 'required|string',
+            'reason_notes' => 'nullable|string',
+            'refund_method' => 'required|in:original,cash,store_credit',
+            'return_mode' => 'required|in:refund,exchange',
+            'restock' => 'boolean',
+        ]);
+
+        $order = \App\Models\Order::with('items')->findOrFail($orderId);
+
+        // Validate items belong to order and quantities are valid
+        $totalRefund = 0;
+        $returnItems = [];
+
+        foreach ($data['items'] as $itemData) {
+            $orderItem = $order->items->find($itemData['order_item_id']);
+
+            if (!$orderItem) {
+                return response()->json([
+                    'message' => 'Item does not belong to this order'
+                ], 422);
+            }
+
+            $maxReturnable = $orderItem->quantity - ($orderItem->returned_quantity ?? 0);
+
+            if ($itemData['quantity'] > $maxReturnable) {
+                return response()->json([
+                    'message' => "Cannot return more than {$maxReturnable} units of {$orderItem->product?->name}"
+                ], 422);
+            }
+
+            $returnItems[] = [
+                'order_item' => $orderItem,
+                'quantity' => $itemData['quantity'],
+                'refund_amount' => $orderItem->unit_price * $itemData['quantity'],
+            ];
+
+            $totalRefund += $orderItem->unit_price * $itemData['quantity'];
+        }
+
+        // Start transaction
+        \DB::beginTransaction();
+
+        try {
+            // Create return record
+            $return = \App\Models\OrderReturn::create([
+                'order_id' => $order->id,
+                'customer_id' => $order->customer_id,
+                'store_id' => $order->store_id,
+                'processed_by' => Auth::id(),
+                'reason' => $data['reason'],
+                'notes' => $data['reason_notes'] ?? null,
+                'refund_method' => $data['refund_method'],
+                'refund_amount' => $totalRefund,
+                'total_amount' => $totalRefund,
+                'type' => $data['return_mode'],
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            // Process each item
+            foreach ($returnItems as $returnItem) {
+                $orderItem = $returnItem['order_item'];
+
+                // Create return item record
+                \App\Models\OrderReturnItem::create([
+                    'order_return_id' => $return->id,
+                    'order_item_id' => $orderItem->id,
+                    'product_id' => $orderItem->product_id,
+                    'product_variant_id' => $orderItem->product_variant_id,
+                    'quantity' => $returnItem['quantity'],
+                    'unit_price' => $orderItem->unit_price,
+                    'total' => $returnItem['refund_amount'],
+                    'restock' => $data['restock'] ?? true,
+                ]);
+
+                // Update order item returned quantity
+                $orderItem->increment('returned_quantity', $returnItem['quantity']);
+
+                // Restock inventory if requested
+                if ($data['restock'] ?? true) {
+                    $inventory = \App\Models\StoreInventory::firstOrCreate(
+                        [
+                            'product_id' => $orderItem->product_id,
+                            'store_id' => $order->store_id ?? 1,
+                        ],
+                        ['quantity' => 0]
+                    );
+                    $inventory->increment('quantity', $returnItem['quantity']);
+                }
+            }
+
+            // Check if all items are returned
+            $allReturned = $order->items->every(function ($item) {
+                return $item->returned_quantity >= $item->quantity;
+            });
+
+            // Update order status
+            $order->update([
+                'status' => $allReturned ? 'refunded' : 'partially_returned',
+            ]);
+
+            // Process refund based on method
+            if ($data['refund_method'] === 'store_credit' && $order->customer_id) {
+                // Add store credit to customer
+                $order->customer->increment('store_credit', $totalRefund);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Return processed successfully',
+                'return' => [
+                    'id' => $return->id,
+                    'refund_amount' => $totalRefund,
+                    'refund_method' => $data['refund_method'],
+                ],
+                'order' => [
+                    'id' => $order->id,
+                    'status' => $order->fresh()->status,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to process return: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

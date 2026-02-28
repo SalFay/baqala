@@ -1,5 +1,6 @@
-import { Modal, List, Typography, Button, Empty, Space, Tag } from 'antd'
+import { List, Typography, Button, Empty, Space, Tag } from 'antd'
 import { ShoppingCartOutlined, UserOutlined } from '@ant-design/icons'
+import CustomModal from '@/Components/CustomModal'
 import { formatCurrency, formatRelativeTime } from '@/Helpers/formatters'
 
 const { Text } = Typography
@@ -12,7 +13,7 @@ export default function HeldCartsModal({
   loading,
 }) {
   return (
-    <Modal
+    <CustomModal
       title="Held Carts"
       open={open}
       onCancel={onClose}
@@ -85,6 +86,6 @@ export default function HeldCartsModal({
           )}
         />
       )}
-    </Modal>
+    </CustomModal>
   )
 }

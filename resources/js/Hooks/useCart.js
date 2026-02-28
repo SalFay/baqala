@@ -36,7 +36,11 @@ export function useCart() {
         customer: cartObj?.customer,
         subtotal: summary?.subtotal || 0,
         tax_amount: summary?.tax_amount || 0,
+        tax_rate: summary?.tax_rate || 0,
         discount: summary?.discount || 0,
+        discount_value: summary?.discount_value || 0,
+        discount_type: summary?.discount_type || null,
+        discount_reason: summary?.discount_reason || null,
         total: summary?.total || 0,
       }
     },
@@ -71,7 +75,11 @@ export function useCart() {
       customer: cartObj?.customer,
       subtotal: summary?.subtotal || 0,
       tax_amount: summary?.tax_amount || 0,
+      tax_rate: summary?.tax_rate || 0,
       discount: summary?.discount || 0,
+      discount_value: summary?.discount_value || 0,
+      discount_type: summary?.discount_type || null,
+      discount_reason: summary?.discount_reason || null,
       total: summary?.total || 0,
     }
   }
@@ -173,6 +181,32 @@ export function useCart() {
     },
   })
 
+  // Apply discount mutation
+  const applyDiscountMutation = useMutation({
+    mutationFn: ({ amount, type, reason }) => posService.applyDiscount(amount, type, reason),
+    onSuccess: (response) => {
+      setCart(parseCartResponse(response))
+      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      message.success('Discount applied')
+    },
+    onError: (error) => {
+      message.error(error.response?.data?.message || 'Failed to apply discount')
+    },
+  })
+
+  // Remove discount mutation
+  const removeDiscountMutation = useMutation({
+    mutationFn: () => posService.removeDiscount(),
+    onSuccess: (response) => {
+      setCart(parseCartResponse(response))
+      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      message.success('Discount removed')
+    },
+    onError: (error) => {
+      message.error(error.response?.data?.message || 'Failed to remove discount')
+    },
+  })
+
   // Hold cart mutation
   const holdCartMutation = useMutation({
     mutationFn: (name) => posService.holdCart(name),
@@ -270,6 +304,17 @@ export function useCart() {
     [scanBarcodeMutation]
   )
 
+  const applyDiscount = useCallback(
+    (amount, type, reason) => {
+      applyDiscountMutation.mutate({ amount, type, reason })
+    },
+    [applyDiscountMutation]
+  )
+
+  const removeDiscount = useCallback(() => {
+    removeDiscountMutation.mutate()
+  }, [removeDiscountMutation])
+
   const holdCart = useCallback(
     (name) => {
       holdCartMutation.mutate(name)
@@ -333,6 +378,18 @@ export function useCart() {
     setPosUI((prev) => ({ ...prev, isHoldCartModalOpen: false }))
   }, [setPosUI])
 
+  const openDiscountModal = useCallback(() => {
+    if (cart.items?.length === 0) {
+      message.warning('Cart is empty')
+      return
+    }
+    setPosUI((prev) => ({ ...prev, isDiscountModalOpen: true }))
+  }, [cart.items, setPosUI])
+
+  const closeDiscountModal = useCallback(() => {
+    setPosUI((prev) => ({ ...prev, isDiscountModalOpen: false }))
+  }, [setPosUI])
+
   const closeReceiptModal = useCallback(() => {
     setPosUI((prev) => ({
       ...prev,
@@ -363,6 +420,8 @@ export function useCart() {
     clearCart,
     setCustomer,
     scanBarcode,
+    applyDiscount,
+    removeDiscount,
     holdCart,
     restoreHeldCart,
     checkout,
@@ -375,6 +434,8 @@ export function useCart() {
     isClearingCart: clearCartMutation.isPending,
     isSettingCustomer: setCustomerMutation.isPending,
     isScanningBarcode: scanBarcodeMutation.isPending,
+    isApplyingDiscount: applyDiscountMutation.isPending,
+    isRemovingDiscount: removeDiscountMutation.isPending,
     isHoldingCart: holdCartMutation.isPending,
     isRestoringCart: restoreHeldCartMutation.isPending,
     isCheckingOut: checkoutMutation.isPending,
@@ -388,6 +449,8 @@ export function useCart() {
     closeHeldCartsModal,
     openHoldCartModal,
     closeHoldCartModal,
+    openDiscountModal,
+    closeDiscountModal,
     closeReceiptModal,
   }
 }

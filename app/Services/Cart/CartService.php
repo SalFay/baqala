@@ -18,12 +18,36 @@ class CartService
             ->forUser(Auth::id())
             ->active()
             ->first()
-            ?? Cart::create(['user_id' => Auth::id(), 'status' => 'active']);
+            ?? Cart::create([
+                'user_id' => Auth::id(),
+                'store_id' => Auth::user()?->store_id ?? 1,
+                'status' => 'active',
+            ]);
     }
 
     public function addItem(Product $product, int $qty = 1, ?ProductVariant $variant = null): Cart
     {
         $cart = $this->getCart();
+
+        // Server-side stock validation
+        if ($product->track_inventory) {
+            $currentCartQty = $cart->items()
+                ->where('product_id', $product->id)
+                ->where('product_variant_id', $variant?->id)
+                ->value('quantity') ?? 0;
+
+            $totalRequestedQty = $currentCartQty + $qty;
+            $availableStock = $variant
+                ? $variant->getStockQuantity()
+                : $product->getStockQuantity();
+
+            if ($totalRequestedQty > $availableStock) {
+                throw new \Exception(
+                    "Insufficient stock. Available: {$availableStock}, Requested: {$totalRequestedQty}"
+                );
+            }
+        }
+
         $cart->addItem($product, $qty, $variant);
         return $cart->recalculate();
     }
@@ -70,10 +94,24 @@ class CartService
             ->get();
     }
 
-    public function restoreHeldCart(int $cartId): Cart
+    public function restoreHeldCart(int $cartId, bool $holdCurrentCart = false): Cart
     {
-        // Clear current active cart
-        Cart::forUser(Auth::id())->active()->delete();
+        $currentActiveCart = Cart::forUser(Auth::id())->active()->first();
+
+        // If there's an active cart with items, optionally hold it first
+        if ($currentActiveCart && $currentActiveCart->items()->count() > 0) {
+            if ($holdCurrentCart) {
+                // Auto-hold the current cart with a generated name
+                $currentActiveCart->hold('Auto-held ' . now()->format('H:i'));
+            } else {
+                // Clear the current cart items and reset totals
+                $currentActiveCart->clear();
+                $currentActiveCart->delete();
+            }
+        } elseif ($currentActiveCart) {
+            // Empty cart, just delete it
+            $currentActiveCart->delete();
+        }
 
         // Restore held cart
         $cart = Cart::findOrFail($cartId);
@@ -90,5 +128,38 @@ class CartService
             return ['product' => $product, 'variant' => null];
         }
         return null;
+    }
+
+    public function applyDiscount(float $amount, string $type, ?string $reason = null): Cart
+    {
+        $cart = $this->getCart();
+
+        if ($type === 'percentage' && ($amount < 0 || $amount > 100)) {
+            throw new \InvalidArgumentException('Percentage discount must be between 0 and 100');
+        }
+
+        if ($type === 'fixed' && $amount > $cart->subtotal) {
+            throw new \InvalidArgumentException('Discount cannot exceed subtotal');
+        }
+
+        $cart->update([
+            'discount' => $amount,
+            'discount_type' => $type,
+            'discount_reason' => $reason,
+        ]);
+
+        return $cart->recalculate();
+    }
+
+    public function removeDiscount(): Cart
+    {
+        $cart = $this->getCart();
+        $cart->update([
+            'discount' => 0,
+            'discount_type' => null,
+            'discount_reason' => null,
+        ]);
+
+        return $cart->recalculate();
     }
 }

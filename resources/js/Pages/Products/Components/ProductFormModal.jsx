@@ -13,6 +13,7 @@ import {
   message,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
+import { getCurrency } from '@/Helpers/formatters'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -134,7 +135,7 @@ export default function ProductFormModal({
           <Col span={12}>
             <Form.Item
               name="sale_price"
-              label="Sale Price (SAR)"
+              label={`Sale Price (${getCurrency()})`}
               rules={[{ required: true, message: 'Please enter sale price' }]}
             >
               <InputNumber
@@ -146,7 +147,7 @@ export default function ProductFormModal({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="cost_price" label="Cost Price (SAR)">
+            <Form.Item name="cost_price" label={`Cost Price (${getCurrency()})`}>
               <InputNumber
                 placeholder="0.00"
                 min={0}

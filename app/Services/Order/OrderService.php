@@ -24,19 +24,24 @@ class OrderService
     public function createOrderFromCart(
         Cart $cart,
         string $paymentType,
-        array $paymentDetails = []
+        array $paymentDetails = [],
+        ?string $notes = null,
+        array $splitPayments = []
     ): Order {
         if ($cart->items->isEmpty()) {
             throw new \InvalidArgumentException('Cart is empty');
         }
 
-        return DB::transaction(function () use ($cart, $paymentType, $paymentDetails) {
+        return DB::transaction(function () use ($cart, $paymentType, $paymentDetails, $notes, $splitPayments) {
+            // Determine payment type label for split payments
+            $paymentTypeLabel = count($splitPayments) > 1 ? 'split' : $paymentType;
+
             // Create order
             $order = Order::create([
                 'store_id' => $cart->store_id,
                 'customer_id' => $cart->customer_id,
                 'user_id' => Auth::id(),
-                'payment_type' => $paymentType,
+                'payment_type' => $paymentTypeLabel,
                 'date' => now(),
                 'status' => OrderStatus::COMPLETED,
                 'payment_status' => PaymentStatus::PAID,
@@ -50,6 +55,7 @@ class OrderService
                 'cashier_name' => Auth::user()?->name,
                 'loyalty_points_redeemed' => $cart->loyalty_points_to_redeem,
                 'loyalty_discount' => $cart->loyalty_discount,
+                'notes' => $notes,
             ]);
 
             // Create order items
@@ -86,8 +92,19 @@ class OrderService
                 }
             }
 
-            // Create payment record
-            if (!empty($paymentDetails)) {
+            // Create payment records (support split payments)
+            if (!empty($splitPayments)) {
+                foreach ($splitPayments as $payment) {
+                    Payment::create([
+                        'order_id' => $order->id,
+                        'amount' => $payment['amount'],
+                        'payment_type' => $payment['method'],
+                        'reference' => $payment['reference'] ?? null,
+                        'notes' => $payment['notes'] ?? null,
+                    ]);
+                }
+            } elseif (!empty($paymentDetails)) {
+                // Single payment
                 Payment::create([
                     'order_id' => $order->id,
                     'amount' => $order->total,

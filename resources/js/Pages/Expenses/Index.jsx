@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import DataGridTable from '@/Components/DataGridTable/DataGridTable'
 import StatusBadge from '@/Components/StatusBadge'
 import GlobalPageHeader from '@/Components/GlobalPageHeader'
-import { formatCurrency, formatDate } from '@/Helpers/formatters'
+import { formatCurrency, formatDate, getCurrency } from '@/Helpers/formatters'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -193,7 +193,7 @@ export default function Expenses() {
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="amount" label="Amount (SAR)" rules={[{ required: true, message: 'Please enter amount' }]}>
+              <Form.Item name="amount" label={`Amount (${getCurrency()})`} rules={[{ required: true, message: 'Please enter amount' }]}>
                 <InputNumber min={0} precision={2} style={{ width: '100%' }} />
               </Form.Item>
             </Col>

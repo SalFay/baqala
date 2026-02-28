@@ -3,7 +3,7 @@ import { UserOutlined, PhoneOutlined, MailOutlined, HomeOutlined } from '@ant-de
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import StatusBadge from '@/Components/StatusBadge'
-import { formatCurrency, formatDateTime } from '@/Helpers/formatters'
+import { formatCurrency, formatDateTime, getCurrency } from '@/Helpers/formatters'
 
 const { Title, Text } = Typography
 
@@ -101,7 +101,7 @@ export default function CustomerDetailDrawer({
                 <Statistic
                   title="Credit Balance"
                   value={customer.credit_balance || 0}
-                  prefix="SAR"
+                  prefix={getCurrency()}
                   precision={2}
                   valueStyle={{ color: customer.credit_balance > 0 ? '#52c41a' : '#000' }}
                 />

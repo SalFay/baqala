@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
 import GlobalPageHeader from '@/Components/GlobalPageHeader'
-import { formatCurrency, formatDate } from '@/Helpers/formatters'
+import { formatCurrency, formatDate, getCurrency } from '@/Helpers/formatters'
 
 const { Text } = Typography
 const { RangePicker } = DatePicker
@@ -145,7 +145,7 @@ export default function Statements() {
               title="Opening Balance"
               value={summary.opening_balance || 0}
               prefix={<DollarOutlined />}
-              suffix="SAR"
+              suffix={getCurrency()}
               precision={2}
             />
           </Card>
@@ -156,7 +156,7 @@ export default function Statements() {
               title="Total Credits"
               value={summary.total_credits || 0}
               prefix={<ArrowUpOutlined />}
-              suffix="SAR"
+              suffix={getCurrency()}
               precision={2}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -168,7 +168,7 @@ export default function Statements() {
               title="Total Debits"
               value={summary.total_debits || 0}
               prefix={<ArrowDownOutlined />}
-              suffix="SAR"
+              suffix={getCurrency()}
               precision={2}
               valueStyle={{ color: '#ff4d4f' }}
             />
@@ -180,7 +180,7 @@ export default function Statements() {
               title="Closing Balance"
               value={summary.closing_balance || 0}
               prefix={<DollarOutlined />}
-              suffix="SAR"
+              suffix={getCurrency()}
               precision={2}
               valueStyle={{ color: '#1890ff' }}
             />

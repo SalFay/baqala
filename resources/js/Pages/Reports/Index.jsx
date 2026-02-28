@@ -7,7 +7,7 @@ import axios from 'axios'
 import dayjs from 'dayjs'
 import { Column } from '@ant-design/charts'
 import GlobalPageHeader from '@/Components/GlobalPageHeader'
-import { formatCurrency, formatDate } from '@/Helpers/formatters'
+import { formatCurrency, formatDate, getCurrency } from '@/Helpers/formatters'
 
 const { Text } = Typography
 const { RangePicker } = DatePicker
@@ -58,7 +58,7 @@ export default function Reports() {
     xField: 'date',
     yField: 'total',
     style: { fill: '#1890ff', radiusTopLeft: 4, radiusTopRight: 4 },
-    axis: { y: { labelFormatter: (v) => `${v} SAR` } },
+    axis: { y: { labelFormatter: (v) => `${v} ${getCurrency()}` } },
   }
 
   return (
@@ -117,7 +117,7 @@ export default function Reports() {
                 title="Total Sales"
                 value={reportData.summary.total_sales || 0}
                 prefix={<DollarOutlined />}
-                suffix="SAR"
+                suffix={getCurrency()}
                 precision={2}
               />
             </Card>
@@ -137,7 +137,7 @@ export default function Reports() {
                 title="Avg Order Value"
                 value={reportData.summary.avg_order_value || 0}
                 prefix={<BarChartOutlined />}
-                suffix="SAR"
+                suffix={getCurrency()}
                 precision={2}
               />
             </Card>

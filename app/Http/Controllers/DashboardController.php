@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Services\Report\ReportService;
+use App\Services\Dashboard\DashboardService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -11,36 +10,31 @@ use Inertia\Response;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected ReportService $reportService
+        protected DashboardService $dashboardService
     ) {}
 
     public function index(Request $request): Response
     {
         $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $startDate = $request->start_date ?? now()->startOfMonth()->toDateString();
+        $endDate = $request->end_date ?? now()->toDateString();
 
-        $stats = $this->reportService->getDashboardStats($storeId);
-
-        $recentOrders = Order::query()
-            ->with(['customer', 'user', 'currentStatus'])
-            ->where('store_id', $storeId)
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get()
-            ->map(fn($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'customer_name' => $order->customer?->full_name ?? $order->customer_name ?? 'Walk-in',
-                'total' => $order->total,
-                'current_status' => $order->currentStatus ? [
-                    'name' => $order->currentStatus->name,
-                    'color' => $order->currentStatus->color,
-                ] : null,
-                'created_at' => $order->created_at,
-            ]);
+        // Get all dashboard data in optimized queries
+        $data = $this->dashboardService->getDashboardData($storeId, $startDate, $endDate);
 
         return Inertia::render('Dashboard/Index', [
-            'stats' => $stats,
-            'recentOrders' => $recentOrders,
+            'stats' => $data['stats'],
+            'salesChart' => $data['salesChart'],
+            'topProducts' => $data['topProducts'],
+            'topCategories' => $data['topCategories'],
+            'recentOrders' => $data['recentOrders'],
+            'lowStock' => $data['lowStock'],
+            'ordersByStatus' => $data['ordersByStatus'],
+            'paymentMethods' => $data['paymentMethods'],
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
         ]);
     }
 }

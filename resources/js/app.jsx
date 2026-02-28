@@ -7,6 +7,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { RecoilRoot } from 'recoil'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ThemeProvider from '@/Components/ThemeProvider'
+import { updateFormatterSettings } from '@/Helpers/formatters'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Baqala POS'
 
@@ -36,6 +37,11 @@ createInertiaApp({
     return page
   },
   setup({ el, App, props }) {
+    // Initialize formatters with app settings from initial page props
+    if (props?.initialPage?.props?.appSettings) {
+      updateFormatterSettings(props.initialPage.props.appSettings)
+    }
+
     const root = createRoot(el)
     root.render(
       <QueryClientProvider client={queryClient}>

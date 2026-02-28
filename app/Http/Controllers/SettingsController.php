@@ -9,6 +9,7 @@ use App\Models\TaxRate;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -19,13 +20,21 @@ class SettingsController extends Controller
     public function index(): Response
     {
         $settings = Setting::pluck('value', 'key')->toArray();
+        $taxRates = TaxRate::orderBy('name')->get()->map(fn($r) => [
+            'id' => $r->id,
+            'name' => $r->name,
+            'rate' => $r->rate,
+            'is_default' => $r->is_default,
+            'is_active' => $r->is_active,
+        ]);
 
         return Inertia::render('Settings/Index', [
             'settings' => $settings,
+            'taxRates' => $taxRates,
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $validated = $request->validate([
             'store_name' => 'nullable|string|max:255',
@@ -33,15 +42,48 @@ class SettingsController extends Controller
             'store_phone' => 'nullable|string|max:20',
             'store_email' => 'nullable|email',
             'tax_number' => 'nullable|string|max:50',
-            'currency' => 'nullable|string|max:3',
-            'currency_symbol' => 'nullable|string|max:5',
+            'currency' => 'nullable|string|max:10',
+            'currency_symbol' => 'nullable|string|max:10',
+            'currency_position' => 'nullable|string|in:before,after',
             'default_tax_rate' => 'nullable|numeric|min:0|max:100',
-            'receipt_header' => 'nullable|string',
-            'receipt_footer' => 'nullable|string',
+            'prices_include_tax' => 'nullable',
+            'receipt_header' => 'nullable|string|max:500',
+            'receipt_footer' => 'nullable|string|max:500',
+            'auto_print_receipt' => 'nullable',
+            'low_stock_threshold' => 'nullable|integer|min:1|max:1000',
+            'allow_negative_stock' => 'nullable',
+            'loyalty_enabled' => 'nullable',
+            'loyalty_points_per_currency' => 'nullable|numeric|min:0',
+            'loyalty_point_value' => 'nullable|numeric|min:0',
         ]);
 
         foreach ($validated as $key => $value) {
+            // Skip _method field from Laravel method spoofing
+            if ($key === '_method') continue;
+
+            // Convert booleans to string
+            if (is_bool($value)) {
+                $value = $value ? '1' : '0';
+            }
+            // Handle null values
+            if ($value === null) {
+                $value = '';
+            }
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+        }
+
+        // Clear the cached settings
+        Cache::forget('app_settings_shared');
+
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Settings updated successfully.',
+                'notifications' => [
+                    ['type' => 'success', 'message' => 'Settings saved successfully']
+                ],
+            ]);
         }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Modal, Input, Typography } from 'antd'
+import { Input, Typography } from 'antd'
+import CustomModal from '@/Components/CustomModal'
 
 const { Text } = Typography
 
@@ -25,14 +26,15 @@ export default function HoldCartModal({
   }
 
   return (
-    <Modal
+    <CustomModal
       title="Hold Cart"
       open={open}
-      onOk={handleOk}
       onCancel={handleCancel}
-      okText="Hold Cart"
-      okButtonProps={{ loading, disabled: !name.trim() }}
-      destroyOnClose
+      onSave={handleOk}
+      showSave
+      saveText="Hold Cart"
+      loading={loading}
+      disableSave={!name.trim()}
     >
       <Text style={{ display: 'block', marginBottom: 8 }}>
         Enter a name for this cart so you can find it later
@@ -44,6 +46,6 @@ export default function HoldCartModal({
         onPressEnter={handleOk}
         autoFocus
       />
-    </Modal>
+    </CustomModal>
   )
 }

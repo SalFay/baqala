@@ -113,11 +113,15 @@ Route::middleware('auth')->group(function () {
             Route::delete('/cart', 'clearCart')->name('cart.clear');
             Route::post('/cart/customer', 'setCustomer')->name('cart.customer');
             Route::post('/cart/scan', 'scanBarcode')->name('cart.scan');
+            Route::post('/cart/discount', 'applyDiscount')->name('cart.discount');
+            Route::delete('/cart/discount', 'removeDiscount')->name('cart.discount.remove');
             Route::post('/cart/hold', 'holdCart')->name('cart.hold');
             Route::get('/cart/hold', 'getHeldCarts')->name('cart.held');
             Route::post('/cart/hold/{cartId}/restore', 'restoreHeldCart')->name('cart.restore');
             Route::post('/cart/checkout', 'checkout')->name('checkout');
             Route::get('/customers/search', 'searchCustomers')->name('customers.search');
+            Route::post('/customers', 'quickCreateCustomer')->name('customers.quick-create');
+            Route::get('/customers/{customer}/loyalty', 'getCustomerLoyalty')->name('customers.loyalty');
             // Dashboard
             Route::get('/dashboard/stats', 'dashboardStats')->name('dashboard.stats');
             Route::get('/dashboard/sales-chart', 'dashboardSalesChart')->name('dashboard.sales-chart');
@@ -132,6 +136,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/orders/{id}', 'orderDetail')->name('orders.show');
             Route::get('/orders/{id}/receipt', 'orderReceipt')->name('orders.receipt');
             Route::post('/orders/{id}/cancel', 'cancelOrder')->name('orders.cancel');
+            // Returns
+            Route::get('/orders/search', 'searchOrdersForReturn')->name('orders.search');
+            Route::post('/orders/{id}/return', 'processReturn')->name('orders.return');
         });
 
         // ------------------------------------------
@@ -306,7 +313,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', fn () => inertia('Reports/Index'))->name('reports.page');
     Route::get('/expenses', fn () => inertia('Expenses/Index'))->name('expenses.page');
     Route::get('/statements', fn () => inertia('Statements/Index'))->name('statements.page');
-    Route::get('/settings', fn () => inertia('Settings/Index'))->name('settings.page');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.page');
     Route::get('/stores', fn () => inertia('Stores/Index'))->name('stores.page');
 
     // ==========================================
