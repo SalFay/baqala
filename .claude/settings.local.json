@@ -25,7 +25,11 @@
       "mcp__playwright__browser_network_requests",
       "Bash(yarn build)",
       "mcp__playwright__browser_evaluate",
-      "mcp__playwright__browser_fill_form"
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_close",
+      "Bash(dir \"C:\\\\laragon\\\\www\\\\sparkcrm\\\\resources\\\\js\\\\Pages\\\\Role\" /B)",
+      "Bash(yarn add ag-grid-enterprise)",
+      "mcp__playwright__browser_press_key"
     ]
   }
 }
