@@ -28,10 +28,15 @@ class Product extends BaseModel
         'sale_price',
         'compare_price',
         'track_inventory',
+        'enable_serial_tracking',
+        'enable_batch_tracking',
+        'enable_expiry_tracking',
+        'expiry_warning_days',
         'low_stock_threshold',
         'weight',
         'weight_unit',
         'meta',
+        'custom_fields',
         'is_active',
     ];
 
@@ -42,9 +47,14 @@ class Product extends BaseModel
         'compare_price' => 'decimal:2',
         'weight' => 'decimal:3',
         'track_inventory' => 'boolean',
+        'enable_serial_tracking' => 'boolean',
+        'enable_batch_tracking' => 'boolean',
+        'enable_expiry_tracking' => 'boolean',
+        'expiry_warning_days' => 'integer',
         'low_stock_threshold' => 'integer',
         'is_active' => 'boolean',
         'meta' => 'array',
+        'custom_fields' => 'array',
     ];
 
     protected $appends = ['display_name'];
@@ -105,6 +115,57 @@ class Product extends BaseModel
     {
         return $this->belongsToMany(ProductAttributeValue::class, 'product_attribute_product', 'product_id', 'attribute_value_id')
             ->withTimestamps();
+    }
+
+    public function modifierSets(): BelongsToMany
+    {
+        return $this->belongsToMany(ModifierSet::class, 'product_modifier_sets')
+            ->withPivot('sort_order')
+            ->withTimestamps()
+            ->orderByPivot('sort_order');
+    }
+
+    public function productUnits(): HasMany
+    {
+        return $this->hasMany(ProductUnit::class);
+    }
+
+    public function units(): BelongsToMany
+    {
+        return $this->belongsToMany(Unit::class, 'product_units')
+            ->withPivot(['is_purchase_unit', 'is_sale_unit', 'is_default', 'multiplier', 'price_per_unit'])
+            ->withTimestamps();
+    }
+
+    public function serials(): HasMany
+    {
+        return $this->hasMany(ProductSerial::class);
+    }
+
+    public function availableSerials(): HasMany
+    {
+        return $this->hasMany(ProductSerial::class)->where('status', 'available');
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
+    }
+
+    public function activeBatches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class)
+            ->whereIn('status', ['active', 'low_stock'])
+            ->where('quantity_available', '>', 0)
+            ->where('expiry_date', '>=', now()->toDateString());
+    }
+
+    public function expiringBatches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class)
+            ->where('expiry_date', '<=', now()->addDays($this->expiry_warning_days ?? 30)->toDateString())
+            ->where('expiry_date', '>=', now()->toDateString())
+            ->where('quantity_available', '>', 0);
     }
 
     // Scopes

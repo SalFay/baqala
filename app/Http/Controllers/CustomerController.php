@@ -102,6 +102,7 @@ class CustomerController extends Controller
         $pageSize = $request->pageSize ?? 20;
 
         $customers = $query
+            ->with('customerGroup')
             ->skip(($page - 1) * $pageSize)
             ->take($pageSize)
             ->get()
@@ -114,6 +115,11 @@ class CustomerController extends Controller
                 'phone' => $customer->phone,
                 'loyalty_points' => $customer->loyalty_points,
                 'credit_balance' => $customer->credit_balance ?? 0,
+                'customer_group_id' => $customer->customer_group_id,
+                'customer_group' => $customer->customerGroup ? [
+                    'id' => $customer->customerGroup->id,
+                    'name' => $customer->customerGroup->name,
+                ] : null,
                 'status' => $customer->status,
                 'created_at' => $customer->created_at,
             ]);

@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import {
-  Modal,
   Form,
   Input,
   InputNumber,
@@ -9,6 +8,7 @@ import {
   Col,
   Divider,
 } from 'antd'
+import CustomModal from '@/Components/CustomModal'
 import { getCurrency } from '@/Helpers/formatters'
 
 const { Option } = Select
@@ -19,6 +19,7 @@ export default function CustomerFormModal({
   onSubmit,
   loading,
   customer,
+  customerGroups = [],
 }) {
   const [form] = Form.useForm()
   const isEditing = !!customer
@@ -34,6 +35,7 @@ export default function CustomerFormModal({
         city: customer.city,
         credit_limit: customer.credit_limit,
         status: customer.status || 'active',
+        customer_group_id: customer.customer_group_id,
       })
     } else if (open) {
       form.resetFields()
@@ -56,15 +58,15 @@ export default function CustomerFormModal({
   }
 
   return (
-    <Modal
+    <CustomModal
       title={isEditing ? 'Edit Customer' : 'Add Customer'}
       open={open}
-      onOk={handleSubmit}
       onCancel={handleClose}
-      okText={isEditing ? 'Update' : 'Create'}
-      confirmLoading={loading}
       width={600}
-      destroyOnClose
+      showSave
+      saveText={isEditing ? 'Update' : 'Create'}
+      loading={loading}
+      onSave={handleSubmit}
     >
       <Form
         form={form}
@@ -140,15 +142,28 @@ export default function CustomerFormModal({
           </Col>
         </Row>
 
-        <Form.Item name="credit_limit" label={`Credit Limit (${getCurrency()})`}>
-          <InputNumber
-            placeholder="0.00"
-            min={0}
-            precision={2}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item name="customer_group_id" label="Customer Group">
+              <Select allowClear placeholder="Select customer group">
+                {customerGroups.map(group => (
+                  <Option key={group.id} value={group.id}>{group.name}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="credit_limit" label={`Credit Limit (${getCurrency()})`}>
+              <InputNumber
+                placeholder="0.00"
+                min={0}
+                precision={2}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
-    </Modal>
+    </CustomModal>
   )
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -30,6 +31,7 @@ class Customer extends BaseModel
         'credit_limit',
         'credit_balance',
         'status',
+        'customer_group_id',
     ];
 
     protected $casts = [
@@ -59,6 +61,11 @@ class Customer extends BaseModel
     }
 
     // Relationships
+    public function customerGroup(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class);
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
@@ -229,6 +236,16 @@ class Customer extends BaseModel
     public function hasEnrolledLoyalty(): bool
     {
         return $this->loyalty()->exists();
+    }
+
+    public function getSellingPriceGroup(): ?SellingPriceGroup
+    {
+        return $this->customerGroup?->sellingPriceGroup;
+    }
+
+    public function getGroupDiscountPercent(): float
+    {
+        return $this->customerGroup?->discount_percent ?? 0;
     }
 
     public function enrollInLoyalty(?int $tierId = null): CustomerLoyalty

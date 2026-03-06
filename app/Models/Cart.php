@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Pricing\PricingService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ class Cart extends Model
         'store_id', 'user_id', 'customer_id', 'session_id', 'status',
         'hold_name', 'subtotal', 'tax_amount', 'discount', 'discount_type',
         'discount_reason', 'total', 'loyalty_points_to_redeem', 'loyalty_discount',
-        'notes', 'held_at', 'expires_at',
+        'notes', 'held_at', 'expires_at', 'selling_price_group_id',
     ];
 
     protected $casts = [
@@ -33,6 +34,7 @@ class Cart extends Model
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
     public function items(): HasMany { return $this->hasMany(CartItem::class); }
+    public function sellingPriceGroup(): BelongsTo { return $this->belongsTo(SellingPriceGroup::class); }
 
     // Scopes
     public function scopeActive($q) { return $q->where('status', 'active'); }
@@ -74,6 +76,26 @@ class Cart extends Model
         return $discount + ($this->loyalty_discount ?? 0);
     }
 
+    /**
+     * Get configured PricingService with customer/price group context.
+     */
+    public function getPricingService(): PricingService
+    {
+        $service = app(PricingService::class);
+
+        // Set customer context (this also sets customer group and its price group)
+        if ($this->customer) {
+            $service->setCustomer($this->customer);
+        }
+
+        // Override with cart's explicit price group if set
+        if ($this->sellingPriceGroup) {
+            $service->setPriceGroup($this->sellingPriceGroup);
+        }
+
+        return $service;
+    }
+
     // Cart operations
     public function addItem(Product $product, int $qty = 1, ?ProductVariant $variant = null): CartItem
     {
@@ -88,7 +110,9 @@ class Cart extends Model
             return $item;
         }
 
-        $price = $variant?->price ?? $product->price;
+        // Use PricingService for dynamic pricing
+        $pricing = $this->getPricingService()->calculateItemPricing($product, $qty, $variant);
+
         return $this->items()->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
@@ -96,11 +120,39 @@ class Cart extends Model
             'product_name' => $product->name,
             'variant_name' => $variant?->name,
             'quantity' => $qty,
-            'unit_price' => $price,
-            'purchase_price' => $variant?->cost ?? $product->cost ?? 0,
+            'unit_price' => $pricing['unit_price'],
+            'original_price' => $pricing['base_price'],
+            'purchase_price' => $variant?->cost_price ?? $product->cost_price ?? 0,
             'tax_rate' => $product->tax_rate ?? 0,
-            'line_total' => $price * $qty,
+            'line_total' => $pricing['line_total'],
+            'discount_amount' => $pricing['discount_amount'],
         ]);
+    }
+
+    /**
+     * Recalculate all item prices (e.g., when customer or price group changes).
+     */
+    public function recalculatePrices(): self
+    {
+        $pricingService = $this->getPricingService();
+
+        foreach ($this->items as $item) {
+            $product = $item->product;
+            $variant = $item->productVariant;
+
+            if (!$product) continue;
+
+            $pricing = $pricingService->calculateItemPricing($product, $item->quantity, $variant);
+
+            $item->update([
+                'unit_price' => $pricing['unit_price'],
+                'original_price' => $pricing['base_price'],
+                'line_total' => $pricing['line_total'],
+                'discount_amount' => $pricing['discount_amount'],
+            ]);
+        }
+
+        return $this->recalculate();
     }
 
     public function updateItemQty(int $itemId, int $qty): void

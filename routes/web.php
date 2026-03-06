@@ -20,6 +20,21 @@ use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SellingPriceGroupController;
+use App\Http\Controllers\CustomerGroupController;
+use App\Http\Controllers\VariationTemplateController;
+use App\Http\Controllers\ModifierSetController;
+use App\Http\Controllers\UnitController;
+use App\Http\Controllers\ProductSerialController;
+use App\Http\Controllers\ProductBatchController;
+use App\Http\Controllers\WarrantyController;
+use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\DiscountRuleController;
+use App\Http\Controllers\CouponController;
+use App\Http\Controllers\CustomerLedgerController;
+use App\Http\Controllers\ChequeController;
+use App\Http\Controllers\CashRegisterController;
+use App\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -146,10 +161,234 @@ Route::middleware('auth')->group(function () {
         // ------------------------------------------
         Route::controller(BusinessTypeController::class)->prefix('business-types')->name('business-types.')->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{businessType}', 'update')->name('update');
+            Route::delete('/{businessType}', 'destroy')->name('destroy');
             Route::get('/current', 'current')->name('current');
             Route::get('/{businessType}/preview', 'preview')->name('preview');
             Route::post('/{businessType}/apply', 'apply')->name('apply');
             Route::post('/seed', 'seedTypes')->name('seed');
+        });
+
+        // ------------------------------------------
+        // POS: Selling Price Groups
+        // ------------------------------------------
+        Route::controller(SellingPriceGroupController::class)->prefix('price-groups')->name('price-groups.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{sellingPriceGroup}', 'update')->name('update');
+            Route::delete('/{sellingPriceGroup}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Customer Groups
+        // ------------------------------------------
+        Route::controller(CustomerGroupController::class)->prefix('customer-groups')->name('customer-groups.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{customerGroup}', 'update')->name('update');
+            Route::delete('/{customerGroup}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Variation Templates
+        // ------------------------------------------
+        Route::controller(VariationTemplateController::class)->prefix('variation-templates')->name('variation-templates.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{variationTemplate}', 'update')->name('update');
+            Route::delete('/{variationTemplate}', 'destroy')->name('destroy');
+            Route::get('/{variationTemplate}/combinations', 'generateCombinations')->name('combinations');
+        });
+
+        // ------------------------------------------
+        // POS: Modifier Sets (Restaurant)
+        // ------------------------------------------
+        Route::controller(ModifierSetController::class)->prefix('modifier-sets')->name('modifier-sets.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{modifierSet}', 'update')->name('update');
+            Route::delete('/{modifierSet}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Units of Measure
+        // ------------------------------------------
+        Route::controller(UnitController::class)->prefix('units')->name('units.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::get('/base', 'baseUnits')->name('base');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{unit}', 'update')->name('update');
+            Route::delete('/{unit}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Product Serials (IMEI Tracking)
+        // ------------------------------------------
+        Route::controller(ProductSerialController::class)->prefix('serials')->name('serials.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/lookup', 'lookup')->name('lookup');
+            Route::get('/product/{productId}', 'forProduct')->name('for-product');
+            Route::get('/statistics', 'statistics')->name('statistics');
+            Route::post('/', 'store')->name('store');
+            Route::post('/bulk', 'bulkStore')->name('bulk-store');
+            Route::put('/{productSerial}', 'update')->name('update');
+            Route::put('/{productSerial}/status', 'updateStatus')->name('status');
+            Route::delete('/{productSerial}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Product Batches (Expiry Tracking)
+        // ------------------------------------------
+        Route::controller(ProductBatchController::class)->prefix('batches')->name('batches.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/product/{productId}', 'forProduct')->name('for-product');
+            Route::get('/statistics', 'statistics')->name('statistics');
+            Route::get('/expiry-report', 'expiryReport')->name('expiry-report');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{productBatch}', 'update')->name('update');
+            Route::delete('/{productBatch}', 'destroy')->name('destroy');
+            Route::post('/{productBatch}/expire', 'markAsExpired')->name('expire');
+            Route::post('/{productBatch}/recall', 'recall')->name('recall');
+            Route::post('/{productBatch}/quarantine', 'quarantine')->name('quarantine');
+            Route::post('/{productBatch}/adjust', 'adjustQuantity')->name('adjust');
+        });
+
+        // ------------------------------------------
+        // POS: Warranties
+        // ------------------------------------------
+        Route::controller(WarrantyController::class)->prefix('warranties')->name('warranties.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{warranty}', 'update')->name('update');
+            Route::delete('/{warranty}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Warranty Claims
+        // ------------------------------------------
+        Route::controller(WarrantyController::class)->prefix('warranty-claims')->name('warranty-claims.')->group(function () {
+            Route::get('/', 'claimsIndex')->name('index');
+            Route::post('/listing', 'claimsListing')->name('listing');
+            Route::get('/statistics', 'claimStatistics')->name('statistics');
+            Route::post('/', 'storeClaim')->name('store');
+            Route::get('/{warrantyClaim}', 'showClaim')->name('show');
+            Route::put('/{warrantyClaim}', 'updateClaim')->name('update');
+            Route::delete('/{warrantyClaim}', 'destroyClaim')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Custom Fields
+        // ------------------------------------------
+        Route::controller(CustomFieldController::class)->prefix('custom-fields')->name('custom-fields.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/metadata', 'getMetadata')->name('metadata');
+            Route::get('/entity/{entityType}', 'forEntity')->name('for-entity');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{customField}', 'update')->name('update');
+            Route::delete('/{customField}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Discount Rules
+        // ------------------------------------------
+        Route::controller(DiscountRuleController::class)->prefix('discount-rules')->name('discount-rules.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{discountRule}', 'update')->name('update');
+            Route::delete('/{discountRule}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Coupons
+        // ------------------------------------------
+        Route::controller(CouponController::class)->prefix('coupons')->name('coupons.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/generate-code', 'generateCode')->name('generate-code');
+            Route::post('/validate', 'validate')->name('validate');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{coupon}', 'update')->name('update');
+            Route::delete('/{coupon}', 'destroy')->name('destroy');
+            Route::get('/{coupon}/statistics', 'statistics')->name('statistics');
+        });
+
+        // ------------------------------------------
+        // POS: Customer Ledger (Credit Management)
+        // ------------------------------------------
+        Route::controller(CustomerLedgerController::class)->prefix('customer-ledger')->name('customer-ledger.')->group(function () {
+            Route::get('/outstanding', 'outstanding')->name('outstanding');
+            Route::get('/{customer}', 'show')->name('show');
+            Route::post('/{customer}/listing', 'listing')->name('listing');
+            Route::get('/{customer}/statement', 'statement')->name('statement');
+            Route::get('/{customer}/aging', 'aging')->name('aging');
+            Route::post('/{customer}/collect-payment', 'collectPayment')->name('collect-payment');
+            Route::post('/{customer}/adjust', 'adjust')->name('adjust');
+            Route::post('/{customer}/recalculate', 'recalculate')->name('recalculate');
+        });
+
+        // ------------------------------------------
+        // POS: Cheques
+        // ------------------------------------------
+        Route::controller(ChequeController::class)->prefix('cheques')->name('cheques.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/summary', 'summary')->name('summary');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{cheque}', 'update')->name('update');
+            Route::delete('/{cheque}', 'destroy')->name('destroy');
+            Route::post('/{cheque}/deposit', 'deposit')->name('deposit');
+            Route::post('/{cheque}/clear', 'clear')->name('clear');
+            Route::post('/{cheque}/bounce', 'bounce')->name('bounce');
+            Route::post('/{cheque}/cancel', 'cancel')->name('cancel');
+        });
+
+        // ------------------------------------------
+        // POS: Cash Registers
+        // ------------------------------------------
+        Route::controller(CashRegisterController::class)->prefix('cash-registers')->name('cash-registers.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/current', 'current')->name('current');
+            Route::get('/denominations', 'denominations')->name('denominations');
+            Route::get('/daily-report', 'dailyReport')->name('daily-report');
+            Route::post('/open', 'open')->name('open');
+            Route::post('/{cashRegister}/close', 'close')->name('close');
+            Route::post('/{cashRegister}/pay-in', 'payIn')->name('pay-in');
+            Route::post('/{cashRegister}/pay-out', 'payOut')->name('pay-out');
+            Route::get('/{cashRegister}/summary', 'summary')->name('summary');
+            Route::get('/{cashRegister}/transactions', 'transactions')->name('transactions');
+        });
+
+        // ------------------------------------------
+        // POS: Locations
+        // ------------------------------------------
+        Route::controller(LocationController::class)->prefix('locations')->name('locations.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{location}', 'update')->name('update');
+            Route::delete('/{location}', 'destroy')->name('destroy');
+            Route::get('/{location}/stock-summary', 'stockSummary')->name('stock-summary');
         });
 
         // ------------------------------------------

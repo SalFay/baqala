@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Head } from '@inertiajs/react'
-import { Button, Dropdown, Modal, message } from 'antd'
+import { Button, Dropdown, Modal, message, Tag } from 'antd'
 import {
   EditOutlined,
   DeleteOutlined,
@@ -16,6 +16,7 @@ import GlobalPageHeader from '@/Components/GlobalPageHeader'
 import CustomerFormModal from './Components/CustomerFormModal'
 import CustomerDetailDrawer from './Components/CustomerDetailDrawer'
 import { formatCurrency } from '@/Helpers/formatters'
+import { fetchAllCustomerGroups } from '@/Helpers/api/customerGroupService'
 
 export default function Customers() {
   const gridRef = useRef()
@@ -25,6 +26,11 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState(null)
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState(null)
+  const [customerGroups, setCustomerGroups] = useState([])
+
+  useEffect(() => {
+    fetchAllCustomerGroups().then(res => setCustomerGroups(res.data.data || []))
+  }, [])
 
   // Create mutation
   const createMutation = useMutation({
@@ -145,6 +151,15 @@ export default function Customers() {
       cellRenderer: ({ value }) => formatCurrency(value || 0),
     },
     {
+      field: 'customer_group',
+      headerName: 'Group',
+      flex: 0.8,
+      minWidth: 100,
+      cellRenderer: ({ data }) => (
+        data.customer_group ? <Tag color="blue">{data.customer_group.name}</Tag> : '-'
+      ),
+    },
+    {
       field: 'status',
       headerName: 'Status',
       flex: 0.8,
@@ -233,6 +248,7 @@ export default function Customers() {
         onSubmit={handleSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
         customer={editingCustomer}
+        customerGroups={customerGroups}
       />
 
       <CustomerDetailDrawer

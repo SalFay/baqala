@@ -30,6 +30,7 @@ class StoreCustomerRequest extends FormRequest
             'preferences' => ['nullable', 'array'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'status' => ['nullable', 'in:Active,Suspended'],
+            'customer_group_id' => ['nullable', 'exists:customer_groups,id'],
         ];
     }
 

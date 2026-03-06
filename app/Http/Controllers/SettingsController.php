@@ -55,6 +55,22 @@ class SettingsController extends Controller
             'loyalty_enabled' => 'nullable',
             'loyalty_points_per_currency' => 'nullable|numeric|min:0',
             'loyalty_point_value' => 'nullable|numeric|min:0',
+            // POS Settings
+            'pos_item_addition_method' => 'nullable|string|in:barcode,search,both',
+            'pos_enable_sounds' => 'nullable',
+            'pos_keyboard_shortcuts_enabled' => 'nullable',
+            'pos_show_product_image' => 'nullable',
+            'enable_credit_sales' => 'nullable',
+            'currency_precision' => 'nullable|integer|min:0|max:4',
+            'quantity_precision' => 'nullable|integer|min:0|max:4',
+            'invoice_prefix' => 'nullable|string|max:20',
+            'invoice_scheme' => 'nullable|string|in:sequential,yearly,monthly',
+            // Advanced Settings
+            'stock_accounting_method' => 'nullable|string|in:FIFO,LIFO,AVCO',
+            'enable_expiry_tracking' => 'nullable',
+            'enable_serial_tracking' => 'nullable',
+            'enable_batch_tracking' => 'nullable',
+            'expiry_alert_days' => 'nullable|integer|min:1|max:365',
         ]);
 
         foreach ($validated as $key => $value) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Head, usePage, router } from '@inertiajs/react'
 import { Card, Tabs, Form, Input, Button, Switch, InputNumber, Divider, message, Row, Col, Select, Space, Alert, Typography } from 'antd'
-import { SaveOutlined, ShopOutlined, DollarOutlined, PrinterOutlined, BellOutlined, GiftOutlined, InboxOutlined, ReloadOutlined } from '@ant-design/icons'
+import { SaveOutlined, ShopOutlined, DollarOutlined, PrinterOutlined, BellOutlined, GiftOutlined, InboxOutlined, ReloadOutlined, SettingOutlined, BarcodeOutlined } from '@ant-design/icons'
 import axios from 'axios'
 import GlobalPageHeader from '@/Components/GlobalPageHeader'
 import { handleApiSuccess, handleApiError } from '@/Helpers/CONSTANT'
@@ -54,6 +54,21 @@ export default function Settings() {
       loyalty_enabled: settings.loyalty_enabled === '1' || settings.loyalty_enabled === true,
       loyalty_points_per_currency: parseFloat(settings.loyalty_points_per_currency) || 1,
       loyalty_point_value: parseFloat(settings.loyalty_point_value) || 0.01,
+      // POS Settings
+      pos_item_addition_method: settings.pos_item_addition_method || 'barcode',
+      pos_enable_sounds: settings.pos_enable_sounds === '1' || settings.pos_enable_sounds === true,
+      pos_keyboard_shortcuts_enabled: settings.pos_keyboard_shortcuts_enabled === '1' || settings.pos_keyboard_shortcuts_enabled === true,
+      pos_show_product_image: settings.pos_show_product_image === '1' || settings.pos_show_product_image === true,
+      currency_precision: parseInt(settings.currency_precision) || 2,
+      quantity_precision: parseInt(settings.quantity_precision) || 3,
+      invoice_prefix: settings.invoice_prefix || 'INV-',
+      invoice_scheme: settings.invoice_scheme || 'sequential',
+      stock_accounting_method: settings.stock_accounting_method || 'FIFO',
+      enable_expiry_tracking: settings.enable_expiry_tracking === '1' || settings.enable_expiry_tracking === true,
+      enable_serial_tracking: settings.enable_serial_tracking === '1' || settings.enable_serial_tracking === true,
+      enable_batch_tracking: settings.enable_batch_tracking === '1' || settings.enable_batch_tracking === true,
+      expiry_alert_days: parseInt(settings.expiry_alert_days) || 30,
+      enable_credit_sales: settings.enable_credit_sales === '1' || settings.enable_credit_sales === true,
     })
   }, [settings, form])
 
@@ -289,6 +304,133 @@ export default function Settings() {
                 <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" />
               </Form.Item>
               <Text type="secondary">Value of 1 point when redeemed</Text>
+            </Col>
+          </Row>
+        </Card>
+      ),
+    },
+    {
+      key: 'pos',
+      label: (
+        <span>
+          <BarcodeOutlined />
+          POS
+        </span>
+      ),
+      children: (
+        <Card>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Form.Item name="pos_item_addition_method" label="Item Addition Method">
+                <Select size="large">
+                  <Option value="barcode">Barcode Scan</Option>
+                  <Option value="search">Search</Option>
+                  <Option value="both">Both</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="pos_enable_sounds" label="Enable Sounds" valuePropName="checked">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="pos_keyboard_shortcuts_enabled" label="Keyboard Shortcuts" valuePropName="checked">
+                <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="pos_show_product_image" label="Show Product Images" valuePropName="checked">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="enable_credit_sales" label="Enable Credit Sales" valuePropName="checked">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+              </Form.Item>
+              <Text type="secondary">Allow customers to buy on credit</Text>
+            </Col>
+          </Row>
+          <Divider orientation="left">Precision</Divider>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Form.Item name="currency_precision" label="Currency Decimal Places">
+                <InputNumber min={0} max={4} style={{ width: '100%' }} size="large" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="quantity_precision" label="Quantity Decimal Places">
+                <InputNumber min={0} max={4} style={{ width: '100%' }} size="large" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Divider orientation="left">Invoice</Divider>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Form.Item name="invoice_prefix" label="Invoice Prefix">
+                <Input placeholder="e.g., INV-" size="large" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="invoice_scheme" label="Numbering Scheme">
+                <Select size="large">
+                  <Option value="sequential">Sequential</Option>
+                  <Option value="yearly">Yearly Reset</Option>
+                  <Option value="monthly">Monthly Reset</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+      ),
+    },
+    {
+      key: 'advanced',
+      label: (
+        <span>
+          <SettingOutlined />
+          Advanced
+        </span>
+      ),
+      children: (
+        <Card>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Form.Item name="stock_accounting_method" label="Stock Accounting Method">
+                <Select size="large">
+                  <Option value="FIFO">FIFO (First In, First Out)</Option>
+                  <Option value="LIFO">LIFO (Last In, First Out)</Option>
+                  <Option value="AVCO">Average Cost</Option>
+                </Select>
+              </Form.Item>
+              <Text type="secondary">Method for calculating cost of goods sold</Text>
+            </Col>
+          </Row>
+          <Divider orientation="left">Tracking Features</Divider>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Form.Item name="enable_expiry_tracking" label="Track Expiry Dates" valuePropName="checked">
+                <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+              </Form.Item>
+              <Text type="secondary">For pharmacy/food products</Text>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="enable_serial_tracking" label="Track Serial/IMEI" valuePropName="checked">
+                <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+              </Form.Item>
+              <Text type="secondary">For electronics/mobile</Text>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="enable_batch_tracking" label="Track Batches" valuePropName="checked">
+                <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+              </Form.Item>
+              <Text type="secondary">For lot/batch tracking</Text>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item name="expiry_alert_days" label="Expiry Alert Days">
+                <InputNumber min={1} max={365} style={{ width: '100%' }} size="large" addonAfter="days" />
+              </Form.Item>
+              <Text type="secondary">Days before expiry to show warnings</Text>
             </Col>
           </Row>
         </Card>

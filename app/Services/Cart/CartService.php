@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\SellingPriceGroup;
 use Illuminate\Support\Facades\Auth;
 
 class CartService
@@ -70,7 +71,31 @@ class CartService
     {
         $cart = $this->getCart();
         $cart->update(['customer_id' => $customer?->id]);
+
+        // Load relationships and recalculate prices based on new customer
+        $cart->load(['items.product', 'items.productVariant', 'customer.customerGroup']);
+
+        // Recalculate prices if cart has items (customer may have different price group)
+        if ($cart->items->count() > 0) {
+            $cart->recalculatePrices();
+        }
+
         return $cart->fresh(['items.product', 'customer']);
+    }
+
+    public function setPriceGroup(?int $priceGroupId): Cart
+    {
+        $cart = $this->getCart();
+        $cart->update(['selling_price_group_id' => $priceGroupId]);
+
+        // Recalculate prices if cart has items
+        $cart->load(['items.product', 'items.productVariant', 'sellingPriceGroup']);
+
+        if ($cart->items->count() > 0) {
+            $cart->recalculatePrices();
+        }
+
+        return $cart->fresh(['items.product', 'customer', 'sellingPriceGroup']);
     }
 
     public function clearCart(): void
