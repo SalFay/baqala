@@ -103,6 +103,8 @@ const useMenuManagement = () => {
         createMenuItem('/users', routeLink('/users', 'Users')),
         createMenuItem('/roles', routeLink('/roles', 'Roles')),
         createMenuItem('/stores', routeLink('/stores', 'Stores')),
+        createMenuItem('/settings/time-pricing', routeLink('/settings/time-pricing', 'Time Pricing')),
+        createMenuItem('/coupons', routeLink('/coupons', 'Coupons')),
       ])
     )
 

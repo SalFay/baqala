@@ -38,6 +38,20 @@ export const posService = {
     removeDiscount: () =>
         axios.delete('/pos/cart/discount'),
 
+    // Coupon
+    applyCoupon: (code) =>
+        axios.post('/pos/cart/coupon', { code }),
+
+    removeCoupon: () =>
+        axios.delete('/pos/cart/coupon'),
+
+    // Promotions
+    getCartWithPromotions: (paymentMethod = null) =>
+        axios.get('/pos/cart/promotions', { params: { payment_method: paymentMethod } }),
+
+    getAvailablePromotions: () =>
+        axios.get('/pos/cart/available-promotions'),
+
     // Hold Cart
     holdCart: (name) =>
         axios.post('/pos/cart/hold', { name }),

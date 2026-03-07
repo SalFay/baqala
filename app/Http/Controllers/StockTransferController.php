@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Api\StockTransfer\StoreStockTransferRequest;
+use App\Http\Resources\StockTransferResource;
 use App\Models\Product;
 use App\Models\StockTransfer;
 use App\Models\Store;
+use App\Traits\HasListing;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,144 +16,91 @@ use Inertia\Response;
 
 class StockTransferController extends Controller
 {
-    /**
-     * Server-side listing for DataGridTable
-     */
-    public function listing(Request $request): \Illuminate\Http\JsonResponse
+    use HasListing;
+
+    public function index(Request $request): Response|JsonResponse
     {
-        $query = StockTransfer::with(['fromStore', 'toStore', 'currentStatus']);
-
-        // Search
-        if ($request->search) {
-            $query->where('transfer_number', 'like', "%{$request->search}%");
+        if ($request->wantsJson()) {
+            return $this->listing($request);
         }
 
-        // Sorting
-        if ($request->sort && count($request->sort) > 0) {
-            foreach ($request->sort as $sort) {
-                $query->orderBy($sort['colId'], $sort['sort']);
-            }
-        } else {
-            $query->orderByDesc('created_at');
-        }
-
-        $total = $query->count();
-        $page = $request->current ?? 1;
-        $pageSize = $request->pageSize ?? 20;
-
-        $transfers = $query
-            ->skip(($page - 1) * $pageSize)
-            ->take($pageSize)
-            ->get()
-            ->map(fn($t) => [
-                'id' => $t->id,
-                'transfer_number' => $t->transfer_number,
-                'from_store' => $t->fromStore?->name,
-                'to_store' => $t->toStore?->name,
-                'status' => $t->currentStatus?->code ?? $t->status,
-                'items_count' => $t->items_count,
-                'created_at' => $t->created_at,
-            ]);
-
-        return response()->json([
-            'data' => $transfers,
-            'total' => $total,
-        ]);
+        return Inertia::render('StockTransfers/Index');
     }
 
-    public function index(Request $request): Response
+    public function listing(Request $request): JsonResponse
     {
-        $transfers = StockTransfer::query()
-            ->with(['fromStore', 'toStore', 'currentStatus'])
-            ->when($request->status, fn($q, $status) => $q->whereStatus($status))
-            ->when($request->search, function ($q, $term) {
-                $q->where('transfer_number', 'like', "%{$term}%");
-            })
-            ->orderByDesc('created_at')
-            ->paginate($request->per_page ?? 20);
-
-        return Inertia::render('StockTransfers/Index', [
-            'transfers' => [
-                'data' => $transfers->map(fn($t) => [
-                    'id' => $t->id,
-                    'transfer_number' => $t->transfer_number,
-                    'from_store' => $t->fromStore?->name,
-                    'to_store' => $t->toStore?->name,
-                    'status' => $t->currentStatus?->code ?? $t->status,
-                    'items_count' => $t->items_count,
-                    'created_at' => $t->created_at,
-                ]),
-                'meta' => [
-                    'total' => $transfers->total(),
-                    'per_page' => $transfers->perPage(),
-                    'current_page' => $transfers->currentPage(),
+        return $this->getListing(
+            $request,
+            StockTransfer::class,
+            with: ['fromStore', 'toStore', 'currentStatus'],
+            resource: StockTransferResource::class,
+            options: [
+                'searchColumns' => ['transfer_number'],
+                'filterColumns' => [
+                    'from_store_id' => 'exact',
+                    'to_store_id' => 'exact',
                 ],
-            ],
-            'filters' => $request->only(['search', 'status']),
-        ]);
+                'withCount' => ['items'],
+                'defaultSort' => 'created_at',
+                'defaultSortDir' => 'desc',
+                'preFilter' => function ($query, $request) {
+                    if ($request->status) {
+                        $query->whereStatus($request->status);
+                    }
+                },
+            ]
+        );
     }
 
     public function create(): Response
     {
-        $stores = Store::where('is_active', true)->orderBy('name')->get(['id', 'name']);
-        $products = Product::where('status', 'active')->orderBy('name')->get(['id', 'name', 'sku']);
-
         return Inertia::render('StockTransfers/Create', [
-            'stores' => $stores,
-            'products' => $products,
+            'stores' => Store::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'products' => Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreStockTransferRequest $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'from_store_id' => 'required|exists:stores,id',
-            'to_store_id' => 'required|exists:stores,id|different:from_store_id',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-        ]);
+        $data = $request->validated();
 
         $transfer = StockTransfer::create([
-            'from_store_id' => $validated['from_store_id'],
-            'to_store_id' => $validated['to_store_id'],
-            'notes' => $validated['notes'],
+            'from_store_id' => $data['from_store_id'],
+            'to_store_id' => $data['to_store_id'],
+            'notes' => $data['notes'] ?? null,
             'created_by_id' => auth()->id(),
         ]);
 
-        foreach ($validated['items'] as $item) {
+        foreach ($data['items'] as $item) {
             $transfer->items()->create($item);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new StockTransferResource($transfer),
+                'notifications' => [['type' => 'success', 'message' => 'Stock transfer created']],
+            ], 201);
         }
 
         return redirect()->route('stock-transfers.show', $transfer)->with('success', 'Stock transfer created.');
     }
 
-    public function show(StockTransfer $stockTransfer): Response
+    public function show(StockTransfer $stockTransfer, Request $request): Response|JsonResponse
     {
         $stockTransfer->load(['fromStore', 'toStore', 'items.product', 'currentStatus', 'statusHistories.status']);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new StockTransferResource($stockTransfer),
+            ]);
+        }
+
         return Inertia::render('StockTransfers/Show', [
-            'transfer' => [
-                'id' => $stockTransfer->id,
-                'transfer_number' => $stockTransfer->transfer_number,
-                'from_store' => $stockTransfer->fromStore,
-                'to_store' => $stockTransfer->toStore,
-                'status' => $stockTransfer->currentStatus?->code ?? $stockTransfer->status,
-                'notes' => $stockTransfer->notes,
-                'items' => $stockTransfer->items->map(fn($item) => [
-                    'id' => $item->id,
-                    'product' => $item->product?->name,
-                    'quantity' => $item->quantity,
-                    'shipped_quantity' => $item->shipped_quantity,
-                    'received_quantity' => $item->received_quantity,
-                ]),
-                'created_at' => $stockTransfer->created_at,
-            ],
+            'transfer' => new StockTransferResource($stockTransfer),
         ]);
     }
 
-    public function ship(Request $request, StockTransfer $stockTransfer): RedirectResponse
+    public function ship(Request $request, StockTransfer $stockTransfer): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'items' => 'required|array',
@@ -166,10 +117,17 @@ class StockTransferController extends Controller
 
         $stockTransfer->changeStatus('in_transit', 'Items shipped');
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new StockTransferResource($stockTransfer->fresh()),
+                'notifications' => [['type' => 'success', 'message' => 'Transfer shipped']],
+            ]);
+        }
+
         return redirect()->route('stock-transfers.show', $stockTransfer)->with('success', 'Transfer shipped.');
     }
 
-    public function receive(Request $request, StockTransfer $stockTransfer): RedirectResponse
+    public function receive(Request $request, StockTransfer $stockTransfer): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'items' => 'required|array',
@@ -185,6 +143,13 @@ class StockTransferController extends Controller
         }
 
         $stockTransfer->changeStatus('completed', 'Items received');
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new StockTransferResource($stockTransfer->fresh()),
+                'notifications' => [['type' => 'success', 'message' => 'Transfer received']],
+            ]);
+        }
 
         return redirect()->route('stock-transfers.show', $stockTransfer)->with('success', 'Transfer received.');
     }

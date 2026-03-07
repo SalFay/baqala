@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TaxService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,9 +65,47 @@ class CartItem extends Model
             : ($this->discount ?? 0);
 
         $afterDiscount = $subtotal - $discount;
-        $this->tax_amount = round(($afterDiscount * ($this->tax_rate ?? 0)) / 100, 2);
+
+        // Use TaxService if product has custom tax settings
+        $taxResult = $this->calculateTaxAmount($afterDiscount);
+        $this->tax_amount = round($taxResult['total_tax'], 2);
         $this->line_total = round($afterDiscount + $this->tax_amount, 2);
         $this->save();
         return $this;
+    }
+
+    /**
+     * Calculate tax using TaxService for advanced tax handling
+     * Falls back to simple tax rate if no custom settings
+     */
+    protected function calculateTaxAmount(float $amount): array
+    {
+        // Check if product has custom tax settings
+        $product = $this->product;
+        if (!$product) {
+            // Fall back to stored tax rate
+            return [
+                'total_tax' => round(($amount * ($this->tax_rate ?? 0)) / 100, 2),
+                'breakdown' => [],
+            ];
+        }
+
+        $taxSetting = ProductTaxSetting::where('product_id', $product->id)->first();
+
+        // If product has custom tax settings, use TaxService
+        if ($taxSetting) {
+            $taxService = app(TaxService::class);
+            $result = $taxService->calculateTax($product, 1, $amount / $this->quantity);
+            return [
+                'total_tax' => $result['tax_amount'] * $this->quantity,
+                'breakdown' => $result['breakdown'],
+            ];
+        }
+
+        // Fall back to simple tax rate calculation
+        return [
+            'total_tax' => round(($amount * ($this->tax_rate ?? 0)) / 100, 2),
+            'breakdown' => [],
+        ];
     }
 }

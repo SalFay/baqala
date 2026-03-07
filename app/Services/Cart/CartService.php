@@ -3,15 +3,21 @@
 namespace App\Services\Cart;
 
 use App\Models\Cart;
+use App\Models\Coupon;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SellingPriceGroup;
+use App\Services\Promotion\DiscountContext;
+use App\Services\Promotion\DiscountResult;
+use App\Services\Promotion\PromotionEngine;
 use Illuminate\Support\Facades\Auth;
 
 class CartService
 {
     protected ?Cart $cart = null;
+    protected ?PromotionEngine $promotionEngine = null;
+    protected ?string $appliedCouponCode = null;
 
     public function getCart(): Cart
     {
@@ -186,5 +192,158 @@ class CartService
         ]);
 
         return $cart->recalculate();
+    }
+
+    /**
+     * Apply a coupon code to the cart
+     */
+    public function applyCoupon(string $code): array
+    {
+        $cart = $this->getCart();
+
+        $coupon = Coupon::where('code', strtoupper(trim($code)))->first();
+
+        if (!$coupon) {
+            return [
+                'success' => false,
+                'message' => 'Invalid coupon code',
+            ];
+        }
+
+        // Validate coupon
+        $errors = $coupon->validateForCustomer($cart->customer, $cart->subtotal);
+
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'message' => implode('. ', $errors),
+            ];
+        }
+
+        // Calculate coupon discount
+        $couponDiscount = $coupon->discount_type === 'percentage'
+            ? ($cart->subtotal * $coupon->discount_amount) / 100
+            : $coupon->discount_amount;
+
+        // Apply max discount cap if set
+        if ($coupon->max_discount_amount && $couponDiscount > $coupon->max_discount_amount) {
+            $couponDiscount = $coupon->max_discount_amount;
+        }
+
+        // Store coupon code and discount in cart
+        $cart->update([
+            'coupon_code' => $coupon->code,
+            'coupon_id' => $coupon->id,
+            'coupon_discount' => $couponDiscount,
+        ]);
+
+        // Recalculate cart totals
+        $cart->recalculate();
+
+        $this->appliedCouponCode = $coupon->code;
+
+        return [
+            'success' => true,
+            'coupon' => [
+                'id' => $coupon->id,
+                'code' => $coupon->code,
+                'discount_type' => $coupon->discount_type,
+                'discount_amount' => $coupon->discount_amount,
+                'coupon_discount' => $couponDiscount,
+            ],
+            'message' => 'Coupon applied successfully',
+        ];
+    }
+
+    /**
+     * Remove coupon from cart
+     */
+    public function removeCoupon(): Cart
+    {
+        $cart = $this->getCart();
+        $cart->update([
+            'coupon_code' => null,
+            'coupon_id' => null,
+            'coupon_discount' => 0,
+        ]);
+
+        $this->appliedCouponCode = null;
+
+        return $cart->recalculate();
+    }
+
+    /**
+     * Get the promotion engine instance
+     */
+    protected function getPromotionEngine(): PromotionEngine
+    {
+        return $this->promotionEngine ??= new PromotionEngine();
+    }
+
+    /**
+     * Calculate all applicable discounts for the current cart
+     */
+    public function calculatePromotions(?string $paymentMethod = null): DiscountResult
+    {
+        $cart = $this->getCart();
+        $cart->load(['items.product', 'customer.customerGroup', 'customer.loyalty.tier']);
+
+        $couponCode = $this->appliedCouponCode ?? $cart->coupon_code;
+
+        return $this->getPromotionEngine()->calculateCartDiscounts(
+            $cart,
+            $couponCode,
+            $paymentMethod
+        );
+    }
+
+    /**
+     * Get all available promotions/discounts that could apply
+     */
+    public function getAvailablePromotions(): array
+    {
+        $cart = $this->getCart();
+        $cart->load(['items.product', 'customer.customerGroup', 'customer.loyalty.tier']);
+
+        $context = DiscountContext::fromCart($cart);
+
+        return $this->getPromotionEngine()->previewAvailableDiscounts($context);
+    }
+
+    /**
+     * Get cart with promotion details
+     */
+    public function getCartWithPromotions(?string $paymentMethod = null): array
+    {
+        $cart = $this->getCart();
+        $cart->load([
+            'items.product',
+            'items.productVariant',
+            'customer.customerGroup.sellingPriceGroup',
+            'customer.loyalty.tier',
+        ]);
+
+        $promotions = $this->calculatePromotions($paymentMethod);
+
+        return [
+            'cart' => $cart,
+            'promotions' => $promotions->toArray(),
+            'effective_total' => $promotions->finalTotal,
+            'savings' => $promotions->totalDiscount,
+            'savings_percentage' => $promotions->getSavingsPercentage(),
+            'free_shipping' => $promotions->hasFreeShipping,
+            'free_items' => $promotions->freeItems,
+        ];
+    }
+
+    /**
+     * Record promotion usage after successful checkout
+     */
+    public function recordPromotionUsage(int $orderId, DiscountResult $promotions): void
+    {
+        $cart = $this->getCart();
+        $customerId = $cart->customer_id;
+
+        $this->getPromotionEngine()->recordUsage($promotions, $orderId, $customerId);
     }
 }

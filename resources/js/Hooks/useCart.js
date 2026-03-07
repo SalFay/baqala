@@ -41,6 +41,8 @@ export function useCart() {
         discount_value: summary?.discount_value || 0,
         discount_type: summary?.discount_type || null,
         discount_reason: summary?.discount_reason || null,
+        coupon_code: cartObj?.coupon_code || summary?.coupon_code || null,
+        coupon_discount: summary?.coupon_discount || 0,
         total: summary?.total || 0,
       }
     },
@@ -80,6 +82,8 @@ export function useCart() {
       discount_value: summary?.discount_value || 0,
       discount_type: summary?.discount_type || null,
       discount_reason: summary?.discount_reason || null,
+      coupon_code: cartObj?.coupon_code || summary?.coupon_code || null,
+      coupon_discount: summary?.coupon_discount || 0,
       total: summary?.total || 0,
     }
   }
@@ -133,6 +137,8 @@ export function useCart() {
         subtotal: 0,
         tax_amount: 0,
         discount: 0,
+        coupon_code: null,
+        coupon_discount: 0,
         total: 0,
       })
       queryClient.invalidateQueries({ queryKey: ['cart'] })
@@ -204,6 +210,32 @@ export function useCart() {
     },
     onError: (error) => {
       message.error(error.response?.data?.message || 'Failed to remove discount')
+    },
+  })
+
+  // Apply coupon mutation
+  const applyCouponMutation = useMutation({
+    mutationFn: (code) => posService.applyCoupon(code),
+    onSuccess: (response) => {
+      setCart(parseCartResponse(response))
+      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      message.success('Coupon applied!')
+    },
+    onError: (error) => {
+      message.error(error.response?.data?.message || 'Invalid coupon code')
+    },
+  })
+
+  // Remove coupon mutation
+  const removeCouponMutation = useMutation({
+    mutationFn: () => posService.removeCoupon(),
+    onSuccess: (response) => {
+      setCart(parseCartResponse(response))
+      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      message.success('Coupon removed')
+    },
+    onError: (error) => {
+      message.error(error.response?.data?.message || 'Failed to remove coupon')
     },
   })
 
@@ -315,6 +347,17 @@ export function useCart() {
     removeDiscountMutation.mutate()
   }, [removeDiscountMutation])
 
+  const applyCoupon = useCallback(
+    (code) => {
+      applyCouponMutation.mutate(code)
+    },
+    [applyCouponMutation]
+  )
+
+  const removeCoupon = useCallback(() => {
+    removeCouponMutation.mutate()
+  }, [removeCouponMutation])
+
   const holdCart = useCallback(
     (name) => {
       holdCartMutation.mutate(name)
@@ -422,6 +465,8 @@ export function useCart() {
     scanBarcode,
     applyDiscount,
     removeDiscount,
+    applyCoupon,
+    removeCoupon,
     holdCart,
     restoreHeldCart,
     checkout,
@@ -436,6 +481,8 @@ export function useCart() {
     isScanningBarcode: scanBarcodeMutation.isPending,
     isApplyingDiscount: applyDiscountMutation.isPending,
     isRemovingDiscount: removeDiscountMutation.isPending,
+    isApplyingCoupon: applyCouponMutation.isPending,
+    isRemovingCoupon: removeCouponMutation.isPending,
     isHoldingCart: holdCartMutation.isPending,
     isRestoringCart: restoreHeldCartMutation.isPending,
     isCheckingOut: checkoutMutation.isPending,

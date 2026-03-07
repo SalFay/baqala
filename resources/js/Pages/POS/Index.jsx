@@ -33,6 +33,8 @@ import LoyaltyPanel from './Components/LoyaltyPanel'
 import RecentOrdersDrawer from './Components/RecentOrdersDrawer'
 import ProductQuickView from './Components/ProductQuickView'
 import ReturnModal from './Components/ReturnModal'
+import CouponInput from './Components/CouponInput'
+import ActivePromotionsBanner from './Components/ActivePromotionsBanner'
 
 const { Content } = Layout
 const { Title, Text } = Typography
@@ -94,6 +96,10 @@ export default function POS() {
     removeDiscount,
     isApplyingDiscount,
     isRemovingDiscount,
+    applyCoupon,
+    removeCoupon,
+    isApplyingCoupon,
+    isRemovingCoupon,
     closeReceiptModal,
   } = useCart()
 
@@ -345,6 +351,9 @@ export default function POS() {
 
           {/* Product Grid */}
           <div style={styles.productArea}>
+            {/* Active Promotions Banner */}
+            <ActivePromotionsBanner />
+
             {isLoadingProducts ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <Spin size="large" />
@@ -481,6 +490,16 @@ export default function POS() {
 
           {/* Cart Footer */}
           <div style={styles.cartFooter}>
+            {/* Coupon Input */}
+            <CouponInput
+              couponCode={cart.coupon_code}
+              onApply={applyCoupon}
+              onRemove={removeCoupon}
+              isApplying={isApplyingCoupon}
+              isRemoving={isRemovingCoupon}
+              disabled={items.length === 0}
+            />
+
             <div style={styles.summaryRow}>
               <Text type="secondary">Subtotal</Text>
               <Text>{formatCurrency(cartSummary.subtotal)}</Text>
@@ -490,6 +509,13 @@ export default function POS() {
               <div style={styles.summaryRow}>
                 <Text type="secondary">Discount</Text>
                 <Text type="success">-{formatCurrency(cartSummary.discount)}</Text>
+              </div>
+            )}
+
+            {cartSummary.coupon_discount > 0 && (
+              <div style={styles.summaryRow}>
+                <Text type="secondary">Coupon ({cart.coupon_code})</Text>
+                <Text type="success">-{formatCurrency(cartSummary.coupon_discount)}</Text>
               </div>
             )}
 

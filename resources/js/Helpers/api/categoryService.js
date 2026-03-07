@@ -16,4 +16,8 @@ export const categoryService = {
     getProducts: (id, params = {}) => axios.get(`/categories/${id}/products`, { params }),
 };
 
+// Named exports for convenience
+export const fetchCategoriesAll = () => axios.get(route('pos.products.categories'));
+export const fetchCategoriesTree = () => categoryService.getTree();
+
 export default categoryService;

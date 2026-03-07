@@ -7,7 +7,8 @@ export const fetchChequeListing = async (params = {}) => {
 
 // Get cheque summary
 export const getChequeSummary = async () => {
-  return await axios.get(route('pos.cheques.summary'))
+  const response = await axios.get(route('pos.cheques.summary'))
+  return { data: { data: response.data } }
 }
 
 // Create cheque

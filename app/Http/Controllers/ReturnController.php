@@ -3,71 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ReturnType;
+use App\Http\Requests\Api\Return\StoreReturnRequest;
+use App\Http\Resources\ReturnResource;
 use App\Models\Order;
 use App\Models\OrderReturn;
 use App\Models\ReturnReason;
 use App\Models\Store;
 use App\Services\Return\ReturnService;
+use App\Traits\HasListing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ReturnController extends Controller
 {
+    use HasListing;
+
     public function __construct(
         protected ReturnService $returnService
     ) {}
 
-    /**
-     * Server-side listing for DataGridTable
-     */
-    public function listing(Request $request): JsonResponse
-    {
-        $store = Store::first();
-
-        $query = OrderReturn::with(['order', 'customer', 'processedBy'])
-            ->where('store_id', $store->id);
-
-        // Search
-        if ($request->search) {
-            $query->where('return_number', 'like', "%{$request->search}%");
-        }
-
-        // Sorting
-        if ($request->sort && count($request->sort) > 0) {
-            foreach ($request->sort as $sort) {
-                $query->orderBy($sort['colId'], $sort['sort']);
-            }
-        } else {
-            $query->orderByDesc('created_at');
-        }
-
-        $total = $query->count();
-        $page = $request->current ?? 1;
-        $pageSize = $request->pageSize ?? 20;
-
-        $returns = $query
-            ->skip(($page - 1) * $pageSize)
-            ->take($pageSize)
-            ->get()
-            ->map(fn($return) => [
-                'id' => $return->id,
-                'return_number' => $return->return_number,
-                'order_number' => $return->order?->order_number,
-                'customer' => $return->customer?->full_name,
-                'type' => $return->type,
-                'status' => $return->status,
-                'refund_amount' => $return->refund_amount,
-                'created_at' => $return->created_at,
-            ]);
-
-        return response()->json([
-            'data' => $returns,
-            'total' => $total,
-        ]);
-    }
-
     public function index(Request $request): JsonResponse
     {
+        if ($request->has('pageSize')) {
+            return $this->listing($request);
+        }
+
         $store = Store::first();
 
         $returns = OrderReturn::query()
@@ -81,61 +41,78 @@ class ReturnController extends Controller
             ->orderByDesc('created_at')
             ->paginate($request->per_page ?? 20);
 
-        return response()->json($returns);
+        return response()->json([
+            'data' => ReturnResource::collection($returns),
+            'total' => $returns->total(),
+        ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function listing(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'type' => 'required|in:refund,exchange,store_credit',
-            'return_reason_id' => 'nullable|exists:return_reasons,id',
-            'reason' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'refund_method' => 'nullable|string',
-            'restocking_fee' => 'nullable|numeric|min:0',
-            'items' => 'required|array|min:1',
-            'items.*.order_item_id' => 'required|exists:order_items,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.condition' => 'nullable|in:sellable,damaged,defective',
-            'items.*.restock' => 'nullable|boolean',
-            'items.*.reason' => 'nullable|string',
-        ]);
+        $store = Store::first();
+
+        return $this->getListing(
+            $request,
+            OrderReturn::class,
+            with: ['order', 'customer', 'processedBy'],
+            resource: ReturnResource::class,
+            options: [
+                'searchColumns' => ['return_number'],
+                'filterColumns' => [
+                    'status' => 'exact',
+                    'type' => 'exact',
+                ],
+                'defaultSort' => 'created_at',
+                'defaultSortDir' => 'desc',
+                'preFilter' => function ($query) use ($store) {
+                    $query->where('store_id', $store->id);
+                },
+            ]
+        );
+    }
+
+    public function store(StoreReturnRequest $request): JsonResponse
+    {
+        $data = $request->validated();
 
         try {
-            $order = Order::findOrFail($validated['order_id']);
+            $order = Order::findOrFail($data['order_id']);
 
             $return = $this->returnService->createReturn(
                 $order,
-                $validated['items'],
-                ReturnType::from($validated['type']),
-                $validated['return_reason_id'] ?? null,
-                $validated['reason'] ?? null,
-                $validated['notes'] ?? null,
-                $validated['refund_method'] ?? null,
-                $validated['restocking_fee'] ?? 0
+                $data['items'],
+                ReturnType::from($data['type']),
+                $data['return_reason_id'] ?? null,
+                $data['reason'] ?? null,
+                $data['notes'] ?? null,
+                $data['refund_method'] ?? null,
+                $data['restocking_fee'] ?? 0
             );
 
             return response()->json([
-                'message' => 'Return created successfully',
-                'data' => $return->load(['order', 'customer', 'items']),
+                'data' => new ReturnResource($return->load(['order', 'customer', 'items'])),
+                'notifications' => [['type' => 'success', 'message' => 'Return created successfully']],
             ], 201);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json([
+                'notifications' => [['type' => 'error', 'message' => $e->getMessage()]],
+            ], 422);
         }
     }
 
     public function show(OrderReturn $return): JsonResponse
     {
         return response()->json([
-            'data' => $return->load(['order.items', 'customer', 'processedBy', 'items.product', 'items.variant', 'returnReason']),
+            'data' => new ReturnResource($return->load(['order.items', 'customer', 'processedBy', 'items.product', 'items.variant', 'returnReason'])),
         ]);
     }
 
     public function getReturnableItems(Order $order): JsonResponse
     {
         if (!$order->canBeReturned()) {
-            return response()->json(['message' => 'Order cannot be returned'], 422);
+            return response()->json([
+                'notifications' => [['type' => 'error', 'message' => 'Order cannot be returned']],
+            ], 422);
         }
 
         $items = $this->returnService->getReturnableItems($order);
@@ -154,11 +131,13 @@ class ReturnController extends Controller
             $return = $this->returnService->approveReturn($return);
 
             return response()->json([
-                'message' => 'Return approved successfully',
-                'data' => $return->load(['order', 'customer', 'items']),
+                'data' => new ReturnResource($return->load(['order', 'customer', 'items'])),
+                'notifications' => [['type' => 'success', 'message' => 'Return approved successfully']],
             ]);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json([
+                'notifications' => [['type' => 'error', 'message' => $e->getMessage()]],
+            ], 422);
         }
     }
 
@@ -172,11 +151,13 @@ class ReturnController extends Controller
             $return = $this->returnService->rejectReturn($return, $validated['reason'] ?? null);
 
             return response()->json([
-                'message' => 'Return rejected',
-                'data' => $return->load(['order', 'customer', 'items']),
+                'data' => new ReturnResource($return->load(['order', 'customer', 'items'])),
+                'notifications' => [['type' => 'warning', 'message' => 'Return rejected']],
             ]);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json([
+                'notifications' => [['type' => 'error', 'message' => $e->getMessage()]],
+            ], 422);
         }
     }
 
@@ -195,11 +176,13 @@ class ReturnController extends Controller
             );
 
             return response()->json([
-                'message' => 'Return processed successfully',
-                'data' => $return->load(['order', 'customer', 'items']),
+                'data' => new ReturnResource($return->load(['order', 'customer', 'items'])),
+                'notifications' => [['type' => 'success', 'message' => 'Return processed successfully']],
             ]);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json([
+                'notifications' => [['type' => 'error', 'message' => $e->getMessage()]],
+            ], 422);
         }
     }
 

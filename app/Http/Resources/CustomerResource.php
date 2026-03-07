@@ -34,6 +34,11 @@ class CustomerResource extends JsonResource
             'is_active' => $this->is_active,
             'loyalty_points' => $this->loyalty_points,
             'loyalty_tier' => $this->loyalty_tier,
+            'customer_group_id' => $this->customer_group_id,
+            'customer_group' => $this->whenLoaded('customerGroup', fn() => [
+                'id' => $this->customerGroup?->id,
+                'name' => $this->customerGroup?->name,
+            ]),
             'total_orders' => $this->when($this->relationLoaded('orders'), $this->total_orders),
             'total_spent' => $this->when($this->relationLoaded('orders'), $this->total_spent),
             'loyalty' => $this->whenLoaded('loyalty'),

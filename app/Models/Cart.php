@@ -13,9 +13,10 @@ class Cart extends Model
     use HasFactory;
 
     protected $fillable = [
-        'store_id', 'user_id', 'customer_id', 'session_id', 'status',
-        'hold_name', 'subtotal', 'tax_amount', 'discount', 'discount_type',
-        'discount_reason', 'total', 'loyalty_points_to_redeem', 'loyalty_discount',
+        'store_id', 'user_id', 'customer_id', 'coupon_id', 'coupon_code',
+        'session_id', 'status', 'hold_name', 'subtotal', 'tax_amount',
+        'discount', 'discount_type', 'discount_reason', 'coupon_discount',
+        'total', 'loyalty_points_to_redeem', 'loyalty_discount',
         'notes', 'held_at', 'expires_at', 'selling_price_group_id',
     ];
 
@@ -33,6 +34,7 @@ class Cart extends Model
     public function store(): BelongsTo { return $this->belongsTo(Store::class); }
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
+    public function coupon(): BelongsTo { return $this->belongsTo(Coupon::class); }
     public function items(): HasMany { return $this->hasMany(CartItem::class); }
     public function sellingPriceGroup(): BelongsTo { return $this->belongsTo(SellingPriceGroup::class); }
 
@@ -73,7 +75,7 @@ class Cart extends Model
         $discount = $this->discount_type === 'percentage'
             ? ($this->subtotal * $this->discount) / 100
             : ($this->discount ?? 0);
-        return $discount + ($this->loyalty_discount ?? 0);
+        return $discount + ($this->loyalty_discount ?? 0) + ($this->coupon_discount ?? 0);
     }
 
     /**

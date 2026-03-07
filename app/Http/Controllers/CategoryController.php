@@ -2,63 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Api\Category\StoreCategoryRequest;
+use App\Http\Requests\Api\Category\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Traits\HasListing;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
-    /**
-     * Server-side listing for DataGridTable
-     */
-    public function listing(Request $request): JsonResponse
-    {
-        $query = Category::withCount('products');
-
-        // Search
-        if ($request->search) {
-            $term = $request->search;
-            $query->where('name', 'like', "%{$term}%");
-        }
-
-        // Sorting
-        if ($request->sort && count($request->sort) > 0) {
-            foreach ($request->sort as $sort) {
-                $query->orderBy($sort['colId'], $sort['sort']);
-            }
-        } else {
-            $query->orderBy('sort_order')->orderBy('name');
-        }
-
-        $total = $query->count();
-        $page = $request->current ?? 1;
-        $pageSize = $request->pageSize ?? 20;
-
-        $categories = $query
-            ->skip(($page - 1) * $pageSize)
-            ->take($pageSize)
-            ->get()
-            ->map(fn($cat) => [
-                'id' => $cat->id,
-                'name' => $cat->name,
-                'parent_id' => $cat->parent_id,
-                'products_count' => $cat->products_count,
-                'is_active' => $cat->is_active,
-                'sort_order' => $cat->sort_order,
-            ]);
-
-        return response()->json([
-            'data' => $categories,
-            'total' => $total,
-        ]);
-    }
+    use HasListing;
 
     public function index(Request $request): Response|JsonResponse
     {
-        // Get categories with hierarchy
+        if ($request->wantsJson()) {
+            return $this->listing($request);
+        }
+
+        // Get categories with hierarchy for tree view
         $categories = Category::with(['children' => function ($q) {
             $q->with('children')->withCount('products');
         }])
@@ -68,107 +33,67 @@ class CategoryController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Also get flat list for select dropdowns
-        $flatCategories = Category::withCount('products')
-            ->when($request->search, fn($q, $term) => $q->where('name', 'like', "%{$term}%"))
-            ->orderBy('name')
-            ->get()
-            ->map(fn($cat) => [
-                'id' => $cat->id,
-                'name' => $cat->name,
-                'parent_id' => $cat->parent_id,
-                'products_count' => $cat->products_count,
-                'is_active' => $cat->is_active,
-            ]);
-
-        // Return JSON only for non-Inertia API requests
-        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest')) {
-            return response()->json(['data' => $flatCategories]);
-        }
-
         return Inertia::render('Categories/Index', [
-            'categories' => $this->formatCategoryTree($categories),
-            'flatCategories' => $flatCategories,
+            'categories' => CategoryResource::collection($categories),
         ]);
     }
 
-    private function formatCategoryTree($categories)
+    public function listing(Request $request): JsonResponse
     {
-        return $categories->map(fn($cat) => [
-            'id' => $cat->id,
-            'name' => $cat->name,
-            'parent_id' => $cat->parent_id,
-            'description' => $cat->description,
-            'products_count' => $cat->products_count,
-            'is_active' => $cat->is_active,
-            'children' => $cat->children->count() > 0 ? $this->formatCategoryTree($cat->children) : [],
+        return $this->getListing(
+            $request,
+            Category::class,
+            resource: CategoryResource::class,
+            options: [
+                'searchColumns' => ['name'],
+                'filterColumns' => [
+                    'parent_id' => 'exact',
+                    'is_active' => 'exact',
+                ],
+                'withCount' => ['products'],
+                'defaultSort' => 'sort_order',
+                'defaultSortDir' => 'asc',
+            ]
+        );
+    }
+
+    public function all(): JsonResponse
+    {
+        $categories = Category::withCount('products')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'data' => CategoryResource::collection($categories),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse|JsonResponse
+    public function store(StoreCategoryRequest $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'parent_id' => 'nullable|exists:categories,id',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        $category = Category::create($request->validated());
 
-        $category = Category::create($validated);
-
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        if ($request->wantsJson()) {
             return response()->json([
-                'data' => $category,
-                'message' => 'Category created successfully.',
+                'data' => new CategoryResource($category),
+                'notifications' => [['type' => 'success', 'message' => 'Category created successfully']],
             ], 201);
         }
 
         return redirect()->back()->with('success', 'Category created successfully.');
     }
 
-    public function update(Request $request, Category $category): RedirectResponse|JsonResponse
+    public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'parent_id' => 'nullable|exists:categories,id',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        $category->update($request->validated());
 
-        // Prevent setting parent to self or own children
-        if ($validated['parent_id'] ?? null) {
-            $descendantIds = $this->getDescendantIds($category);
-            if (in_array($validated['parent_id'], $descendantIds) || $validated['parent_id'] == $category->id) {
-                if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
-                    return response()->json([
-                        'message' => 'Cannot set parent to self or descendant.',
-                        'errors' => ['parent_id' => ['Cannot set parent to self or descendant.']],
-                    ], 422);
-                }
-                return redirect()->back()->withErrors(['parent_id' => 'Cannot set parent to self or descendant.']);
-            }
-        }
-
-        $category->update($validated);
-
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        if ($request->wantsJson()) {
             return response()->json([
-                'data' => $category->fresh(),
-                'message' => 'Category updated successfully.',
+                'data' => new CategoryResource($category->fresh()),
+                'notifications' => [['type' => 'success', 'message' => 'Category updated successfully']],
             ]);
         }
 
         return redirect()->back()->with('success', 'Category updated successfully.');
-    }
-
-    private function getDescendantIds(Category $category): array
-    {
-        $ids = [];
-        foreach ($category->children as $child) {
-            $ids[] = $child->id;
-            $ids = array_merge($ids, $this->getDescendantIds($child));
-        }
-        return $ids;
     }
 
     public function destroy(Category $category): RedirectResponse|JsonResponse
@@ -178,9 +103,9 @@ class CategoryController extends Controller
 
         $category->delete();
 
-        if (request()->wantsJson() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+        if (request()->wantsJson()) {
             return response()->json([
-                'message' => 'Category deleted successfully.',
+                'notifications' => [['type' => 'success', 'message' => 'Category deleted successfully']],
             ]);
         }
 

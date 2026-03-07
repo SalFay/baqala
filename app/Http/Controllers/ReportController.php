@@ -99,4 +99,191 @@ class ReportController extends Controller
 
         return $this->reportService->exportReport($type, $format, $fromDate, $toDate);
     }
+
+    /**
+     * Profit & Loss Report
+     */
+    public function profitLoss(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->toDateString();
+        $toDate = $request->to_date ?? now()->toDateString();
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getProfitLossReport($fromDate, $toDate, $storeId)
+            );
+        }
+
+        return Inertia::render('Reports/ProfitLoss', [
+            'data' => $this->reportService->getProfitLossReport($fromDate, $toDate, $storeId),
+            'filters' => compact('fromDate', 'toDate', 'storeId'),
+        ]);
+    }
+
+    /**
+     * Daily Summary Report
+     */
+    public function dailySummary(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->toDateString();
+        $toDate = $request->to_date ?? now()->toDateString();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'daily' => $this->reportService->getDailySales($fromDate, $toDate, $storeId),
+                'summary' => $this->reportService->getSalesReport($fromDate, $toDate, $storeId),
+            ]);
+        }
+
+        return Inertia::render('Reports/DailySummary', [
+            'daily' => $this->reportService->getDailySales($fromDate, $toDate, $storeId),
+            'summary' => $this->reportService->getSalesReport($fromDate, $toDate, $storeId),
+            'filters' => compact('fromDate', 'toDate', 'storeId'),
+        ]);
+    }
+
+    /**
+     * Sales by Category Report
+     */
+    public function salesByCategory(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->toDateString();
+        $toDate = $request->to_date ?? now()->toDateString();
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getSalesByCategory($fromDate, $toDate, $storeId)
+            );
+        }
+
+        return Inertia::render('Reports/SalesByCategory', [
+            'categories' => $this->reportService->getSalesByCategory($fromDate, $toDate, $storeId),
+            'filters' => compact('fromDate', 'toDate', 'storeId'),
+        ]);
+    }
+
+    /**
+     * Sales by Customer Report
+     */
+    public function salesByCustomer(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->toDateString();
+        $toDate = $request->to_date ?? now()->toDateString();
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getSalesByCustomer($fromDate, $toDate, $storeId)
+            );
+        }
+
+        return Inertia::render('Reports/SalesByCustomer', [
+            'customers' => $this->reportService->getSalesByCustomer($fromDate, $toDate, $storeId),
+            'filters' => compact('fromDate', 'toDate', 'storeId'),
+        ]);
+    }
+
+    /**
+     * Payment Methods Report
+     */
+    public function paymentMethods(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->toDateString();
+        $toDate = $request->to_date ?? now()->toDateString();
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getPaymentMethodReport($fromDate, $toDate, $storeId)
+            );
+        }
+
+        return Inertia::render('Reports/PaymentMethodReport', [
+            'payments' => $this->reportService->getPaymentMethodReport($fromDate, $toDate, $storeId),
+            'filters' => compact('fromDate', 'toDate', 'storeId'),
+        ]);
+    }
+
+    /**
+     * Stock Valuation Report
+     */
+    public function stockValuation(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $locationId = $request->location_id;
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getStockValuation($storeId, $locationId)
+            );
+        }
+
+        return Inertia::render('Reports/StockValuation', [
+            'data' => $this->reportService->getStockValuation($storeId, $locationId),
+            'filters' => compact('storeId', 'locationId'),
+        ]);
+    }
+
+    /**
+     * Expiry Report
+     */
+    public function expiryReport(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $daysAhead = $request->days_ahead ?? 30;
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getExpiryReport($storeId, $daysAhead)
+            );
+        }
+
+        return Inertia::render('Reports/ExpiryReport', [
+            'items' => $this->reportService->getExpiryReport($storeId, $daysAhead),
+            'filters' => compact('storeId', 'daysAhead'),
+        ]);
+    }
+
+    /**
+     * Customer Aging Report
+     */
+    public function customerAging(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getCustomerAging($storeId)
+            );
+        }
+
+        return Inertia::render('Reports/CustomerAging', [
+            'customers' => $this->reportService->getCustomerAging($storeId),
+            'filters' => compact('storeId'),
+        ]);
+    }
+
+    /**
+     * Cash Register Report
+     */
+    public function cashRegisterReport(Request $request): Response|\Illuminate\Http\JsonResponse
+    {
+        $storeId = $request->store_id ?? auth()->user()->store_id ?? 1;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->toDateString();
+        $toDate = $request->to_date ?? now()->toDateString();
+
+        if ($request->wantsJson()) {
+            return response()->json(
+                $this->reportService->getCashRegisterReport($fromDate, $toDate, $storeId)
+            );
+        }
+
+        return Inertia::render('Reports/CashRegisterReport', [
+            'registers' => $this->reportService->getCashRegisterReport($fromDate, $toDate, $storeId),
+            'filters' => compact('fromDate', 'toDate', 'storeId'),
+        ]);
+    }
 }

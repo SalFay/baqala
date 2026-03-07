@@ -71,7 +71,7 @@ class POSController extends Controller
 
     public function getCart(): JsonResponse
     {
-        $cart = $this->cartService->getCart()->load(['items.product', 'customer']);
+        $cart = $this->cartService->getCart()->load(['items.product', 'customer', 'coupon']);
         $cartData = $cart->toApiArray();
 
         $subtotal = (float) ($cartData['subtotal'] ?? 0);
@@ -87,11 +87,15 @@ class POSController extends Controller
                 : $cart->discount;
         }
 
+        // Coupon discount
+        $couponDiscount = (float) ($cart->coupon_discount ?? 0);
+
         return response()->json([
             'cart' => [
                 'id' => $cartData['id'],
                 'items' => $cartData['items'],
                 'customer' => $cartData['customer'],
+                'coupon_code' => $cart->coupon_code,
             ],
             'summary' => [
                 'subtotal' => $subtotal,
@@ -101,6 +105,8 @@ class POSController extends Controller
                 'discount_value' => (float) ($cart->discount ?? 0),
                 'discount_type' => $cart->discount_type,
                 'discount_reason' => $cart->discount_reason,
+                'coupon_code' => $cart->coupon_code,
+                'coupon_discount' => $couponDiscount,
                 'total' => (float) ($cartData['total'] ?? 0),
             ],
         ]);
@@ -624,6 +630,71 @@ class POSController extends Controller
     public function recentOrders(Request $request): JsonResponse
     {
         return $this->dashboardRecentOrders($request);
+    }
+
+    /**
+     * Apply a coupon code to the cart
+     */
+    public function applyCoupon(Request $request): JsonResponse
+    {
+        $code = $request->validate(['code' => 'required|string|max:50'])['code'];
+
+        $result = $this->cartService->applyCoupon($code);
+
+        if (!$result['success']) {
+            return response()->json([
+                'message' => $result['message'],
+            ], 422);
+        }
+
+        $cart = $this->getCart()->getData(true);
+
+        return response()->json([
+            ...$cart,
+            'coupon' => $result['coupon'],
+            'notifications' => [['type' => 'success', 'message' => $result['message']]],
+        ]);
+    }
+
+    /**
+     * Remove coupon from cart
+     */
+    public function removeCoupon(): JsonResponse
+    {
+        $this->cartService->removeCoupon();
+        return $this->getCart();
+    }
+
+    /**
+     * Get cart with all applicable promotions/discounts
+     */
+    public function getCartWithPromotions(Request $request): JsonResponse
+    {
+        $paymentMethod = $request->payment_method;
+
+        $result = $this->cartService->getCartWithPromotions($paymentMethod);
+
+        return response()->json([
+            'cart' => $result['cart']->toApiArray(),
+            'promotions' => $result['promotions'],
+            'effective_total' => $result['effective_total'],
+            'savings' => $result['savings'],
+            'savings_percentage' => $result['savings_percentage'],
+            'free_shipping' => $result['free_shipping'],
+            'free_items' => $result['free_items'],
+        ]);
+    }
+
+    /**
+     * Get available promotions that could apply to the cart
+     */
+    public function getAvailablePromotions(): JsonResponse
+    {
+        $promotions = $this->cartService->getAvailablePromotions();
+
+        return response()->json([
+            'data' => $promotions,
+        ]);
     }
 
     /**

@@ -1,11 +1,20 @@
-import { Typography, Divider, theme } from 'antd'
+import { Typography, Divider, Tag, theme } from 'antd'
+import { CloseOutlined } from '@ant-design/icons'
 import { formatCurrency } from '@/Helpers/formatters'
 
 const { Text, Title } = Typography
 
-export default function CartSummary({ summary }) {
+export default function CartSummary({ summary, couponCode, onRemoveCoupon }) {
   const { token } = theme.useToken()
-  const { subtotal = 0, tax = 0, tax_rate = 0, discount = 0, loyaltyDiscount = 0, total = 0 } = summary
+  const {
+    subtotal = 0,
+    tax = 0,
+    tax_rate = 0,
+    discount = 0,
+    loyaltyDiscount = 0,
+    couponDiscount = 0,
+    total = 0
+  } = summary
 
   return (
     <div
@@ -33,6 +42,28 @@ export default function CartSummary({ summary }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
           <Text type="secondary">Discount</Text>
           <Text style={{ color: token.colorSuccess }}>-{formatCurrency(discount)}</Text>
+        </div>
+      )}
+
+      {/* Coupon Discount */}
+      {(couponDiscount > 0 || couponCode) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, alignItems: 'center' }}>
+          <div>
+            <Text type="secondary">Coupon </Text>
+            {couponCode && (
+              <Tag
+                color="green"
+                closable
+                onClose={(e) => { e.preventDefault(); onRemoveCoupon?.() }}
+                style={{ marginLeft: 4 }}
+              >
+                {couponCode}
+              </Tag>
+            )}
+          </div>
+          {couponDiscount > 0 && (
+            <Text style={{ color: token.colorSuccess }}>-{formatCurrency(couponDiscount)}</Text>
+          )}
         </div>
       )}
 

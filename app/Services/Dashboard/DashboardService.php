@@ -88,8 +88,8 @@ class DashboardService
         $totalCustomers = Customer::count();
 
         // Calculate growth percentages
-        $dailyGrowth = $this->calculateGrowth($salesStats->today_sales, $salesStats->yesterday_sales);
-        $monthlyGrowth = $this->calculateGrowth($salesStats->month_sales, $salesStats->last_month_sales);
+        $dailyGrowth = $this->calculateGrowth((float) ($salesStats->today_sales ?? 0), (float) ($salesStats->yesterday_sales ?? 0));
+        $monthlyGrowth = $this->calculateGrowth((float) ($salesStats->month_sales ?? 0), (float) ($salesStats->last_month_sales ?? 0));
 
         return [
             'todaySales' => (float) ($salesStats->today_sales ?? 0),

@@ -35,6 +35,12 @@ use App\Http\Controllers\CustomerLedgerController;
 use App\Http\Controllers\ChequeController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\TaxRateController;
+use App\Http\Controllers\RestaurantTableController;
+use App\Http\Controllers\TableReservationController;
+use App\Http\Controllers\KitchenController;
+use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\TimePricingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -130,6 +136,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/cart/scan', 'scanBarcode')->name('cart.scan');
             Route::post('/cart/discount', 'applyDiscount')->name('cart.discount');
             Route::delete('/cart/discount', 'removeDiscount')->name('cart.discount.remove');
+            Route::post('/cart/coupon', 'applyCoupon')->name('cart.coupon');
+            Route::delete('/cart/coupon', 'removeCoupon')->name('cart.coupon.remove');
+            Route::get('/cart/promotions', 'getCartWithPromotions')->name('cart.promotions');
+            Route::get('/cart/available-promotions', 'getAvailablePromotions')->name('cart.available-promotions');
             Route::post('/cart/hold', 'holdCart')->name('cart.hold');
             Route::get('/cart/hold', 'getHeldCarts')->name('cart.held');
             Route::post('/cart/hold/{cartId}/restore', 'restoreHeldCart')->name('cart.restore');
@@ -318,13 +328,97 @@ Route::middleware('auth')->group(function () {
         });
 
         // ------------------------------------------
+        // POS: Time-Based Pricing
+        // ------------------------------------------
+        Route::controller(TimePricingController::class)->prefix('time-pricing')->name('time-pricing.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/active', 'active')->name('active');
+            Route::post('/preview', 'preview')->name('preview');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{timePricing}', 'show')->name('show');
+            Route::put('/{timePricing}', 'update')->name('update');
+            Route::delete('/{timePricing}', 'destroy')->name('destroy');
+            Route::post('/{timePricing}/toggle', 'toggle')->name('toggle');
+        });
+
+        // ------------------------------------------
+        // POS: Tax Rates
+        // ------------------------------------------
+        Route::controller(TaxRateController::class)->prefix('tax-rates')->name('tax-rates.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{taxRate}', 'update')->name('update');
+            Route::delete('/{taxRate}', 'destroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // POS: Tax Groups
+        // ------------------------------------------
+        Route::controller(TaxRateController::class)->prefix('tax-groups')->name('tax-groups.')->group(function () {
+            Route::post('/listing', 'groupsIndex')->name('listing');
+            Route::get('/all', 'groupsAll')->name('all');
+            Route::post('/', 'groupStore')->name('store');
+            Route::put('/{taxGroup}', 'groupUpdate')->name('update');
+            Route::delete('/{taxGroup}', 'groupDestroy')->name('destroy');
+        });
+
+        // ------------------------------------------
+        // Restaurant: Tables
+        // ------------------------------------------
+        Route::controller(RestaurantTableController::class)->prefix('restaurant-tables')->name('restaurant-tables.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/all', 'all')->name('all');
+            Route::get('/floor-plan', 'floorPlan')->name('floor-plan');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{restaurantTable}', 'update')->name('update');
+            Route::delete('/{restaurantTable}', 'destroy')->name('destroy');
+            Route::post('/{restaurantTable}/status', 'updateStatus')->name('update-status');
+            Route::post('/{restaurantTable}/position', 'updatePosition')->name('update-position');
+        });
+
+        // ------------------------------------------
+        // Restaurant: Reservations
+        // ------------------------------------------
+        Route::controller(TableReservationController::class)->prefix('reservations')->name('reservations.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/today-summary', 'todaySummary')->name('today-summary');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{tableReservation}', 'update')->name('update');
+            Route::delete('/{tableReservation}', 'destroy')->name('destroy');
+            Route::post('/{tableReservation}/confirm', 'confirm')->name('confirm');
+            Route::post('/{tableReservation}/cancel', 'cancel')->name('cancel');
+            Route::post('/{tableReservation}/complete', 'complete')->name('complete');
+            Route::post('/{tableReservation}/no-show', 'noShow')->name('no-show');
+        });
+
+        // ------------------------------------------
+        // Kitchen Display System (KDS)
+        // ------------------------------------------
+        Route::controller(KitchenController::class)->prefix('kitchen')->name('kitchen.')->group(function () {
+            Route::get('/', 'display')->name('display');
+            Route::get('/orders', 'getPendingOrders')->name('orders');
+            Route::get('/statistics', 'statistics')->name('statistics');
+            Route::get('/by-station', 'byStation')->name('by-station');
+            Route::post('/bump-order', 'bumpOrder')->name('bump-order');
+            Route::post('/{kitchenOrder}/status', 'updateStatus')->name('update-status');
+            Route::post('/{kitchenOrder}/start', 'startPreparing')->name('start');
+            Route::post('/{kitchenOrder}/ready', 'markReady')->name('ready');
+            Route::post('/{kitchenOrder}/served', 'markServed')->name('served');
+        });
+
+        // ------------------------------------------
         // POS: Coupons
         // ------------------------------------------
         Route::controller(CouponController::class)->prefix('coupons')->name('coupons.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('/listing', 'listing')->name('listing');
             Route::get('/generate-code', 'generateCode')->name('generate-code');
-            Route::post('/validate', 'validate')->name('validate');
+            Route::post('/validate', 'validateCoupon')->name('validate');
             Route::post('/', 'store')->name('store');
             Route::put('/{coupon}', 'update')->name('update');
             Route::delete('/{coupon}', 'destroy')->name('destroy');
@@ -444,6 +538,27 @@ Route::middleware('auth')->group(function () {
         });
 
         // ------------------------------------------
+        // POS: Quotations
+        // ------------------------------------------
+        Route::controller(QuotationController::class)->prefix('quotations')->name('quotations.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/listing', 'listing')->name('listing');
+            Route::get('/statistics', 'statistics')->name('statistics');
+            Route::get('/create', 'form')->name('create');
+            Route::get('/{quotation}/edit', 'form')->name('edit');
+            Route::get('/{quotation}/print', 'print')->name('print');
+            Route::get('/{quotation}', 'show')->name('show');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{quotation}', 'update')->name('update');
+            Route::delete('/{quotation}', 'destroy')->name('destroy');
+            Route::post('/{quotation}/send', 'markAsSent')->name('send');
+            Route::post('/{quotation}/accept', 'accept')->name('accept');
+            Route::post('/{quotation}/reject', 'reject')->name('reject');
+            Route::post('/{quotation}/convert', 'convertToOrder')->name('convert');
+            Route::post('/{quotation}/duplicate', 'duplicate')->name('duplicate');
+        });
+
+        // ------------------------------------------
         // POS: Statements (Customer & Vendor)
         // ------------------------------------------
         Route::controller(StatementController::class)->group(function () {
@@ -532,6 +647,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventory', 'inventory')->name('inventory');
         Route::get('/customers', 'customers')->name('customers');
         Route::get('/export', 'export')->name('export');
+        Route::get('/profit-loss', 'profitLoss')->name('profit-loss');
+        Route::get('/daily-summary', 'dailySummary')->name('daily-summary');
+        Route::get('/sales-by-category', 'salesByCategory')->name('sales-by-category');
+        Route::get('/sales-by-customer', 'salesByCustomer')->name('sales-by-customer');
+        Route::get('/payment-methods', 'paymentMethods')->name('payment-methods');
+        Route::get('/stock-valuation', 'stockValuation')->name('stock-valuation');
+        Route::get('/expiry', 'expiryReport')->name('expiry');
+        Route::get('/customer-aging', 'customerAging')->name('customer-aging');
+        Route::get('/cash-registers', 'cashRegisterReport')->name('cash-registers');
     });
 
     // ==========================================
@@ -553,6 +677,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/expenses', fn () => inertia('Expenses/Index'))->name('expenses.page');
     Route::get('/statements', fn () => inertia('Statements/Index'))->name('statements.page');
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.page');
+    Route::get('/settings/time-pricing', fn () => inertia('Settings/TimePricing/Index'))->name('settings.time-pricing.page');
+    Route::get('/coupons', fn () => inertia('Marketing/Coupons/Index'))->name('coupons.page');
     Route::get('/stores', fn () => inertia('Stores/Index'))->name('stores.page');
 
     // ==========================================

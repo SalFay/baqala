@@ -1,132 +1,62 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Http\Requests\Api\Customer\StoreCustomerRequest;
 use App\Http\Requests\Api\Customer\UpdateCustomerRequest;
+use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
+use App\Traits\HasListing;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\JsonResponse;
 
 class CustomerController extends Controller
 {
+    use HasListing;
+
     public function index(Request $request): Response|JsonResponse
     {
-        $customers = Customer::query()
-            ->when($request->search, function ($q, $term) {
-                $q->where(function ($q) use ($term) {
-                    $q->where('first_name', 'like', "%{$term}%")
-                        ->orWhere('last_name', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%")
-                        ->orWhere('phone', 'like', "%{$term}%");
-                });
-            })
-            ->when($request->status, fn($q, $status) => $q->where('status', $status))
-            ->orderBy($request->sort_by ?? 'created_at', $request->sort_dir ?? 'desc')
-            ->paginate($request->per_page ?? 20);
-
-        $customersData = $customers->map(fn($customer) => [
-            'id' => $customer->id,
-            'first_name' => $customer->first_name,
-            'last_name' => $customer->last_name,
-            'full_name' => $customer->full_name,
-            'email' => $customer->email,
-            'phone' => $customer->phone,
-            'loyalty_points' => $customer->loyalty_points,
-            'credit_balance' => $customer->credit_balance ?? 0,
-            'status' => $customer->status,
-            'created_at' => $customer->created_at,
-        ]);
-
-        // Return JSON only for non-Inertia API requests
-        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest')) {
-            return response()->json([
-                'data' => $customersData,
-                'current_page' => $customers->currentPage(),
-                'per_page' => $customers->perPage(),
-                'total' => $customers->total(),
-                'last_page' => $customers->lastPage(),
-            ]);
+        if ($request->wantsJson()) {
+            return $this->listing($request);
         }
 
-        return Inertia::render('Customers/Index', [
-            'customers' => [
-                'data' => $customersData,
-                'meta' => [
-                    'total' => $customers->total(),
-                    'per_page' => $customers->perPage(),
-                    'current_page' => $customers->currentPage(),
-                    'last_page' => $customers->lastPage(),
-                ],
-            ],
-            'filters' => $request->only(['search', 'status']),
-        ]);
+        return Inertia::render('Customers/Index');
     }
 
-    /**
-     * Server-side listing for DataGridTable
-     */
     public function listing(Request $request): JsonResponse
     {
-        $query = Customer::query();
+        return $this->getListing(
+            $request,
+            Customer::class,
+            with: ['customerGroup'],
+            resource: CustomerResource::class,
+            options: [
+                'searchColumns' => ['first_name', 'last_name', 'email', 'phone'],
+                'filterColumns' => [
+                    'status' => 'exact',
+                    'customer_group_id' => 'exact',
+                ],
+                'defaultSort' => 'created_at',
+                'defaultSortDir' => 'desc',
+            ]
+        );
+    }
 
-        // Search
-        if ($request->search) {
-            $term = $request->search;
-            $query->where(function ($q) use ($term) {
-                $q->where('first_name', 'like', "%{$term}%")
-                    ->orWhere('last_name', 'like', "%{$term}%")
-                    ->orWhere('email', 'like', "%{$term}%")
-                    ->orWhere('phone', 'like', "%{$term}%");
-            });
-        }
+    public function show(Customer $customer, Request $request): Response|JsonResponse
+    {
+        $customer->load(['orders' => fn($q) => $q->latest()->limit(10)]);
 
-        // Soft deleted filter
-        if ($request->soft_deleted) {
-            $query->onlyTrashed();
-        }
-
-        // Sorting
-        if ($request->sort && count($request->sort) > 0) {
-            foreach ($request->sort as $sort) {
-                $query->orderBy($sort['colId'], $sort['sort']);
-            }
-        } else {
-            $query->orderBy('created_at', 'desc');
-        }
-
-        $total = $query->count();
-        $page = $request->current ?? 1;
-        $pageSize = $request->pageSize ?? 20;
-
-        $customers = $query
-            ->with('customerGroup')
-            ->skip(($page - 1) * $pageSize)
-            ->take($pageSize)
-            ->get()
-            ->map(fn($customer) => [
-                'id' => $customer->id,
-                'first_name' => $customer->first_name,
-                'last_name' => $customer->last_name,
-                'full_name' => $customer->full_name,
-                'email' => $customer->email,
-                'phone' => $customer->phone,
-                'loyalty_points' => $customer->loyalty_points,
-                'credit_balance' => $customer->credit_balance ?? 0,
-                'customer_group_id' => $customer->customer_group_id,
-                'customer_group' => $customer->customerGroup ? [
-                    'id' => $customer->customerGroup->id,
-                    'name' => $customer->customerGroup->name,
-                ] : null,
-                'status' => $customer->status,
-                'created_at' => $customer->created_at,
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new CustomerResource($customer),
             ]);
+        }
 
-        return response()->json([
-            'data' => $customers,
-            'total' => $total,
+        return Inertia::render('Customers/Show', [
+            'customer' => new CustomerResource($customer),
         ]);
     }
 
@@ -138,54 +68,7 @@ class CustomerController extends Controller
     public function edit(Customer $customer): Response
     {
         return Inertia::render('Customers/Edit', [
-            'customer' => [
-                'id' => $customer->id,
-                'first_name' => $customer->first_name,
-                'last_name' => $customer->last_name,
-                'email' => $customer->email,
-                'phone' => $customer->phone,
-                'address' => $customer->address,
-                'city' => $customer->city,
-                'loyalty_points' => $customer->loyalty_points,
-                'credit_limit' => $customer->credit_limit,
-                'status' => $customer->status,
-            ],
-        ]);
-    }
-
-    public function show(Customer $customer, Request $request): Response|JsonResponse
-    {
-        $customer->load(['orders' => fn($q) => $q->latest()->limit(10)]);
-
-        $customerData = [
-            'id' => $customer->id,
-            'first_name' => $customer->first_name,
-            'last_name' => $customer->last_name,
-            'full_name' => $customer->full_name,
-            'email' => $customer->email,
-            'phone' => $customer->phone,
-            'address' => $customer->address,
-            'city' => $customer->city,
-            'loyalty_points' => $customer->loyalty_points,
-            'credit_limit' => $customer->credit_limit,
-            'credit_balance' => $customer->credit_balance ?? 0,
-            'status' => $customer->status,
-            'recent_orders' => $customer->orders->map(fn($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'total' => $order->total,
-                'status' => $order->status,
-                'created_at' => $order->created_at,
-            ]),
-            'created_at' => $customer->created_at,
-        ];
-
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
-            return response()->json(['data' => $customerData]);
-        }
-
-        return Inertia::render('Customers/Show', [
-            'customer' => $customerData,
+            'customer' => new CustomerResource($customer),
         ]);
     }
 
@@ -193,10 +76,10 @@ class CustomerController extends Controller
     {
         $customer = Customer::create($request->validated());
 
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        if ($request->wantsJson()) {
             return response()->json([
-                'data' => $customer,
-                'message' => 'Customer created successfully.',
+                'data' => new CustomerResource($customer),
+                'notifications' => [['type' => 'success', 'message' => 'Customer created successfully']],
             ], 201);
         }
 
@@ -208,10 +91,10 @@ class CustomerController extends Controller
     {
         $customer->update($request->validated());
 
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        if ($request->wantsJson()) {
             return response()->json([
-                'data' => $customer->fresh(),
-                'message' => 'Customer updated successfully.',
+                'data' => new CustomerResource($customer->fresh()),
+                'notifications' => [['type' => 'success', 'message' => 'Customer updated successfully']],
             ]);
         }
 
@@ -223,9 +106,9 @@ class CustomerController extends Controller
     {
         $customer->delete();
 
-        if (request()->wantsJson() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+        if (request()->wantsJson()) {
             return response()->json([
-                'message' => 'Customer deleted successfully.',
+                'notifications' => [['type' => 'success', 'message' => 'Customer deleted successfully']],
             ]);
         }
 
