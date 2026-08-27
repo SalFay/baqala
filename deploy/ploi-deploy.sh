@@ -50,17 +50,8 @@ $PHP "$COMPOSER" install --no-interaction --prefer-dist --optimize-autoloader --
 
 $PHP artisan optimize:clear
 $PHP artisan config:cache
+$PHP artisan route:cache
 $PHP artisan view:cache
-
-# NO `artisan route:cache`. routes/admin.php assigns the name users.update
-# twice - line 60 (update user) and line 226 (update roles, which should be
-# roles.update). Route caching serialises names and refuses duplicates:
-#
-#     Unable to prepare route [admin/roles/edit/{role}] for serialization.
-#     Another route has already been assigned name [users.update].
-#
-# The app runs fine without a route cache, just marginally slower. Re-enable
-# this line once the duplicate name is fixed on the production branch.
 
 sudo service php8.2-fpm reload
 
