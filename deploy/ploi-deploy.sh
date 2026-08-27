@@ -16,16 +16,26 @@
 # branch here: v3 needs its own 101-table database. See deploy/deploy-v3.sh.
 
 # --- PHP version -----------------------------------------------------------
-# The site's FPM pool is /etc/php/8.2/fpm/pool.d/pos-4ugbp.conf, but the
-# server's default CLI php is 8.3. Running composer under the CLI default
-# generates vendor/composer/platform_check.php demanding PHP >= 8.3, which
-# makes every request die with:
+# Two separate things are going on here. Both matter.
 #
-#     Composer detected issues in your platform:
-#     Your Composer dependencies require a PHP version ">= 8.3.0".
+# 1. The site's FPM pool is /etc/php/8.2/fpm/pool.d/pos-4ugbp.conf, but the
+#    server's default CLI php is 8.3. Composer writes
+#    vendor/composer/platform_check.php against whichever PHP it runs under,
+#    so running it as the default `composer` builds vendor/ for 8.3 and every
+#    request then dies with:
 #
-# So pin every command to the same binary the site actually serves with.
-# This is the correct fix; --ignore-platform-reqs only hides the mismatch.
+#        Composer detected issues in your platform:
+#        Your Composer dependencies require a PHP version ">= 8.3.0".
+#
+#    Hence pinning $PHP to the binary the site actually serves with.
+#
+# 2. composer.lock itself pins maennchen/zipstream-php 3.2.1, which requires
+#    php-64bit ^8.3, pulled in by phpoffice/phpspreadsheet. Under PHP 8.2
+#    composer refuses outright: "Your lock file does not contain a compatible
+#    set of packages." So --ignore-platform-reqs is REQUIRED here, not
+#    cosmetic - it is what has kept this deploy working. Do not remove it
+#    without first either moving the site's pool to PHP 8.3 or relaxing
+#    zipstream in the lock (composer require maennchen/zipstream-php:^2.1).
 PHP=/usr/bin/php8.2
 COMPOSER="$(command -v composer)"
 
@@ -38,7 +48,7 @@ trap '$PHP artisan up || true' EXIT
 git fetch origin production
 git reset --hard origin/production
 
-$PHP "$COMPOSER" install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+$PHP "$COMPOSER" install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-reqs
 
 # No npm step: this branch commits its compiled assets (public/css,
 # public/js, public/themes, public/mix-manifest.json). Branch v3 does not -

@@ -51,7 +51,7 @@ git -c safe.directory="$SITE" reset --hard "$TARGET"
 echo
 echo "==> Rebuilding PHP dependencies (Laravel 8)"
 # Mandatory: vendor/ currently holds Laravel 11 packages from the v3 deploy.
-/usr/bin/php8.2 "$(command -v composer)" install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+/usr/bin/php8.2 "$(command -v composer)" install --no-interaction --prefer-dist --optimize-autoloader --no-dev --ignore-platform-reqs
 
 echo
 echo "==> Clearing caches"
