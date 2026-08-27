@@ -24,7 +24,7 @@
 		use Illuminate\Support\Facades\Route;
 
 		Route::get( '/',
-				[ DashboardController::class, 'index' ] )->name( 'dashboard' )->middleware( 'can:access dashboard' );
+				[ DashboardController::class, 'index' ] )->name( 'admin.dashboard' )->middleware( 'can:access dashboard' );
 		/**
 			* Invoices
 			*/
@@ -323,7 +323,7 @@
 						Route::get( '/{vendor}', [ StockController::class, 'index' ] )
 						     ->name( 'inventory.add' )->middleware( 'can:add inventory' );
 						Route::post( '/{vendor}', [ StockController::class, 'store' ] )
-						     ->name( 'inventory.add' )->middleware( 'can:add inventory' );
+						     ->name( 'inventory.store' )->middleware( 'can:add inventory' );
 						Route::patch( '{vendor}/cart', [ StockController::class, 'showCart' ] )
 						     ->name( 'inventory.show_cart' )->middleware( 'can:show inventory cart' );
 						Route::post( '{vendor}/cart', [ StockController::class, 'addToCart' ] )
@@ -351,7 +351,7 @@
 						     ->name( 'order.add' )->middleware( 'can:add order' );
 
 						Route::post( '/{customer}', [ OrderController::class, 'store' ] )
-						     ->name( 'order.add' )->middleware( 'can:add order' );
+						     ->name( 'order.store' )->middleware( 'can:add order' );
 
 						Route::patch( '{customer}/cart', [ OrderController::class, 'showCart' ] )
 						     ->name( 'order.show_cart' )->middleware( 'can:show order cart' );
