@@ -223,7 +223,7 @@
 				     ->name( 'roles.edit' )->middleware( 'can:update roles' );
 
 				Route::post( '/edit/{role}', [ RoleController::class, 'update' ] )
-				     ->name( 'users.update' )->middleware( 'can:update roles' );
+				     ->name( 'roles.update' )->middleware( 'can:update roles' );
 
 				Route::post( '/delete/{role}', [ RoleController::class, 'destroy' ] )
 				     ->name( 'roles.delete' )->middleware( 'can:delete roles' );
