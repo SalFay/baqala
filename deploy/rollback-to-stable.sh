@@ -23,7 +23,7 @@ STAMP="$(date +%F-%H%M)"
 cd "$SITE"
 
 echo "==> Preflight"
-php -v | head -1
+/usr/bin/php8.2 -v | head -1
 whoami
 test -w . || { echo "FATAL: no write access here. Run as pos-4ugbp."; exit 1; }
 
@@ -55,7 +55,7 @@ echo "==> Rebuilding PHP dependencies (Laravel 8)"
 
 echo
 echo "==> Clearing caches"
-php artisan optimize:clear
+/usr/bin/php8.2 artisan optimize:clear
 
 echo
 echo "==> Done. Deployed $(git -c safe.directory="$SITE" rev-parse --short HEAD)"
