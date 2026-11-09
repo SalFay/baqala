@@ -53,6 +53,25 @@ class Order extends Model
    */
   public const DISCOUNT_SQL = 'GREATEST(0, sub_total + COALESCE(delivery_charges, 0) - total)';
 
+  /**
+   * Each cart row's purchase_price is the product's cost, saved on the order line and
+   * in the inventory. A blank or non-numeric value becomes 0 (the columns are NOT NULL).
+   * The POS used to send the sale price here by mistake, so every line had cost = sale.
+   */
+  public static function normalizeCartCosts( \Illuminate\Http\Request $request ) : void
+  {
+    if( !is_array( $request->products ) ) {
+      return;
+    }
+    $request->merge( [
+      'products' => array_map( static function( $p ) {
+        $cost = $p[ 'purchase_price' ] ?? null;
+        $p[ 'purchase_price' ] = is_numeric( $cost ) && $cost >= 0 ? (float) $cost : 0.0;
+        return $p;
+      }, $request->products ),
+    ] );
+  }
+
   public function getDiscountAmountAttribute() : float
   {
     return max( 0, round( $this->sub_total + ( $this->delivery_charges ?? 0 ) - $this->total, 2 ) );

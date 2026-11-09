@@ -379,7 +379,7 @@
 						 'sale_price': $(tr).find(':input').eq(0).val(),
 						 'stock': $(tr).find('td:eq(2)').find('input').val(),
 						 'taxable_price': $(tr).find('td:eq(3)').find('input').val(),
-						 'purchase_price': $(tr).find('input[type=hidden]').val(),
+						 'purchase_price': $(tr).find('[name$="[purchase_price]"]').val(),
 					 }
 					 products.push(sub)
 				 }
@@ -443,7 +443,7 @@
 						'sale_price': $(tr).find(':input').eq(0).val(),
 						'stock': $(tr).find('td:eq(2)').find('input').val(),
 						'taxable_price': $(tr).find('td:eq(3)').find('input').val(),
-						'purchase_price': $(tr).find('input[type=hidden]').val(),
+						'purchase_price': $(tr).find('[name$="[purchase_price]"]').val(),
 					}
 					products.push(sub)
 				}

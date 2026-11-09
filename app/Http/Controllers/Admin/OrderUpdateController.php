@@ -56,6 +56,7 @@ class OrderUpdateController extends Controller
   
   public function update( Request $request, Order $order )
   {
+    Order::normalizeCartCosts( $request );
     $paid = $request->amount;
     $total = $request->total;
     $type = $request->payment_type;

@@ -165,6 +165,7 @@ class OrderController extends Controller
 
   public function store( Request $request, Customer $customer )
   {
+    Order::normalizeCartCosts( $request );
     $paid = $request->amount;
     $total = $request->total;
     $type = $request->payment_type;
