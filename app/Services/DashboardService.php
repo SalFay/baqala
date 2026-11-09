@@ -125,10 +125,9 @@ class DashboardService
     /** Orders and sales by hour the order was rung up. */
     private function hourly( Carbon $from, Carbon $to ) : array
     {
-        $rows = DB::table( 'orders' )->whereNull( 'deleted_at' )->whereBetween( 'date', $this->dates( $from, $to ) )
-                  ->groupByRaw( 'HOUR(created_at)' )
-                  ->selectRaw( 'HOUR(created_at) AS h, COUNT(*) AS orders, SUM(total) AS sales' )
-                  ->get()->keyBy( 'h' );
+        $rows = $this->groupedBy( 'h', 'HOUR(created_at)', $from, $to )
+                     ->selectRaw( 'h, COUNT(*) AS orders, SUM(total) AS sales' )
+                     ->get()->keyBy( 'h' );
 
         return collect( self::HOURS )
             ->map( fn( $h ) => [ 'hour' => $h, 'label' => Carbon::createFromTime( $h )->format( 'g A' ),
@@ -188,10 +187,9 @@ class DashboardService
     {
         $name = "NULLIF(REPLACE(UPPER(TRIM(COALESCE(cashier_name, ''))), '.', ''), '')";
 
-        return DB::table( 'orders' )->whereNull( 'deleted_at' )->whereBetween( 'date', $this->dates( $from, $to ) )
-                 ->groupByRaw( $name )
-                 ->selectRaw( "$name AS name, COUNT(*) AS orders, SUM(total) AS sales" )
-                 ->orderByDesc( 'sales' )->get()
+        return $this->groupedBy( 'name', $name, $from, $to )
+                    ->selectRaw( 'name, COUNT(*) AS orders, SUM(total) AS sales' )
+                    ->orderByDesc( 'sales' )->get()
                  ->map( fn( $r ) => [ 'name' => $r->name ?? 'Not entered', 'orders' => (int) $r->orders,
                                       'sales' => (float) $r->sales, 'avg' => $r->orders ? $r->sales / $r->orders : 0 ] )
                  ->all();
@@ -201,12 +199,9 @@ class DashboardService
     private function months( Carbon $to ) : array
     {
         $start = $to->copy()->startOfMonth()->subMonths( 11 );
-        $rows = DB::table( 'orders' )->whereNull( 'deleted_at' )
-                  ->whereBetween( 'date', [ $start->toDateString(), $to->copy()->endOfMonth()->toDateString() ] )
-                  ->groupByRaw( "DATE_FORMAT(date, '%Y-%m')" )
-                  ->selectRaw( "DATE_FORMAT(date, '%Y-%m') AS ym, COUNT(*) AS orders, SUM(total) AS sales,
-                        SUM(" . Order::DISCOUNT_SQL . ") AS discount, SUM(delivery_charges) AS delivery" )
-                  ->get()->keyBy( 'ym' );
+        $rows = $this->groupedBy( 'ym', "DATE_FORMAT(date, '%Y-%m')", $start, $to->copy()->endOfMonth() )
+                     ->selectRaw( 'ym, COUNT(*) AS orders, SUM(total) AS sales, SUM(discount) AS discount, SUM(delivery_charges) AS delivery' )
+                     ->get()->keyBy( 'ym' );
 
         $out = [];
         for( $m = $start->copy(); $m->lte( $to ); $m->addMonth() ) {
@@ -256,6 +251,20 @@ class DashboardService
             'payable'    => $party( Vendor::class, 'COALESCE(credit, 0) - COALESCE(debit, 0)' ),
             'stock'      => (float) DB::table( 'inventory' )->whereNull( 'deleted_at' )->where( 'status', 'Available' )->sum( 'cost' ),
         ];
+    }
+
+    /**
+     * Live orders in the range, ready to group by a computed value ($sql AS $alias).
+     * The value is computed in a subquery and grouped as a plain column outside it:
+     * MariaDB (the live server) rejects GROUP BY on an expression with ONLY_FULL_GROUP_BY,
+     * which MySQL 8 accepts.
+     */
+    private function groupedBy( string $alias, string $sql, Carbon $from, Carbon $to )
+    {
+        $orders = DB::table( 'orders' )->whereNull( 'deleted_at' )->whereBetween( 'date', $this->dates( $from, $to ) )
+                    ->selectRaw( "$sql AS $alias, total, delivery_charges, " . Order::DISCOUNT_SQL . ' AS discount' );
+
+        return DB::query()->fromSub( $orders, 'o' )->groupBy( $alias );
     }
 
     /** Sale lines of live orders in the range. */
