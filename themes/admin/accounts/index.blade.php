@@ -26,6 +26,8 @@
 		 table.dataTable({
 			 autoWidth: true,
 			 ordering: false,
+			 processing: true,
+			 serverSide: true,
 			 ajax: {
 				 url: "{{route('accounts.ajax')}}",
 				 type: 'post',

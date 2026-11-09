@@ -54,17 +54,20 @@ class ProductService
     $query = InventoryLog::query();
     if( !empty( $request->search[ 'value' ] ) ) {
       $search = $request->search[ 'value' ];
-      $query->where( 'order_type', 'LIKE', '%' . $search . '%' )
-            ->orWhere( 'order_id', 'LIKE', '%' . $search . '%' )
-            ->orWhere( 'status', 'LIKE', '%' . $search . '%' )
-            ->orWhereHas( 'product', function( $query ) use ( $search ) {
-              $query->where( 'name', 'LIKE', '%' . $search . '%' );
-            } );
+      // Grouped so the date range below still applies to search results.
+      $query->where( function( $query ) use ( $search ) {
+        $query->where( 'order_type', 'LIKE', '%' . $search . '%' )
+              ->orWhere( 'order_id', 'LIKE', '%' . $search . '%' )
+              ->orWhere( 'status', 'LIKE', '%' . $search . '%' )
+              ->orWhereHas( 'product', function( $query ) use ( $search ) {
+                $query->where( 'name', 'LIKE', '%' . $search . '%' );
+              } );
+      } );
     }
     if( $start && $end ) {
       $query->where( 'created_at', '>=', $start )->where( 'created_at', '<=', $end );
     }
-    $table = $dataTables->eloquent( $query->limit( 500 )->orderByDesc( 'id' ) );
+    $table = $dataTables->eloquent( $query->orderByDesc( 'id' ) );
     $table->addColumn( 'id', static function( $row ) {
       return $row->order_id;
     } )->addColumn( 'type', static function( $row ) {
@@ -102,17 +105,23 @@ class ProductService
     $query = Order::query();
     if( !empty( $request->search[ 'value' ] ) ) {
       $search = $request->search[ 'value' ];
-      $query->where( 'id', 'LIKE', '%' . $search . '%' )
-            ->orWhere( 'total', 'LIKE', '%' . $search . '%' )
-            ->orWhereHas( 'customer', function( $query ) use ( $search ) {
-              $query->where( 'first_name', 'LIKE', '%' . $search . '%' );
-              $query->where( 'last_name', 'LIKE', '%' . $search . '%' );
-            } );
+      // Grouped so the date range below still applies to search results.
+      $query->where( function( $query ) use ( $search ) {
+        $query->where( 'id', 'LIKE', '%' . $search . '%' )
+              ->orWhere( 'total', 'LIKE', '%' . $search . '%' )
+              ->orWhere( 'customer_name', 'LIKE', '%' . $search . '%' )
+              ->orWhere( 'cashier_name', 'LIKE', '%' . $search . '%' )
+              ->orWhereHas( 'customer', function( $query ) use ( $search ) {
+                $query->where( 'first_name', 'LIKE', '%' . $search . '%' )
+                      ->orWhere( 'last_name', 'LIKE', '%' . $search . '%' );
+              } );
+      } );
     }
     if( $start && $end ) {
-      $query->where( 'created_at', '>=', $start )->where( 'created_at', '<=', $end );
+      // Sale (business) date, the same one the dashboard and receipts use.
+      $query->whereBetween( 'date', [ substr( $start, 0, 10 ), substr( $end, 0, 10 ) ] );
     }
-    $table = $dataTables->eloquent( $query->limit( 500 )->orderByDesc( 'id' ) );
+    $table = $dataTables->eloquent( $query->orderByDesc( 'id' ) );
     $table->addColumn( 'customer', static function( $row ) {
       return $row->customer->first_name . ' ' . $row->customer->last_name;
     } )->addColumn( 'date', static function( $row ) {

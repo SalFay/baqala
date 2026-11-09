@@ -228,8 +228,10 @@ function startDate( $date )
 function endDate( $date )
 {
   if( $date ) {
-    $end = explode( 'to', $date )[ 1 ];
-    return Carbon::make( $end )->format( 'Y-m-d 23:59:59' );
+    // A single picked day comes without "to": the range ends on that same day.
+    $parts = explode( 'to', $date );
+    $end = $parts[ 1 ] ?? $parts[ 0 ];
+    return Carbon::make( trim( $end ) )->format( 'Y-m-d 23:59:59' );
   }
   
   return '';

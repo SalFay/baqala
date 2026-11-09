@@ -24,7 +24,7 @@ class AccountRepository extends BaseRepository
     if( $start && $end ) {
       $query->where( 'created_at', '>=', $start )->where( 'created_at', '<=', $end );
     }
-    return $query->orderBy( 'id', 'desc' )->limit( 100 );
+    return $query->orderBy( 'id', 'desc' );
   }
   
 }
