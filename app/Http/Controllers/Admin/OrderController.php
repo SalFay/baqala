@@ -195,27 +195,7 @@ class OrderController extends Controller
 
       foreach( $request->products as $product ) {
 
-        for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
-
-          $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                           ->where( 'status', 'Available' )->first();
-          if( $prod ) {
-            $prod->update( [
-              'status'   => 'Sold',
-              'order_id' => $order->id
-            ] );
-          } else {
-            Inventory::create( [
-              'stock_id'   => 0,
-              'order_id'   => $order->id,
-              'product_id' => $product[ 'id' ],
-              'cost'       => $product[ 'purchase_price' ],
-              'status'     => 'Sold',
-              'date'       => $request->date
-            ] );
-          }
-
-        }
+        Inventory::sell( $order->id, $product, (int) $product[ 'stock' ], $request->date );
         OrderItem::create( [
           'order_type'     => Order::class,
           'order_id'       => $order->id,
@@ -284,13 +264,7 @@ class OrderController extends Controller
   {
     DB::transaction( function() use ( $order ) {
       foreach( $order->items as $item ) {
-        // Put back the units this order took (some old orders hold fewer rows than
-        // their quantity; that used to crash half-way through the delete).
-        Inventory::where( 'product_id', $item->product_id )
-                 ->where( 'order_id', $order->id )
-                 ->where( 'status', 'Sold' )
-                 ->limit( $item->stock )
-                 ->update( [ 'status' => 'Available', 'order_id' => 0 ] );
+        Inventory::release( $order->id, $item->product_id, $item->stock );
 
         $item->delete();
       }

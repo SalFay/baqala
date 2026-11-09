@@ -79,112 +79,33 @@ class OrderUpdateController extends Controller
     DB::transaction( function() use ( $request, $order, $data, $total, $paid ) {
       $order->update( $data );
     
+      // Lines removed in the edit cart: return their units and drop the line. (The cart
+      // used to delete the line on click, before Save, and never returned its units.)
+      $keep = collect( $request->products )->pluck( 'id' )->all();
+      foreach( $order->items()->whereNotIn( 'product_id', $keep )->get() as $item ) {
+        Inventory::release( $order->id, $item->product_id, $item->stock );
+        $this->logStock( $order, $item->product_id, $item->stock, $item->sale_price, 0, 'Available', $request->date );
+        $item->delete();
+      }
+
       foreach( $request->products as $product ) {
-      
-        $count = Inventory::where( 'product_id', $product[ 'id' ] )
-                          ->where( 'order_id', $order->id )->where( 'status', 'Sold' )->count();
-        $orderItem = OrderItem::where( 'order_id', $order->id )
-                              ->where( 'product_id', $product[ 'id' ] )->first();
-        if( $orderItem ) {
-          if( $count > $product[ 'stock' ] ) {
-            $stock = $count - $product[ 'stock' ];
-            if( $product[ 'stock' ] <= 0 ) {
-              $orderItem->delete();
-            } else {
-              $orderItem->update( [
-                'stock' => $orderItem->stock - $stock,
-              ] );
-            }
-          
-            InventoryLog::create( [
-              'order_type'    => Order::class,
-              'order_id'      => $order->id,
-              'product_id'    => $product[ 'id' ],
-              'stock'         => $stock,
-              'cost'          => $product[ 'sale_price' ],
-              'taxable_price' => 0,
-              'status'        => 'Available',
-              'date'          => now()
-            ] );
-            for( $i = 1; $i <= $stock; $i++ ) {
-              $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                               ->where( 'status', 'Sold' )->first();
-              if( $prod ) {
-                $prod->update( [
-                  'status'   => 'Available',
-                  'order_id' => $order->id
-                ] );
-              } else {
-                Inventory::create( [
-                  'stock_id'   => 0,
-                  'order_id'   => $order->id,
-                  'product_id' => $product[ 'id' ],
-                  'cost'       => $product[ 'purchase_price' ],
-                  'status'     => 'Available',
-                  'date'       => $request->date
-                ] );
-              }
-            
-            }
-          }
-          if( $count < $product[ 'stock' ] ) {
-            $stock = $product[ 'stock' ] - $count;
-            $orderItem->update( [
-              'stock' => $orderItem->stock + $stock,
-            ] );
-            InventoryLog::create( [
-              'order_type'    => Order::class,
-              'order_id'      => $order->id,
-              'product_id'    => $product[ 'id' ],
-              'stock'         => $stock,
-              'cost'          => $product[ 'sale_price' ],
-              'taxable_price' => 0,
-              'status'        => 'Sold',
-              'date'          => now()
-            ] );
-            for( $i = 1; $i <= $stock; $i++ ) {
-              $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                               ->where( 'status', 'Available' )->first();
-              if( $prod ) {
-                $prod->update( [
-                  'order_id' => $order->id,
-                  'status'   => 'Sold'
-                ] );
-              } else {
-                Inventory::create( [
-                  'stock_id'   => 0,
-                  'order_id'   => $order->id,
-                  'product_id' => $product[ 'id' ],
-                  'cost'       => $product[ 'purchase_price' ],
-                  'status'     => 'Sold',
-                  'date'       => $request->date
-                ] );
-              }
-            
-            }
-          }
-        } else {
-          for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
-          
-            $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                             ->where( 'status', 'Available' )->first();
-            if( $prod ) {
-              $prod->update( [
-                'status'   => 'Sold',
-                'order_id' => $order->id
-              ] );
-            } else {
-              Inventory::create( [
-                'stock_id'   => 0,
-                'order_id'   => $order->id,
-                'product_id' => $product[ 'id' ],
-                'cost'       => $product[ 'purchase_price' ],
-                'status'     => 'Sold',
-                'date'       => $request->date
-              ] );
-            }
-          
-          }
+        $item = OrderItem::where( 'order_type', Order::class )->where( 'order_id', $order->id )
+                         ->where( 'product_id', $product[ 'id' ] )->first();
+        // The order line holds the quantity. Counting stock rows instead made untouched
+        // lines grow on save for old orders holding fewer rows than their quantity.
+        $diff = (int) $product[ 'stock' ] - (int) ( $item->stock ?? 0 );
+        $taxable = round( $product[ 'taxable_price' ] ?? 0, 2 );
+
+        if( $diff > 0 ) {
+          Inventory::sell( $order->id, $product, $diff, $request->date );
+          $this->logStock( $order, $product[ 'id' ], $diff, $product[ 'sale_price' ], $taxable, 'Sold', $request->date );
+        } elseif( $diff < 0 ) {
+          // Only this order's units (it used to free the first sold unit of any order).
+          Inventory::release( $order->id, $product[ 'id' ], -$diff );
+          $this->logStock( $order, $product[ 'id' ], -$diff, $product[ 'sale_price' ], 0, 'Available', $request->date );
+        }
+
+        if( !$item ) {
           OrderItem::create( [
             'order_type'     => Order::class,
             'order_id'       => $order->id,
@@ -192,21 +113,14 @@ class OrderUpdateController extends Controller
             'stock'          => $product[ 'stock' ],
             'purchase_price' => $product[ 'purchase_price' ],
             'sale_price'     => $product[ 'sale_price' ],
-            'taxable_price'  => round( $product[ 'taxable_price' ], 2 ),
+            'taxable_price'  => $taxable,
             'status'         => 'Delivered',
             'date'           => $request->date
           ] );
-        
-          InventoryLog::create( [
-            'order_type'    => Order::class,
-            'order_id'      => $order->id,
-            'product_id'    => $product[ 'id' ],
-            'stock'         => $product[ 'stock' ],
-            'cost'          => $product[ 'sale_price' ],
-            'taxable_price' => round( $product[ 'taxable_price' ], 2 ),
-            'status'        => 'Sold',
-            'date'          => $request->date
-          ] );
+        } elseif( $product[ 'stock' ] <= 0 ) {
+          $item->delete();
+        } elseif( $diff !== 0 ) {
+          $item->update( [ 'stock' => $product[ 'stock' ] ] );
         }
       }
 
@@ -253,12 +167,25 @@ class OrderUpdateController extends Controller
     
   }// addToCart
   
+  private function logStock( Order $order, $productId, $qty, $price, $taxable, string $status, $date ) : void
+  {
+    InventoryLog::create( [
+      'order_type'    => Order::class,
+      'order_id'      => $order->id,
+      'product_id'    => $productId,
+      'stock'         => $qty,
+      'cost'          => $price,
+      'taxable_price' => $taxable,
+      'status'        => $status,
+      'date'          => $date
+    ] );
+  }
+
+  /**
+   * Remove a line from the edit cart only; the order changes when the edit is saved.
+   */
   public function deleteFromCart( Request $request, Order $order )
   {
-    $item = OrderItem::where( 'product_id', $request->id )->where( 'order_id', $order->id )->first();
-    if( $item ) {
-      $item->delete();
-    }
     $this->cartService->setCustomerId( $order->id );
     $this->cartService->remove( $request->id );
     return response()->json( [ 'status' => 'ok', 'message' => 'Product Deleted from Cart' ], 200 );

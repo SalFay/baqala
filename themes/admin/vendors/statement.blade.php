@@ -30,8 +30,8 @@
 						<tr>
 							<td>{{date('j F, Y, g:i A', strtotime($st->created_at))}}</td>
 							<td>{{$st->comments}}</td>
-							<td>{{$st->credit}}</td>
 							<td>{{$st->debit}}</td>
+							<td>{{$st->credit}}</td>
 
 							<td>    {{$remaining += $st->credit - $st->debit}}  </td>
 
