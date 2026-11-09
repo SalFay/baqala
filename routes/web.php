@@ -14,14 +14,12 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::prefix( 'impersonate' )->group( function() {
+Route::prefix( 'impersonate' )->middleware( 'auth' )->group( function() {
     Route::get( 'start/{user}', [ ImpersonationController::class, 'startImpersonation' ] )
-         ->name( 'impersonate.start' );
+         ->name( 'impersonate.start' )->middleware( 'can:access settings' );
     Route::get( 'stop', [ ImpersonationController::class, 'endImpersonation' ] )
          ->name( 'impersonate.stop' );
 } );
-Route::get( 'test/{action}', [ HomeController::class, 'artisan' ] )->name( 'artisan' );
-Route::get( 'changeCategory', [ HomeController::class, 'changeCategory' ] )->name( 'changeCategory' );
 Route::get( '/', [ HomeController::class, 'index' ] )->name( 'home' );
 
 Route::middleware( [ 'auth:sanctum', 'verified' ] )->get( '/dashboard', function() {
@@ -33,7 +31,4 @@ Route::middleware( [ 'auth:sanctum', 'verified' ] )->get( '/dashboard', function
         [ \App\Http\Controllers\Api\InventoryController::class, 'addToCart' ] )->name( 'addToCart' );
     Route::post( 'removeCart',
         [ \App\Http\Controllers\Api\InventoryController::class, 'remove' ] )->name( 'removeCart' );*/
-Route::get( 'storage', [ HomeController::class, 'storageLink' ] );
-
-Route::get( 'backup', [ HomeController::class, 'backupDatabase' ] )->name( 'backup' );
 
