@@ -146,7 +146,7 @@
                     @if(user_can('access orders report'))
                         <li>
                             <a href="{{url('admin/reports/order')}}"
-                               class="nav-link {!! request()->is('admin/reports/order*')?' active':'' !!}">
+                               class="nav-link {!! request()->is('admin/reports/order')?' active':'' !!}">
                                 <i class="fas fa-list"></i>
                                 <span>Order</span>
                             </a>
@@ -178,7 +178,7 @@
         @if(user_can('access roles'))
             <li class="nav-item">
                 <a href="{{url('admin/roles')}}"
-                   class="nav-link {!! request()->is('admin/reports/role*')?' active':'' !!}">
+                   class="nav-link {!! request()->is('admin/role*')?' active':'' !!}">
                     <i class="icon-menu3"></i>
                     <span>Roles</span>
                 </a>
@@ -187,7 +187,7 @@
         @if(user_can('access users'))
             <li class="nav-item">
                 <a href="{{url('admin/users')}}"
-                   class="nav-link {!! request()->is('admin/reports/user*')?' active':'' !!}">
+                   class="nav-link {!! request()->is('admin/user*')?' active':'' !!}">
                     <i class="fas fa-users"></i>
                     <span>Users</span>
                 </a>
@@ -196,7 +196,7 @@
         @if(user_can('access settings'))
             <li class="nav-item">
                 <a href="{{route('setup')}}"
-                   class="nav-link {!! request()->is('admin/reports/setup*')?' active':'' !!}">
+                   class="nav-link {!! request()->is('admin/settings*')?' active':'' !!}">
                     <i class="fas fa-cogs"></i>
                     <span>Settings</span>
                 </a>

@@ -7,6 +7,7 @@
 	<title>@yield('page-title') - {{config('app.name')}}</title>
 
 	<link href="{{asset('assets/css/app.css')}}" type="text/css" rel="stylesheet">
+	<link href="{{asset('assets/css/theme.css')}}?v={{ @filemtime(public_path('assets/css/theme.css')) }}" type="text/css" rel="stylesheet">
 
 	@stack('head')
 	<style>
@@ -81,14 +82,19 @@
 	</style>
 </head>
 
-<body>
+@php
+	// The POS, cart and invoice/receipt pages keep their own layout; only the shell changes there.
+	$plainPage = request()->is( 'admin/pos*', 'admin/order/*', 'admin/orders/*', 'admin/*/invoice/*', 'admin/inventory/*' );
+	$brand = option( 'title' ) ?: config( 'app.name' );
+@endphp
+<body class="{{ $plainPage ? 'is-plain' : '' }}">
 
 <!-- Main navbar -->
-<div class="navbar navbar-expand-md navbar-dark">
+<div class="navbar navbar-expand-md app-topbar hidden-print">
 	<div class="navbar-brand">
-		<a href="#" class="d-inline-block">
-			<h4 style="color: #ffffff;font-weight: 700;font-size: 16px;" class="mr-2"> {{option('title')}} </h4>
-
+		<a href="{{ url('admin') }}">
+			<span class="app-brand__mark">{{ mb_strtoupper( mb_substr( $brand, 0, 1 ) ) }}</span>
+			<span class="app-brand__name">{{ $brand }}</span>
 		</a>
 	</div>
 
@@ -104,25 +110,23 @@
 	<div class="collapse navbar-collapse" id="navbar-mobile">
 		<ul class="navbar-nav">
 			<li class="nav-item">
-				<a href="#" class="navbar-nav-link sidebar-control sidebar-main-toggle d-none d-md-block">
+				<a href="#" class="navbar-nav-link sidebar-control sidebar-main-toggle d-none d-md-block" title="Collapse menu">
 					<i class="icon-paragraph-justify3"></i>
 				</a>
 			</li>
-
-
 		</ul>
 
-
-		<span class="ml-md-3 mr-md-auto">&nbsp;</span>
+		<div class="app-title mr-md-auto">
+			<div class="app-title__crumb"><a href="{{ url('admin') }}">Home</a> &nbsp;/&nbsp; @yield('breadcrumbs')</div>
+			<div class="app-title__heading">@yield('heading')</div>
+		</div>
 
 		<ul class="navbar-nav">
 
 			<li class="nav-item dropdown dropdown-user">
-				<a href="#" class="navbar-nav-link d-flex align-items-center dropdown-toggle" data-toggle="dropdown">
-					<img src="#" class="rounded-circle mr-2"
-					     height="34" alt="">
+				<a href="#" class="navbar-nav-link dropdown-toggle app-user" data-toggle="dropdown">
+					<span class="app-user__avatar">{{ Auth::user()->first_letter }}</span>
 					<span>{{Auth::user()->full_name}}</span>
-
 				</a>
 
 				<div class="dropdown-menu dropdown-menu-right">
@@ -165,26 +169,6 @@
 
 		<!-- Sidebar content -->
 		<div class="sidebar-content">
-
-			<!-- User menu -->
-			<div class="sidebar-user">
-				<div class="card-body">
-					<div class="media">
-						<div class="mr-3"><a href="#" class="btn bg-blue rounded-round btn-icon btn-sm"><span
-									class="letter-icon">{{Auth::user()->first_letter}}</span></a></div>
-
-
-						<div class="media-body">
-							<div class="media-title font-weight-semibold">{{Auth::user()->full_name}}</div>
-							<div class="font-size-xs opacity-50">
-								<i class="icon-pin font-size-sm"></i> &nbsp;Mingora
-							</div>
-						</div>
-
-					</div>
-				</div>
-			</div>
-			<!-- /user menu -->
 
 
 			<!-- Main navigation -->
@@ -259,24 +243,10 @@
 
 
 		<!-- Footer -->
-		<div class="navbar navbar-expand-lg navbar-light">
-			<div class="text-center d-lg-none w-100">
-				<button type="button" class="navbar-toggler dropdown-toggle" data-toggle="collapse"
-				        data-target="#navbar-footer">
-					<i class="icon-unfold mr-2"></i>
-					Footer
-				</button>
-			</div>
-
-			<div class="navbar-collapse collapse" id="navbar-footer">
-					<span class="navbar-text">
-						&copy; 2019 - {{date('Y')}}. <a href="http://xpertzdev.com/">Xpertz Dev IT Solution</a>
-					</span>
-
-				<ul class="navbar-nav ml-lg-auto">
-
-				</ul>
-			</div>
+		<div class="navbar app-footer hidden-print">
+			<span class="navbar-text">
+				&copy; 2019 - {{date('Y')}}. <a href="http://xpertzdev.com/">Xpertz Dev IT Solution</a>
+			</span>
 		</div>
 		<!-- /footer -->
 
@@ -294,6 +264,13 @@
 	$(document).ready(function () {
 		ui.init()
 		$('[data-popup="tooltip"]').tooltip()
+
+		// Keep the menu group of the current page open.
+		$('.nav-sidebar .nav-group-sub').each(function () {
+			if ($(this).find('.nav-link.active').length) {
+				$(this).show().closest('.nav-item-submenu').addClass('nav-item-open')
+			}
+		})
 	})
 
 	let delay = (function () {
