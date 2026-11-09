@@ -11,6 +11,7 @@ use App\Models\Vendor;
 use Carbon\Carbon;
 use Carbon\CarbonTimeZone;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 function format_date( $format = 'm/d/Y', $date = 'now' )
@@ -38,32 +39,23 @@ function StockChecking( $id, $stock )
   
 }// stock_count
 
+/**
+ * What a customer owes: debit - credit. Summed in SQL; it used to load every ledger
+ * row (44k for the walk-in customer, each with its bank) just to add them up.
+ */
 function checkingBalance( $customer )
 {
-  $statement = Account::where( 'party_type', Customer::class )
-                      ->where( 'party_id', $customer )->get();
-  
-  if( $statement ) {
-    $total = 0;
-    foreach( $statement as $st ) {
-      $total += $st->debit - $st->credit;
-    }
-    return $total;
-  }
+  return (float) Account::where( 'party_type', Customer::class )->where( 'party_id', $customer )
+                        ->sum( DB::raw( 'COALESCE(debit, 0) - COALESCE(credit, 0)' ) );
 }
 
+/**
+ * What we owe a vendor: credit - debit.
+ */
 function checkingBalanceVendor( $vendor )
 {
-  $statement = Account::where( 'party_type', Vendor::class )
-                      ->where( 'party_id', $vendor )->get();
-  
-  if( $statement ) {
-    $total = 0;
-    foreach( $statement as $st ) {
-      $total += $st->credit - $st->debit;
-    }
-    return $total;
-  }
+  return (float) Account::where( 'party_type', Vendor::class )->where( 'party_id', $vendor )
+                        ->sum( DB::raw( 'COALESCE(credit, 0) - COALESCE(debit, 0)' ) );
 }
 
 function calculateProductVat( $amount, $id, $stock )
