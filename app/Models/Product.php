@@ -45,7 +45,8 @@ class Product extends Model
 
     public function getFullNameAttribute()
     {
-        return "{$this->name} {$this->category->code}";
+        // Category may have been deleted; don't crash every page that lists the product.
+        return trim("{$this->name} {$this->category?->code}");
     }
 
 }
