@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Deploy branch v3 (POS V2 rewrite, Laravel 11 + Vite + Inertia).
+# Deploy branch pos-rewrite (POS V2 rewrite, Laravel 11 + Vite + Inertia).
 #
 # ---------------------------------------------------------------------------
 # READ THIS BEFORE RUNNING
@@ -61,9 +61,9 @@ cleanup() { php artisan up || true; }
 trap cleanup EXIT
 
 echo
-echo "==> Fetching v3"
-git -c safe.directory="$SITE" fetch origin v3
-git -c safe.directory="$SITE" reset --hard origin/v3
+echo "==> Fetching pos-rewrite"
+git -c safe.directory="$SITE" fetch origin pos-rewrite
+git -c safe.directory="$SITE" reset --hard origin/pos-rewrite
 
 echo
 echo "==> PHP dependencies"
