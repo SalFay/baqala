@@ -85,7 +85,8 @@
             // Function to filter products based on search term
             function filterProducts(searchTerm) {
                 $('#productGrid .product-card').each(function () {
-                    const productName = $(this).data('name').toLowerCase();
+                    // String(): jQuery turns a numeric name ("7") into a number, which crashed the search.
+                    const productName = String($(this).data('name')).toLowerCase();
                     if (productName.includes(searchTerm.toLowerCase())) {
                         $(this).closest('.col-2').show();
                     } else {

@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\DashboardService;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -30,191 +31,77 @@ class DashboardController extends Controller
         $this->service = $invoice;
     }
 
-    public function index()
+    /**
+     * ?range=Y-m-d to Y-m-d (default: this month so far), ?compare=previous|last_year|none
+     */
+    public function index(Request $request, DashboardService $dashboard)
     {
-        /**
-         * Pie Chart
-         */
-        $users = User::count();
-        $customers = Customer::count();
-        $vendors = Vendor::count();
-        $categories = Category::count();
-        $products = Product::count();
-        /**
-         * Margin / Profit Daily
-         */
-        $data = [];
+        [$from, $to] = $this->range($request->input('range'));
+        $compare = in_array($request->input('compare'), ['previous', 'last_year', 'none'], true)
+            ? $request->input('compare') : 'previous';
+        [$cFrom, $cTo] = $this->compareRange($from, $to, $compare);
 
-        $queryResult = Order::whereMonth('date', date('m'))->whereYear('date',
-            date('Y'))->orderByDesc('date')->get()->toArray();
-        foreach ($queryResult as $order) {
-            $date = $order['date'];
-            $discount = $order['discount_type'] === 'rupee' ? $order['discount'] : ($order['discount'] * $order['sub_total'] / 100);
-            $data[$date] = $data[$date] ?? [
-                'date' => $date,
-                'total' => 0,
-                'delivery' => 0,
-                'discount' => 0,
-                'net' => 0,
-            ];
+        return view('admin.dashboard.index', $dashboard->build($from, $to, $cFrom, $cTo) + [
+            'range'       => $from->toDateString() . ' to ' . $to->toDateString(),
+            'compareMode' => $compare,
+            'presets'     => $this->presets(),
+        ]);
+    }
 
-            $data[$date]['total'] += $order['sub_total'];
-            $data[$date]['delivery'] += $order['delivery_charges'];
-            $data[$date]['discount'] += $discount;
-            $data[$date]['net'] += $order['total'];
+    private function range(?string $input): array
+    {
+        try {
+            $parts = array_map('trim', explode('to', (string) $input));
+            $from = Carbon::parse($parts[0])->startOfDay();
+            $to = Carbon::parse($parts[1] ?? $parts[0])->startOfDay();
+        } catch (\Throwable $e) {
+            $from = now()->startOfMonth();
+            $to = now()->startOfDay();
         }
-        $data = array_values($data);
-
-        /**
-         * Margin / Profit Monthly with Daily Discount Calculation
-         */
-        $month = [];
-
-// Fetch previous year's last 2 months + current year's months up to current month
-        $currentYear = (int) date('Y');
-        $previousYear = $currentYear - 1;
-        $currentMonth = (int) date('m');
-
-        $query = DB::select("
-    SELECT
-        MONTH(date) as month,
-        MONTHNAME(date) as month_name,
-        YEAR(date) as year,
-        SUM(sub_total) as sub_total,
-        SUM(total) as total
-    FROM orders
-    WHERE (YEAR(date) = ? AND MONTH(date) IN (11, 12))
-       OR (YEAR(date) = ? AND MONTH(date) <= ?)
-    GROUP BY YEAR(date), MONTH(date), MONTHNAME(date)
-    ORDER BY YEAR(date), MONTH(date)
-", [$previousYear, $currentYear, $currentMonth]);
-
-        foreach ($query as $r) {
-            $rowYear = $r->year;
-            $monthName = Carbon::create()->month($r->month)->format('M') . ' ' . $rowYear;
-            $subTotal = $r->sub_total; // This is the equivalent of the old profit calculation
-            $netAmount = $r->total;    // This is the equivalent of the old net amount
-
-            // Calculate daily discount for the month
-            $dailyDiscount = 0;
-            $dailyQuery = Order::whereMonth('date', $r->month)
-                ->whereYear('date', $rowYear)
-                ->selectRaw('date, SUM(CASE WHEN discount_type = "rupee" THEN discount ELSE (discount * sub_total / 100) END) as daily_discount')
-                ->groupBy('date')
-                ->get();
-
-            $dailyDelivery = 0;
-            $dailyDeliveryQuery = Order::whereMonth('date', $r->month)
-                ->whereYear('date', $rowYear)
-                ->selectRaw('date, SUM(delivery_charges) as daily_delivery')
-                ->groupBy('date')
-                ->get();
-
-            foreach ($dailyDeliveryQuery as $daily) {
-                $dailyDelivery += $daily->daily_delivery;
-            }
-
-            foreach ($dailyQuery as $daily) {
-                $dailyDiscount += $daily->daily_discount;
-            }
-
-            // Fetch vendor discounts and expenses for the month
-            $discountVendor = Stock::whereMonth('date', $r->month)
-                ->whereYear('date', $rowYear)
-                ->sum('discount');
-
-            $discountVendor += Account::whereMonth('created_at', $r->month)
-                ->whereYear('created_at', $rowYear)
-                ->where('party_type', Vendor::class)
-                ->sum('discount');
-
-            $discountCustomer = Account::whereMonth('created_at', $r->month)
-                ->whereYear('created_at', $rowYear)
-                ->where('party_type', Customer::class)
-                ->sum('discount');
-
-            $expense = Account::whereMonth('created_at', $r->month)
-                ->whereYear('created_at', $rowYear)
-                ->where('party_type', Expense::class)
-                ->where('party_id', '!=', 6)
-                ->sum('debit');
-
-            // Final result for the month
-            $month[$monthName] = [
-                'month' => $monthName,
-                'daily_discount' => $dailyDiscount,
-                'discount' => $discountCustomer,
-                'expense' => $expense,
-                'vendor_discount' => $discountVendor,
-                'daily_delivery' => $dailyDelivery,
-                'sub_total' => $subTotal + $dailyDelivery,
-                'net' => $netAmount - ($discountCustomer + $discountVendor + $expense), // Adjust net after all deductions
-            ];
+        if (!$input) {
+            $from = now()->startOfMonth();
+            $to = now()->startOfDay();
         }
+        return $from->lte($to) ? [$from, $to] : [$to, $from];
+    }
 
-        $month = array_values($month);
-
-        /**
-         * Bank Details
-         */
-        $bank_details = [];
-        $banks = Bank::all();
-        if (!empty($banks)) {
-            foreach ($banks as $bank) {
-                $account = DB::table('accounts')
-                    ->select(DB::raw('sum(credit) as credit, sum(debit) as debit'))
-                    ->where('bank_id', $bank->id)->get();
-                $credit = $account[0]->credit;
-                $debit = $account[0]->debit;
-                $bank_details[] = [
-                    'name' => $bank->name,
-                    'amount' => $credit - $debit
-                ];
-            }
+    /**
+     * previous: a range starting on the 1st compares with the same days of the month
+     * before (1-9 Nov vs 1-9 Oct); any other range with the same number of days just before.
+     */
+    private function compareRange(Carbon $from, Carbon $to, string $mode): array
+    {
+        if ($mode === 'none') {
+            return [null, null];
         }
-        $customerAmount = DB::table('accounts')
-            ->select(DB::raw('sum(credit) as credit, sum(debit) as debit'))
-            ->where('party_type', Customer::class)->get();
-        $creditCustomer = $customerAmount[0]->credit;
-        $debitCustomer = $customerAmount[0]->debit;
-        $vendorAmount = DB::table('accounts')
-            ->select(DB::raw('sum(credit) as credit, sum(debit) as debit'))
-            ->where('party_type', Vendor::class)->get();
-        $creditVendor = $vendorAmount[0]->credit;
-        $debitVendor = $vendorAmount[0]->debit;
-        $bank_details[] = [
-            'name' => 'Customer',
-            'amount' => $debitCustomer - $creditCustomer
-        ];
-        $bank_details[] = [
-            'name' => 'Vendor',
-            'amount' => $creditVendor - $debitVendor
-        ];
-        // Optimized: Calculate stock value with single query instead of loading all products
-        $stockAmount = DB::table('inventory')
-            ->join('products', 'inventory.product_id', '=', 'products.id')
-            ->where('inventory.status', 'Available')
-            ->whereNull('inventory.deleted_at')
-            ->sum('products.purchase_price');
-        $bank_details[] = [
-            'name' => 'Stock',
-            'amount' => $stockAmount
-        ];
-        $expenses = Expense::all();
-        $expense_details = $expenses->map(function ($expense) {
-            $debit = $expense->accounts->filter(function ($account) {
-                return $account->created_at->format('m') == date('m') && $account->created_at->format('Y') == date('Y');
-            })->sum('debit');
+        if ($mode === 'last_year') {
+            return [$from->copy()->subYearNoOverflow(), $to->copy()->subYearNoOverflow()];
+        }
+        if ($from->day === 1) {
+            $cFrom = $from->copy()->subMonthNoOverflow();
+            $months = $from->diffInMonths($to->copy()->addDay());
+            if ($months >= 1 && $to->isLastOfMonth()) {
+                // whole months: the same number of whole months before
+                return [$from->copy()->subMonthsNoOverflow($months), $from->copy()->subDay()];
+            }
+            return [$cFrom, $cFrom->copy()->addDays($from->diffInDays($to))->min($cFrom->copy()->endOfMonth())];
+        }
+        $days = $from->diffInDays($to) + 1;
+        return [$from->copy()->subDays($days), $from->copy()->subDay()];
+    }
 
-            return [
-                'name' => $expense->name,
-                'amount' => $debit,
-            ];
-        });
-
-        return view('admin.dashboard.index',
-            compact('users', 'customers', 'vendors', 'data', 'categories', 'products', 'month', 'bank_details',
-                'expense_details'));
+    private function presets(): array
+    {
+        $d = fn (Carbon $a, Carbon $b) => $a->toDateString() . ' to ' . $b->toDateString();
+        $today = now()->startOfDay();
+        return [
+            'Today'      => $d($today, $today),
+            'Yesterday'  => $d($today->copy()->subDay(), $today->copy()->subDay()),
+            'Last 7 days' => $d($today->copy()->subDays(6), $today),
+            'This month' => $d($today->copy()->startOfMonth(), $today),
+            'Last month' => $d($today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()),
+            'This year'  => $d($today->copy()->startOfYear(), $today),
+        ];
     }
 
     public function customerInvoices(Request $request, DataTables $dataTables)
