@@ -162,6 +162,7 @@
                         </li>
                     @endif
 
+                    @if(user_can('access reports'))
                     <li>
                         <a href="{{url('admin/reports/product-sold')}}"
                            class="nav-link {!! request()->is('admin/reports/product-sold*')?' active':'' !!}">
@@ -169,6 +170,7 @@
                             <span>Product Sold</span>
                         </a>
                     </li>
+                    @endif
 
                 </ul>
             </li>

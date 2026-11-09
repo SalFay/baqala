@@ -415,7 +415,7 @@
 				Route::post( '/inventory', [ ReportController::class, 'inventory' ] )
 				     ->name( 'reports.inventory.ajax' )->middleware( 'can:access inventory report' );
                 Route::get( '/product-sold', [ ReportController::class, 'productSold' ] )
-				     ->name( 'reports.product-sold' );
+				     ->name( 'reports.product-sold' )->middleware( 'can:access reports' );
 		} );
 
 		/**
@@ -478,7 +478,8 @@
 
 		} );
 
-		Route::prefix( 'sms' )->group( function() {
+		// Sends paid bulk SMS/email; not in the menu. Admins only.
+		Route::prefix( 'sms' )->middleware( 'can:access settings' )->group( function() {
 				Route::get( '/', [ SMSController::class, 'index' ] )
 				     ->name( 'admin.numbers.list' );
 				Route::get( '/emails', [ SMSController::class, 'emails' ] )
@@ -498,7 +499,7 @@
 				     ->name( 'admin.logs' )->middleware( 'can:access logs' );
 
 				Route::post( '/filter', [ LogController::class, 'filter' ] )
-				     ->name( 'admin.logs.filter' );
+				     ->name( 'admin.logs.filter' )->middleware( 'can:access logs' );
 
 		} );
 
