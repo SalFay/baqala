@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Option;
 use Redirect;
+use Spatie\Backup\BackupDestination\BackupDestination;
 
 /**
  * Class SettingController
@@ -64,11 +65,14 @@ class SettingController extends Controller
   }
 
   /**
-   * Folder spatie/laravel-backup writes to: storage/app/{backup.name}.
+   * Folder spatie/laravel-backup writes to. Ask the package for the name: it turns
+   * anything but letters, digits and dots into '-' ("Sherin Huts Pos" -> "Sherin-Huts-Pos").
    */
   private function backupDirectory() : string
   {
-    return storage_path( 'app/' . config( 'backup.backup.name' ) );
+    $name = BackupDestination::create( 'local', config( 'backup.backup.name' ) )->backupName();
+
+    return storage_path( 'app/' . $name );
   }
 
   /**

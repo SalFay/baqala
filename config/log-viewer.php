@@ -121,7 +121,11 @@ return [
         AuthorizeLogViewer::class,
     ],
 
-    'api_stateful_domains' => env('LOG_VIEWER_API_STATEFUL_DOMAINS') ? explode(',', env('LOG_VIEWER_API_STATEFUL_DOMAINS')) : null,
+    // Default to this site's own host. Left null, the package falls back to Sanctum's
+    // localhost-only list, so the live site's API calls got no session and 403'd.
+    'api_stateful_domains' => env('LOG_VIEWER_API_STATEFUL_DOMAINS')
+        ? explode(',', env('LOG_VIEWER_API_STATEFUL_DOMAINS'))
+        : [parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)],
 
     /*
     |--------------------------------------------------------------------------
