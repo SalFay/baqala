@@ -1,153 +1,180 @@
 @extends('admin.layouts.admin')
 
-@section('page-title','Manage Orders')
-@section('heading','Manage Orders')
+@section('page-title','Orders')
+@section('heading','Orders')
 @section('breadcrumbs', 'Orders')
 
+@php
+	$range = $f['range'];
+	$money = fn( $v ) => 'Rs ' . number_format( (float) $v );
+@endphp
+
 @section('content')
-	<div class="card" id="section-overview">
-		<div
-			class="card-header bg-teal-400 header-elements-inline">
-			<h6 class="card-title"> Total Orders</h6>
+<div class="rk">
+
+	@include('admin.partials.report-head', [
+		'eyebrow' => 'Orders',
+		'range'   => $range,
+		'presets' => $presets,
+		'params'  => [ 'cashier' => $f['cashier'], 'q' => $f['search'], 'show' => $f['show'] ],
+		'note'    => implode( ' · ', array_filter( [
+			'By sale date',
+			$f['cashier'] !== '' ? 'cashier ' . ( $f['cashier'] === '-' ? '(no name)' : $f['cashier'] ) : null,
+			$f['search'] !== '' ? '“' . $f['search'] . '”' : null,
+			$f['show'] !== '' ? strtolower( $show[ $f['show'] ] ) : null,
+		] ) ),
+	])
+
+	<form method="get" class="rk-filters" id="order-filters">
+		<div class="rk-field rk-field--range">
+			<label for="f-range">Sale date</label>
+			<input type="text" name="range" id="f-range" value="{{ $range->value() }}" class="form-control rk-range" autocomplete="off">
 		</div>
+		<div class="rk-field">
+			<label for="f-cashier">Cashier</label>
+			<select name="cashier" id="f-cashier" class="form-control">
+				<option value="">All cashiers</option>
+				@foreach($cashiers as $name => $count)
+					<option value="{{ $name }}" {{ mb_strtoupper( $f['cashier'] ) === $name ? 'selected' : '' }}>{{ $name }}</option>
+				@endforeach
+				<option value="-" {{ $f['cashier'] === '-' ? 'selected' : '' }}>(No cashier name)</option>
+			</select>
+		</div>
+		<div class="rk-field">
+			<label for="f-show">Show</label>
+			<select name="show" id="f-show" class="form-control">
+				@foreach($show as $value => $label)
+					<option value="{{ $value }}" {{ $f['show'] === $value ? 'selected' : '' }}>{{ $label }}</option>
+				@endforeach
+			</select>
+		</div>
+		<div class="rk-field rk-field--grow">
+			<label for="f-q">Order # or customer</label>
+			<input type="search" name="q" id="f-q" value="{{ $f['search'] }}" class="form-control" placeholder="e.g. 21825 or Mohsin">
+		</div>
+		<div class="rk-actions">
+			<button type="submit" class="btn btn-primary">Apply</button>
+			<a href="{{ url()->current() }}" class="btn btn-light">Reset</a>
+		</div>
+	</form>
 
-		<div class="card-body">
-			<div class="table-responsive">
-				@include('admin.dateRange')
-
-				<table id="orderTable" class="table table-bordered table-striped table-hover">
-					<thead>
-					<tr>
-						<th> Order #</th>
-						<th> Customer</th>
-						<th>Sub Total</th>
-						<th>Discount</th>
-						<th>Delivery</th>
-						<th>VAT</th>
-						<th>Net Amount</th>
-						<th>Credit</th>
-						<th>Debit</th>
-						<th>Date</th>
-
-					</tr>
-					</thead>
-					<tfoot>
-					<tr>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-					</tr>
-					</tfoot>
-				</table>
-			</div>
+	<div class="rk-kpis" style="--rk-tiles: 7">
+		<div class="rk-kpi rk-kpi--lead">
+			<div class="rk-kpi__label">Net sales</div>
+			<div class="rk-kpi__value">{{ $money( $summary['net_sales'] ) }}</div>
+		</div>
+		<div class="rk-kpi">
+			<div class="rk-kpi__label">Orders</div>
+			<div class="rk-kpi__value">{{ number_format( $summary['orders'] ) }}</div>
+		</div>
+		<div class="rk-kpi">
+			<div class="rk-kpi__label">Average order</div>
+			<div class="rk-kpi__value">{{ $money( $summary['avg_order'] ) }}</div>
+		</div>
+		<div class="rk-kpi">
+			<div class="rk-kpi__label">Items sold</div>
+			<div class="rk-kpi__value">{{ number_format( $summary['items'] ) }}</div>
+		</div>
+		<div class="rk-kpi">
+			<div class="rk-kpi__label">Discounts</div>
+			<div class="rk-kpi__value">{{ $money( $summary['discount'] ) }}</div>
+		</div>
+		<div class="rk-kpi">
+			<div class="rk-kpi__label">Delivery</div>
+			<div class="rk-kpi__value">{{ $money( $summary['delivery'] ) }}</div>
+		</div>
+		<div class="rk-kpi {{ $summary['unpaid'] > 0 ? 'rk-kpi--warn' : '' }}">
+			<div class="rk-kpi__label">Unpaid</div>
+			<div class="rk-kpi__value">{{ $money( $summary['unpaid'] ) }}</div>
 		</div>
 	</div>
-@endsection
-@include('plugins.date-picker')
-@include('plugins.ajax')
 
+	<div class="rk-card">
+		<div class="rk-card__head">
+			<h3>{{ number_format( $summary['orders'] ) }} {{ $summary['orders'] === 1 ? 'order' : 'orders' }}</h3>
+			<span class="rk-muted">Newest first · net = item sales − discount + delivery · click an order # to open its invoice</span>
+		</div>
+		<div class="table-responsive">
+			<table id="orderTable" class="table table-hover rk-table">
+				<thead>
+				<tr>
+					<th>Order #</th>
+					<th>Date</th>
+					<th>Customer</th>
+					<th>Cashier</th>
+					<th class="num">Items</th>
+					<th class="num">Item sales</th>
+					<th class="num">Discount</th>
+					<th class="num">Delivery</th>
+					<th class="num">Net total</th>
+					<th class="num">Unpaid</th>
+					<th></th>
+				</tr>
+				</thead>
+				<tfoot>
+				<tr>
+					<th colspan="4">Total ({{ number_format( $summary['orders'] ) }} orders)</th>
+					<th class="num">{{ number_format( $summary['items'] ) }}</th>
+					<th class="num">{{ number_format( $summary['item_sales'] ) }}</th>
+					<th class="num">{{ number_format( $summary['discount'], 2 ) }}</th>
+					<th class="num">{{ number_format( $summary['delivery'] ) }}</th>
+					<th class="num">{{ number_format( $summary['net_sales'] ) }}</th>
+					<th class="num {{ $summary['unpaid'] > 0 ? 'rk-bad' : '' }}">{{ number_format( $summary['unpaid'] ) }}</th>
+					<th></th>
+				</tr>
+				</tfoot>
+			</table>
+		</div>
+	</div>
+</div>
+@endsection
+
+@include('admin.partials.report-kit')
+@include('plugins.ajax')
 @include('plugins.DataTables')
+
 @push('footer')
 	<script>
-	 let table = $('#orderTable')
+		$(function () {
+			const num = (d, t) => t === 'display' ? Number(d || 0).toLocaleString('en-PK', {maximumFractionDigits: 2}) : d
+			const unpaid = (d, t) => t === 'display' && Number(d) > 0 ? '<span class="rk-bad">' + num(d, t) + '</span>' : num(d, t)
 
-	 $(document).ready(function () {
+			$('#orderTable').DataTable({
+				processing: true,
+				serverSide: true,
+				ordering: false,
+				autoWidth: false,
+				searching: false,
+				pageLength: 100,
+				lengthMenu: [[50, 100, 500, 1000], [50, 100, 500, 1000]],
+				language: {emptyTable: 'No orders match these filters.', processing: 'Loading…'},
+				ajax: {
+					url: "{{ route('reports.order.ajax') }}",
+					type: 'post',
+					data: {
+						range: @json($range->value()),
+						cashier: @json($f['cashier']),
+						q: @json($f['search']),
+						show: @json($f['show'])
+					}
+				},
+				columns: [
+					{data: 'id'},
+					{data: 'when'},
+					{data: 'customer_name'},
+					{data: 'cashier_name'},
+					{data: 'items', className: 'num', render: num},
+					{data: 'sub_total', className: 'num', render: num},
+					{data: 'discount_amount', className: 'num'},
+					{data: 'delivery_charges', className: 'num', render: num},
+					{data: 'total', className: 'num', render: (d, t) => t === 'display' ? '<b>' + num(d, t) + '</b>' : d},
+					{data: 'debit', className: 'num', render: unpaid},
+					{data: 'action', className: 'text-nowrap'}
+				]
+			})
 
-		 callDataTable()
-
-	 })
-
-	 function callDataTable (date = '') {
-
-		 table.dataTable({
-             "lengthMenu": [[100, "All", 50, 25], [100, "All", 50, 25]],
-
-             autoWidth: true,
-			 ordering: false,
-			 processing: true,
-			 serverSide: true,
-			 ajax: {
-				 url: "{{route('reports.order.ajax')}}",
-				 type: 'post',
-				 data: { date: date }
-			 },
-			 columns: [
-				 { data: 'id' },
-				 { data: 'customer' },
-				 { data: 'sub_total' },
-				 { data: 'discount' },
-				 { data: 'delivery_charges' },
-				 { data: 'vat' },
-				 { data: 'total' },
-				 { data: 'credit' },
-				 { data: 'debit' },
-				 { data: 'date' }
-
-			 ],
-			 'footerCallback': function (row, data, start, end, display) {
-				 var api = this.api(), data
-
-				 // Remove the formatting to get integer data for summation
-				 let intVal = function (i) {
-					 return typeof i === 'string' ?
-						i.replace(/[\$,]/g, '') * 1 :
-						typeof i === 'number' ?
-						 i : 0
-				 }
-
-				 for (i = 2; i <= 8; i++) {
-
-					 // Total over all pages
-					 total = api
-						.column(i)
-						.data()
-						.reduce(function (a, b) {
-							var t = intVal(a) + intVal(b)
-							return t.toFixed(2)
-						}, 0)
-
-					 // Total over this page
-					 pageTotal = api
-						.column(i, { page: 'current' })
-						.data()
-						.reduce(function (a, b) {
-							var t = intVal(a) + intVal(b)
-							return t.toFixed(2)
-						}, 0)
-
-					 // Update footer
-					 $(api.column(i).footer()).html(
-						'Rs.' + pageTotal
-					 )
-				 }
-
-			 }
-		 })
-	 }
-
-	 $('#filter-range').on('click', function (e) {
-		 e.preventDefault()
-		 $val = $('#dataRange').val()
-		 table.DataTable().destroy()
-		 callDataTable($val)
-	 })
-
-	 $('#filter-refresh').on('click', function (e) {
-		 e.preventDefault()
-		 $('#dataRange').val('')
-		 table.DataTable().destroy()
-		 callDataTable()
-	 })
-
-
+			// Picking a cashier or "show" applies straight away.
+			$('#f-cashier, #f-show').on('change', function () { $('#order-filters').trigger('submit') })
+		})
 	</script>
-
 @endpush
-

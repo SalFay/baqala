@@ -85,6 +85,8 @@
 
 				Route::get( '/statement/{customer}', [ CustomerController::class, 'statement' ] )
 				     ->name( 'customers.statement' )->middleware( 'can:view customer statement' );
+				Route::post( '/statement/{customer}', [ CustomerController::class, 'statement' ] )
+				     ->name( 'customers.statement.ajax' )->middleware( 'can:view customer statement' );
 
 				Route::post( '/edit/{customer}', [ CustomerController::class, 'update' ] )
 				     ->name( 'customers.update' )->middleware( 'can:update customer' );
@@ -140,6 +142,8 @@
 
 				Route::get( '/statement/{vendor}', [ VendorController::class, 'statement' ] )
 				     ->name( 'vendors.statement' )->middleware( 'can:view vendor statement' );
+				Route::post( '/statement/{vendor}', [ VendorController::class, 'statement' ] )
+				     ->name( 'vendors.statement.ajax' )->middleware( 'can:view vendor statement' );
 
 				Route::post( '/delete/{vendor}', [ VendorController::class, 'destroy' ] )
 				     ->name( 'vendors.delete' )->middleware( 'can:delete vendor' );
@@ -408,6 +412,8 @@
          ->name( 'reports.order.ajax' )->middleware( 'can:access orders report' );
 				Route::get( '/order-items', [ ReportController::class, 'ordersItem' ] )
 				     ->name( 'reports.order-items' )->middleware( 'can:access profit report' );
+				Route::post( '/order-items', [ ReportController::class, 'ordersItem' ] )
+				     ->name( 'reports.order-items.ajax' )->middleware( 'can:access profit report' );
 				Route::get( '/stock', [ ReportController::class, 'stock' ] )
 				     ->name( 'reports.stock' )->middleware( 'can:access stock invoices report' );
 				Route::get( '/inventory', [ ReportController::class, 'inventory' ] )
@@ -469,6 +475,8 @@
 
 				Route::get( '/statement/{bank}', [ BankController::class, 'statement' ] )
 				     ->name( 'bank.statement' )->middleware( 'can:view bank statement' );
+				Route::post( '/statement/{bank}', [ BankController::class, 'statement' ] )
+				     ->name( 'bank.statement.ajax' )->middleware( 'can:view bank statement' );
 
 				Route::post( '/edit/{bank}', [ BankController::class, 'update' ] )
 				     ->name( 'bank.update' )->middleware( 'can:update bank' );

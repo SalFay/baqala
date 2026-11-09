@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Helpers\Ui;
 use App\Models\InventoryLog;
-use App\Models\Order;
 use App\Models\Product;
 use App\Repositories\ProductRepository;
 use Carbon\Carbon;
@@ -68,9 +67,20 @@ class ProductService
     if( $start && $end ) {
       $query->where( 'created_at', '>=', $start )->where( 'created_at', '<=', $end );
     }
-    $table = $dataTables->eloquent( $query->orderByDesc( 'id' ) );
+    if( $request->input( 'kind' ) === 'order' ) {
+      $query->where( 'order_type', \App\Models\Order::class );
+    } elseif( $request->input( 'kind' ) === 'stock' ) {
+      $query->where( 'order_type', \App\Models\Stock::class );
+    }
+    if( in_array( $request->input( 'status' ), [ 'Available', 'Sold' ], true ) ) {
+      $query->where( 'status', $request->input( 'status' ) );
+    }
+    $qty = (int) ( clone $query )->toBase()->sum( 'stock' );
+    $table = $dataTables->eloquent( $query->with( 'product.category' )->orderByDesc( 'id' ) )->with( 'qty', $qty );
     $table->addColumn( 'id', static function( $row ) {
-      return $row->order_id;
+      return $row->order_type === \App\Models\Order::class && user_can( 'access customer invoice' )
+        ? '<a href="' . route( 'order.invoice', $row->order_id ) . '" target="_blank">#' . $row->order_id . '</a>'
+        : '#' . $row->order_id;
     } )->addColumn( 'type', static function( $row ) {
       if( $row->order_type === \App\Models\Stock::class ) {
         return '<span class="badge bg-primary">Stock</span>';
@@ -92,44 +102,10 @@ class ProductService
       }
       return '<span class="badge bg-danger">Order Return</span>';
     } )->addColumn( 'date', static function( $row ) {
-      return Carbon::make( $row->created_at )->format( 'j F, Y, g:i a' );
+      return Carbon::make( $row->created_at )->format( 'd-M-Y' )
+        . '<div class="rk-sub">' . Carbon::make( $row->created_at )->format( 'g:i a' ) . '</div>';
     } );
     $table->rawColumns( [ 'id', 'type', 'product', 'stock', 'cost', 'status', 'date' ] );
-    return $table->make();
-  }
-
-  public function orders( Request $request, DataTables $dataTables )
-  {
-    capDataTablesLength( $request );
-    $start = startDate( $request->date );
-    $end = endDate( $request->date );
-
-    $query = Order::query();
-    if( !empty( $request->search[ 'value' ] ) ) {
-      $search = $request->search[ 'value' ];
-      // Grouped so the date range below still applies to search results.
-      $query->where( function( $query ) use ( $search ) {
-        $query->where( 'id', 'LIKE', '%' . $search . '%' )
-              ->orWhere( 'total', 'LIKE', '%' . $search . '%' )
-              ->orWhere( 'customer_name', 'LIKE', '%' . $search . '%' )
-              ->orWhere( 'cashier_name', 'LIKE', '%' . $search . '%' )
-              ->orWhereHas( 'customer', function( $query ) use ( $search ) {
-                $query->where( 'first_name', 'LIKE', '%' . $search . '%' )
-                      ->orWhere( 'last_name', 'LIKE', '%' . $search . '%' );
-              } );
-      } );
-    }
-    if( $start && $end ) {
-      // Sale (business) date, the same one the dashboard and receipts use.
-      $query->whereBetween( 'date', [ substr( $start, 0, 10 ), substr( $end, 0, 10 ) ] );
-    }
-    $table = $dataTables->eloquent( $query->orderByDesc( 'id' ) );
-    $table->addColumn( 'customer', static function( $row ) {
-      return $row->customer->first_name . ' ' . $row->customer->last_name;
-    } )->addColumn( 'date', static function( $row ) {
-      return Carbon::make( $row->created_at )->format( 'j F, Y, g:i a' );
-    } );
-    $table->rawColumns( [ 'customer', 'date' ] );
     return $table->make();
   }
 

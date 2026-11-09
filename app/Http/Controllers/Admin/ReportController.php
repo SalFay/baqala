@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\InventoryLog;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
-use App\Models\Stock;
+use App\Services\OrderListService;
 use App\Services\ProductService;
+use App\Services\SalesReportService;
+use App\Support\DateRange;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
 
 class ReportController extends Controller
@@ -32,53 +31,81 @@ class ReportController extends Controller
 
     }
 
-    public function orders(Request $request, DataTables $dataTables)
+    /**
+     * Orders list. GET ?range=&cashier=&q=&show= renders the page with its totals;
+     * the table posts the same filters back for its rows.
+     */
+    public function orders(Request $request, DataTables $dataTables, OrderListService $orders)
     {
         if ($request->ajax() && $request->isMethod('post')) {
-            return $this->service->orders($request, $dataTables);
+            return $orders->dataTable($request, $dataTables);
         }
-        return view('admin.reports.orders');
+        $filters = $orders->filters($request);
 
+        return view('admin.reports.orders', [
+            'f'        => $filters,
+            'summary'  => $orders->summary($filters),
+            'cashiers' => $orders->cashiers(),
+            'show'     => OrderListService::SHOW,
+            'presets'  => DateRange::presets(),
+        ]);
     }
 
-    public function ordersItem(Request $request)
+    /**
+     * Margin / Profit: every order line with its share of the order discount, and profit
+     * where the line has a real cost. GET ?range=&category=&q= (default: this month).
+     */
+    public function ordersItem(Request $request, DataTables $dataTables, SalesReportService $sales)
     {
-        // One date range (default: this month) instead of every order line ever (35k+ rows).
-        $range = $request->input('date') ?: now()->startOfMonth()->toDateString() . ' to ' . now()->toDateString();
-        $from = substr(startDate($range), 0, 10);
-        $to = substr(endDate($range), 0, 10);
+        if ($request->ajax() && $request->isMethod('post')) {
+            return $sales->linesTable($request, $dataTables);
+        }
+        $filters = $sales->filters($request, 'month');
 
-        $orders = Order::query()->without(['customer', 'items'])
-            ->whereBetween('date', [$from, $to])
-            ->get(['id', 'date', 'sub_total', 'delivery_charges', 'total'])
-            ->keyBy('id');
+        return view('admin.reports.ordersItem', [
+            'f'          => $filters,
+            'summary'    => $sales->summary($filters),
+            'categories' => $sales->categories(),
+            'presets'    => DateRange::presets(),
+        ]);
+    }
 
-        $items = OrderItem::where('order_type', Order::class)
-            ->whereIn('order_id', $orders->keys())
-            ->orderByDesc('order_id')
+    /**
+     * Stock (purchase) invoices from vendors. GET ?range=&vendor= (default: this year).
+     */
+    public function stock(Request $request)
+    {
+        $range = DateRange::parse($request->input('range'), 'year');
+        $vendor = (int) $request->input('vendor', 0);
+
+        $invoices = DB::table('stocks AS s')
+            ->leftJoin('vendors AS v', 'v.id', '=', 's.vendor_id')
+            ->whereNull('s.deleted_at')
+            ->whereBetween('s.date', $range->dates())
+            ->when($vendor > 0, fn ($q) => $q->where('s.vendor_id', $vendor))
+            ->select('s.id', 's.date', 's.created_at', 's.invoice_no', 's.sub_total', 's.discount', 's.delivery_charges',
+                's.total', 's.credit', 's.debit', 'v.name AS vendor')
+            // A stock invoice's lines are its "Available" inventory log rows.
+            ->selectSub(DB::table('inventory_log AS i')->selectRaw('COALESCE(SUM(i.stock), 0)')
+                ->whereColumn('i.order_id', 's.id')->where('i.order_type', \App\Models\Stock::class)
+                ->where('i.status', 'Available')->whereNull('i.deleted_at'), 'items')
+            ->orderByDesc('s.date')->orderByDesc('s.id')
             ->get();
 
-        // Share each order's discount across its lines by sale value, so line discounts add
-        // up to the order's real discount (it used to repeat the whole discount of an
-        // unrelated order - looked up by item id - on every line).
-        $lineSales = $items->groupBy('order_id')->map(fn ($lines) => $lines->sum(fn ($l) => $l->stock * $l->sale_price));
-        foreach ($items as $item) {
-            $order = $orders[$item->order_id];
-            $sale = $item->stock * $item->sale_price;
-            $item->discount_share = $lineSales[$item->order_id] > 0
-                ? round($order->discount_amount * $sale / $lineSales[$item->order_id], 2)
-                : 0;
-            $item->order_date = $order->date;
-        }
-
-        return view('admin.reports.ordersItem', ['orders' => $items, 'range' => $range]);
-    }
-
-    public function stock()
-    {
-        $stock = Stock::all();
-        return view('admin.reports.stock', compact('stock'));
-
+        return view('admin.reports.stock', [
+            'range'    => $range,
+            'vendor'   => $vendor,
+            'vendors'  => DB::table('vendors')->whereNull('deleted_at')->orderBy('name')->pluck('name', 'id')->all(),
+            'invoices' => $invoices,
+            'presets'  => DateRange::presets(),
+            'summary'  => [
+                'invoices' => $invoices->count(),
+                'items'    => (int) $invoices->sum('items'),
+                'total'    => (float) $invoices->sum('total'),
+                'paid'     => (float) $invoices->sum('credit'),
+                'unpaid'   => (float) $invoices->sum('debit'),
+            ],
+        ]);
     }
 
     public function inventory(Request $request, DataTables $dataTables)
@@ -90,67 +117,28 @@ class ReportController extends Controller
 
     }
 
-    public function productSold(Request $request)
+    /**
+     * Product Sold: one row per product with quantity, orders, sales, discount and share,
+     * plus sales by category. GET ?range=&category=&q=&sort=sales|qty (default: today).
+     */
+    public function productSold(Request $request, SalesReportService $sales)
     {
-        // Get the date range from the request
-        $dateRange = $request->input('date_range');
-        $startDate = null;
-        $endDate = null;
-
-        if (!$dateRange) {
-            // Default to today's date range
-            $startDate = now()->startOfDay();
-            $endDate = now()->endOfDay();
-        } else {
-            // Replace "to" with "-" for consistent parsing
-            $dateRange = str_replace(' to ', ' - ', $dateRange);
-            $dates = explode(' - ', $dateRange);
-            if (count($dates) === 1) {
-                // Only one date provided, use it as both start and end
-                $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay();
-                $endDate = $startDate->copy()->endOfDay();
-            } else {
-                // Both start and end dates are provided
-                $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay();
-                $endDate = \Carbon\Carbon::parse($dates[1])->endOfDay();
-            }
+        // The old form sent "date_range" as "Y-m-d - Y-m-d"; keep those links working.
+        if (!$request->filled('range') && $request->filled('date_range')) {
+            $request->merge(['range' => str_replace(' - ', ' to ', $request->input('date_range'))]);
         }
-        // Fetch order items within the date range and group by product
-        // Sale date, as on the dashboard and other reports (created_at put after-midnight
-        // sales on the next day).
-        $orderItems = OrderItem::whereHas('order', function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()]);
-        })
-            ->with('product') // Eager load the product relationship
-            ->get()
-            ->groupBy('product_id'); // Group order items by product ID
+        $filters = $sales->filters($request, 'today');
+        $sort = $request->input('sort') === 'qty' ? 'qty' : 'sales';
 
-        // Calculate total quantity sold and total sales for each product
-        $products = $orderItems->map(function ($items, $productId) {
-            $product = $items->first()->product;
-
-            if (!$product) {
-                return null; // Skip if product data is missing
-            }
-
-            $quantitySold = $items->sum('stock');
-            $totalSales = $items->sum(function ($item) {
-                return $item->stock * ($item->sale_price ?? 0); // Default to 0 if sale_price is null
-            });
-
-            return [
-                'name' => $product->name,
-                'quantity_sold' => $quantitySold,
-                'sale_price' => $items->first()->sale_price ?? 0, // Default to 0 if sale_price is null
-                'total_sales' => $totalSales,
-            ];
-        })->filter(); // Remove null entries
-
-        // Calculate totals for the footer
-        $totalQuantitySold = $products->sum('quantity_sold');
-        $totalSales = $products->sum('total_sales');
-
-        return view('admin.reports.productSold', compact('products', 'totalQuantitySold', 'totalSales'));
+        return view('admin.reports.productSold', [
+            'f'          => $filters,
+            'sort'       => $sort,
+            'summary'    => $sales->summary($filters),
+            'products'   => $sales->byProduct($filters, $sort),
+            'byCategory' => $sales->byCategory($filters),
+            'categories' => $sales->categories(),
+            'presets'    => DateRange::presets(),
+        ]);
     }
 
 }
