@@ -116,8 +116,10 @@ class ReportController extends Controller
             }
         }
         // Fetch order items within the date range and group by product
+        // Sale date, as on the dashboard and other reports (created_at put after-midnight
+        // sales on the next day).
         $orderItems = OrderItem::whereHas('order', function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
+            $query->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()]);
         })
             ->with('product') // Eager load the product relationship
             ->get()
