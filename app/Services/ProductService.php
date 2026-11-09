@@ -48,6 +48,7 @@ class ProductService
 
   public function inventoryLog( Request $request, DataTables $dataTables )
   {
+    capDataTablesLength( $request );
     $start = startDate( $request->date );
     $end = endDate( $request->date );
 
@@ -99,6 +100,7 @@ class ProductService
 
   public function orders( Request $request, DataTables $dataTables )
   {
+    capDataTablesLength( $request );
     $start = startDate( $request->date );
     $end = endDate( $request->date );
 

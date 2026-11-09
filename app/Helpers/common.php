@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Vendor;
 use Carbon\Carbon;
 use Carbon\CarbonTimeZone;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 function format_date( $format = 'm/d/Y', $date = 'now' )
@@ -213,6 +214,18 @@ function logCauserDetail( $subjectId )
     return $user->first_name . ' ' . $user->last_name;
   }
   return '';
+}
+
+/**
+ * Cap a DataTables page size server-side ("All" sends -1). Paging still reaches every
+ * row, unlike the old limit() calls that silently cut reports off at 500.
+ */
+function capDataTablesLength( Request $request, int $max = 1000 ) : void
+{
+  $length = (int) $request->input( 'length', $max );
+  if( $length <= 0 || $length > $max ) {
+    $request->merge( [ 'length' => $max ] );
+  }
 }
 
 function startDate( $date )

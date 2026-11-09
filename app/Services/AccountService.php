@@ -32,6 +32,7 @@ class AccountService
    */
   public function dataTables( Request $request, DataTables $dataTables )
   {
+    capDataTablesLength( $request );
     $start = startDate( $request->date );
     $end = endDate( $request->date );
     
