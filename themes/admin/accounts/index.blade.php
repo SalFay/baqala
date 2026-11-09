@@ -22,67 +22,50 @@
 	<script>
 	 let table = $('#table-account')
 
-	 function callDataTable (date = '') {
+	 const accNum = v => Number(v || 0).toLocaleString('en-PK', {maximumFractionDigits: 2})
+	 const accCell = (d, t) => t === 'display' ? (Number(d) ? accNum(d) : '<span class="rk-sub">0</span>') : d
+
+	 function callDataTable () {
 		 table.dataTable({
-			 autoWidth: true,
+			 autoWidth: false,
 			 ordering: false,
 			 processing: true,
 			 serverSide: true,
+			 pageLength: 100,
+			 lengthMenu: [[50, 100, 500, 1000], [50, 100, 500, 1000]],
+			 language: {emptyTable: 'No entries match these filters.', processing: 'Loading…'},
 			 ajax: {
 				 url: "{{route('accounts.ajax')}}",
 				 type: 'post',
-				 data: { date: date }
+				 // Read the filters on every request, so reloads after saving keep them.
+				 data: function (d) {
+					 d.date = $('#acc-range').val()
+					 d.type = $('#acc-type').val()
+					 d.source = $('#acc-source').val()
+				 },
+				 dataSrc: function (json) {
+					 const t = json.totals || {}
+					 $('#acc-entries').text(Number(t.entries || 0).toLocaleString('en-PK'))
+					 $('#acc-debit').text('Rs ' + accNum(t.debit))
+					 $('#acc-credit').text('Rs ' + accNum(t.credit))
+					 $('#acc-discount').text('Rs ' + accNum(t.discount))
+					 $('#acc-foot-debit').text(accNum(t.debit))
+					 $('#acc-foot-credit').text(accNum(t.credit))
+					 $('#acc-foot-discount').text(accNum(t.discount))
+					 return json.data
+				 }
 			 },
 			 columns: [
-				 { data: 'date' },
+				 { data: 'date', className: 'text-nowrap' },
 				 { data: 'type' },
 				 { data: 'name' },
-				 { data: 'debit' },
-				 { data: 'credit' },
-				 { data: 'discount' },
+				 { data: 'debit', className: 'num', render: accCell },
+				 { data: 'credit', className: 'num', render: accCell },
+				 { data: 'discount', className: 'num', render: accCell },
 				 { data: 'bank' },
 				 { data: 'comments' },
-				 { data: 'action' }
+				 { data: 'action', className: 'text-nowrap' }
 			 ],
-			 'footerCallback': function (row, data, start, end, display) {
-				 var api = this.api(), data
-
-				 // Remove the formatting to get integer data for summation
-				 let intVal = function (i) {
-					 return typeof i === 'string' ?
-						i.replace(/[\$,]/g, '') * 1 :
-						typeof i === 'number' ?
-						 i : 0
-				 }
-
-				 for (i = 3; i <= 5; i++) {
-
-					 // Total over all pages
-					 total = api
-						.column(i)
-						.data()
-						.reduce(function (a, b) {
-							var t = intVal(a) + intVal(b)
-							return t.toFixed(2)
-						}, 0)
-
-					 // Total over this page
-					 pageTotal = api
-						.column(i, { page: 'current' })
-						.data()
-						.reduce(function (a, b) {
-							var t = intVal(a) + intVal(b)
-							return t.toFixed(2)
-						}, 0)
-
-					 // Update footer
-					 $(api.column(i).footer()).html(
-						'Rs.' + pageTotal + ' (Total Rs. ' + total + ')'
-					 )
-				 }
-
-			 },
-
 		 })
 	 }
 
@@ -446,16 +429,16 @@
 
 	 $('#filter-range').on('click', function (e) {
 		 e.preventDefault()
-		 $val = $('#dataRange').val()
-		 table.DataTable().destroy()
-		 callDataTable($val)
+		 table.api().ajax.reload()
 	 })
+	 $('#acc-type, #acc-source').on('change', function () { table.api().ajax.reload() })
 
 	 $('#filter-refresh').on('click', function (e) {
 		 e.preventDefault()
-		 $('#dataRange').val('')
-		 table.DataTable().destroy()
-		 callDataTable()
+		 const range = document.querySelector('#acc-range')
+		 if (range && range._flatpickr) range._flatpickr.setDate(@json(\App\Support\DateRange::parse(null, 'month')->dates()))
+		 $('#acc-type, #acc-source').val('')
+		 table.api().ajax.reload()
 	 })
 
 

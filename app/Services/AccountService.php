@@ -36,7 +36,21 @@ class AccountService
     $start = startDate( $request->date );
     $end = endDate( $request->date );
     
-    $table = $dataTables->eloquent( $this->repository->dataTablesQuery( $start, $end ) );
+    $type = (string) $request->input( 'type', '' );
+    $source = (string) $request->input( 'source', '' );
+    $query = $this->repository->dataTablesQuery( $start, $end, $type, $source );
+
+    // Totals over every matching entry (the footer used to add up only the page shown).
+    $totals = ( clone $query )->reorder()->toBase()
+                ->selectRaw( 'COUNT(*) AS entries, COALESCE(SUM(debit), 0) AS debit, COALESCE(SUM(credit), 0) AS credit,
+                    COALESCE(SUM(discount), 0) AS discount' )->first();
+
+    $table = $dataTables->eloquent( $query->with( 'bank' ) )->with( 'totals', [
+      'entries'  => (int) $totals->entries,
+      'debit'    => (float) $totals->debit,
+      'credit'   => (float) $totals->credit,
+      'discount' => (float) $totals->discount,
+    ] );
     
     $table->addColumn( 'type', static function( $row ) {
       $type = '';
@@ -76,7 +90,8 @@ class AccountService
     } );
     
     $table->addColumn( 'date', static function( $row ) {
-      return date( 'd-m-Y', strtotime( $row->created_at ) );
+      return date( 'd-M-Y', strtotime( $row->created_at ) )
+        . '<div class="rk-sub">' . date( 'g:i a', strtotime( $row->created_at ) ) . '</div>';
     } );
     
     $table->addColumn( 'bank', static function( $row ) {

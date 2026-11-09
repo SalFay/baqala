@@ -27,13 +27,20 @@ class VendorController extends Controller
     return response()->json( [ 'status' => 'ok', 'message' => 'Vendor Added' ], 200 );
   } // store
   
-  public function statement( Vendor $vendor )
+  /** Statement for a date range (default this month); the table posts back for its pages. */
+  public function statement( Request $request, Vendor $vendor, \App\Services\LedgerService $ledger )
   {
-    $statement = Account::where( 'party_id', $vendor->id )
-                        ->where( 'party_type', Vendor::class )->orderBy( 'created_at', 'ASC' )->get();
-    
-    $vendor_name = $vendor->name;
-    return view( 'admin.vendors.statement', compact( 'statement', 'vendor_name' ) );
+    if( $request->isMethod( 'post' ) ) {
+      return response()->json( $ledger->page( 'vendor', $vendor->id, $request ) );
+    }
+    $f = $ledger->filters( $request );
+    return view( 'admin.ledger.statement', [
+      'kind'    => 'vendor',
+      'party'   => $vendor,
+      'name'    => $vendor->name,
+      'f'       => $f,
+      'summary' => $ledger->summary( 'vendor', $vendor->id, $f ),
+    ] );
   }
   
   /**

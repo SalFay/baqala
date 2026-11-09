@@ -61,13 +61,19 @@ class BankController extends Controller
     return [ 'status' => 'ok', 'message' => 'Bank Deleted' ];
   }
   
-  public function statement( Bank $bank )
+  /** Statement for a date range (default this month); the table posts back for its pages. */
+  public function statement( \Illuminate\Http\Request $request, Bank $bank, \App\Services\LedgerService $ledger )
   {
-    $statement = Account::where( 'party_id', $bank->id )
-                        ->where( 'party_type', Bank::class )->
-      orWhere( 'bank_id', $bank->id )->orderBy( 'created_at', 'ASC' )->get();
-    
-    $bank = $bank->name;
-    return view( 'admin.banks.statement', compact( 'statement', 'bank' ) );
+    if( $request->isMethod( 'post' ) ) {
+      return response()->json( $ledger->page( 'bank', $bank->id, $request ) );
+    }
+    $f = $ledger->filters( $request );
+    return view( 'admin.ledger.statement', [
+      'kind'    => 'bank',
+      'party'   => $bank,
+      'name'    => $bank->name,
+      'f'       => $f,
+      'summary' => $ledger->summary( 'bank', $bank->id, $f ),
+    ] );
   }
 }

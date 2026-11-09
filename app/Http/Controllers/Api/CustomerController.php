@@ -43,13 +43,20 @@ class CustomerController extends Controller
     return response()->json( [ 'status' => 'ok', 'message' => 'Customer Updated' ], 200 );
   } // update
   
-  public function statement( Customer $customer )
+  /** Statement for a date range (default this month); the table posts back for its pages. */
+  public function statement( Request $request, Customer $customer, \App\Services\LedgerService $ledger )
   {
-    $statement = Account::where( 'party_id', $customer->id )
-                        ->where( 'party_type', Customer::class )->orderBy( 'created_at', 'ASC' )->get();
-    
-    $customer = $customer->first_name . ' ' . $customer->last_name;
-    return view( 'admin.customers.statement', compact( 'statement', 'customer' ) );
+    if( $request->isMethod( 'post' ) ) {
+      return response()->json( $ledger->page( 'customer', $customer->id, $request ) );
+    }
+    $f = $ledger->filters( $request );
+    return view( 'admin.ledger.statement', [
+      'kind'    => 'customer',
+      'party'   => $customer,
+      'name'    => trim( $customer->first_name . ' ' . $customer->last_name ),
+      'f'       => $f,
+      'summary' => $ledger->summary( 'customer', $customer->id, $f ),
+    ] );
   }
   
   /**
