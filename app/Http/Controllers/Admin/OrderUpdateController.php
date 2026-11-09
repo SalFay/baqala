@@ -14,6 +14,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrderUpdateController extends Controller
 {
@@ -62,6 +63,7 @@ class OrderUpdateController extends Controller
       'payment_type'     => $type,
       'date'             => $request->date,
       'discount'         => $request->discount,
+      'discount_type'    => $request->input( 'discount_type', $order->discount_type ),
       'vat'              => option( 'vat_amount' ),
       'delivery_charges' => $request->delivery_charges,
       'sub_total'        => $request->sub_total,
@@ -72,78 +74,104 @@ class OrderUpdateController extends Controller
       'cashier_name'     => $request->cashier_name
     ];
     
-    $order->update( $data );
+    // All or nothing, and the ledger is replaced rather than added to: posting the full
+    // edited total again on every edit counted the sale twice (Rs 321,278 on live).
+    DB::transaction( function() use ( $request, $order, $data, $total, $paid ) {
+      $order->update( $data );
     
-    foreach( $request->products as $product ) {
+      foreach( $request->products as $product ) {
       
-      $count = Inventory::where( 'product_id', $product[ 'id' ] )
-                        ->where( 'order_id', $order->id )->where( 'status', 'Sold' )->count();
-      $orderItem = OrderItem::where( 'order_id', $order->id )
-                            ->where( 'product_id', $product[ 'id' ] )->first();
-      if( $orderItem ) {
-        if( $count > $product[ 'stock' ] ) {
-          $stock = $count - $product[ 'stock' ];
-          if( $product[ 'stock' ] <= 0 ) {
-            $orderItem->delete();
-          } else {
-            $orderItem->update( [
-              'stock' => $orderItem->stock - $stock,
-            ] );
-          }
-          
-          InventoryLog::create( [
-            'order_type'    => Order::class,
-            'order_id'      => $order->id,
-            'product_id'    => $product[ 'id' ],
-            'stock'         => $stock,
-            'cost'          => $product[ 'sale_price' ],
-            'taxable_price' => 0,
-            'status'        => 'Available',
-            'date'          => now()
-          ] );
-          for( $i = 1; $i <= $stock; $i++ ) {
-            $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                             ->where( 'status', 'Sold' )->first();
-            if( $prod ) {
-              $prod->update( [
-                'status'   => 'Available',
-                'order_id' => $order->id
-              ] );
+        $count = Inventory::where( 'product_id', $product[ 'id' ] )
+                          ->where( 'order_id', $order->id )->where( 'status', 'Sold' )->count();
+        $orderItem = OrderItem::where( 'order_id', $order->id )
+                              ->where( 'product_id', $product[ 'id' ] )->first();
+        if( $orderItem ) {
+          if( $count > $product[ 'stock' ] ) {
+            $stock = $count - $product[ 'stock' ];
+            if( $product[ 'stock' ] <= 0 ) {
+              $orderItem->delete();
             } else {
-              Inventory::create( [
-                'stock_id'   => 0,
-                'order_id'   => $order->id,
-                'product_id' => $product[ 'id' ],
-                'cost'       => $product[ 'purchase_price' ],
-                'status'     => 'Available',
-                'date'       => $request->date
+              $orderItem->update( [
+                'stock' => $orderItem->stock - $stock,
               ] );
             }
+          
+            InventoryLog::create( [
+              'order_type'    => Order::class,
+              'order_id'      => $order->id,
+              'product_id'    => $product[ 'id' ],
+              'stock'         => $stock,
+              'cost'          => $product[ 'sale_price' ],
+              'taxable_price' => 0,
+              'status'        => 'Available',
+              'date'          => now()
+            ] );
+            for( $i = 1; $i <= $stock; $i++ ) {
+              $prod = Inventory::where( 'product_id', $product[ 'id' ] )
+                               ->where( 'status', 'Sold' )->first();
+              if( $prod ) {
+                $prod->update( [
+                  'status'   => 'Available',
+                  'order_id' => $order->id
+                ] );
+              } else {
+                Inventory::create( [
+                  'stock_id'   => 0,
+                  'order_id'   => $order->id,
+                  'product_id' => $product[ 'id' ],
+                  'cost'       => $product[ 'purchase_price' ],
+                  'status'     => 'Available',
+                  'date'       => $request->date
+                ] );
+              }
             
+            }
           }
-        }
-        if( $count < $product[ 'stock' ] ) {
-          $stock = $product[ 'stock' ] - $count;
-          $orderItem->update( [
-            'stock' => $orderItem->stock + $stock,
-          ] );
-          InventoryLog::create( [
-            'order_type'    => Order::class,
-            'order_id'      => $order->id,
-            'product_id'    => $product[ 'id' ],
-            'stock'         => $stock,
-            'cost'          => $product[ 'sale_price' ],
-            'taxable_price' => 0,
-            'status'        => 'Sold',
-            'date'          => now()
-          ] );
-          for( $i = 1; $i <= $stock; $i++ ) {
+          if( $count < $product[ 'stock' ] ) {
+            $stock = $product[ 'stock' ] - $count;
+            $orderItem->update( [
+              'stock' => $orderItem->stock + $stock,
+            ] );
+            InventoryLog::create( [
+              'order_type'    => Order::class,
+              'order_id'      => $order->id,
+              'product_id'    => $product[ 'id' ],
+              'stock'         => $stock,
+              'cost'          => $product[ 'sale_price' ],
+              'taxable_price' => 0,
+              'status'        => 'Sold',
+              'date'          => now()
+            ] );
+            for( $i = 1; $i <= $stock; $i++ ) {
+              $prod = Inventory::where( 'product_id', $product[ 'id' ] )
+                               ->where( 'status', 'Available' )->first();
+              if( $prod ) {
+                $prod->update( [
+                  'order_id' => $order->id,
+                  'status'   => 'Sold'
+                ] );
+              } else {
+                Inventory::create( [
+                  'stock_id'   => 0,
+                  'order_id'   => $order->id,
+                  'product_id' => $product[ 'id' ],
+                  'cost'       => $product[ 'purchase_price' ],
+                  'status'     => 'Sold',
+                  'date'       => $request->date
+                ] );
+              }
+            
+            }
+          }
+        } else {
+          for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
+          
             $prod = Inventory::where( 'product_id', $product[ 'id' ] )
                              ->where( 'status', 'Available' )->first();
             if( $prod ) {
               $prod->update( [
-                'order_id' => $order->id,
-                'status'   => 'Sold'
+                'status'   => 'Sold',
+                'order_id' => $order->id
               ] );
             } else {
               Inventory::create( [
@@ -155,73 +183,37 @@ class OrderUpdateController extends Controller
                 'date'       => $request->date
               ] );
             }
-            
-          }
-        }
-      } else {
-        for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
           
-          $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                           ->where( 'status', 'Available' )->first();
-          if( $prod ) {
-            $prod->update( [
-              'status'   => 'Sold',
-              'order_id' => $order->id
-            ] );
-          } else {
-            Inventory::create( [
-              'stock_id'   => 0,
-              'order_id'   => $order->id,
-              'product_id' => $product[ 'id' ],
-              'cost'       => $product[ 'purchase_price' ],
-              'status'     => 'Sold',
-              'date'       => $request->date
-            ] );
           }
-          
-        }
-        OrderItem::create( [
-          'order_type'     => Order::class,
-          'order_id'       => $order->id,
-          'product_id'     => $product[ 'id' ],
-          'stock'          => $product[ 'stock' ],
-          'purchase_price' => $product[ 'purchase_price' ],
-          'sale_price'     => $product[ 'sale_price' ],
-          'taxable_price'  => round( $product[ 'taxable_price' ], 2 ),
-          'status'         => 'Delivered',
-          'date'           => $request->date
-        ] );
+          OrderItem::create( [
+            'order_type'     => Order::class,
+            'order_id'       => $order->id,
+            'product_id'     => $product[ 'id' ],
+            'stock'          => $product[ 'stock' ],
+            'purchase_price' => $product[ 'purchase_price' ],
+            'sale_price'     => $product[ 'sale_price' ],
+            'taxable_price'  => round( $product[ 'taxable_price' ], 2 ),
+            'status'         => 'Delivered',
+            'date'           => $request->date
+          ] );
         
-        InventoryLog::create( [
-          'order_type'    => Order::class,
-          'order_id'      => $order->id,
-          'product_id'    => $product[ 'id' ],
-          'stock'         => $product[ 'stock' ],
-          'cost'          => $product[ 'sale_price' ],
-          'taxable_price' => round( $product[ 'taxable_price' ], 2 ),
-          'status'        => 'Sold',
-          'date'          => $request->date
-        ] );
+          InventoryLog::create( [
+            'order_type'    => Order::class,
+            'order_id'      => $order->id,
+            'product_id'    => $product[ 'id' ],
+            'stock'         => $product[ 'stock' ],
+            'cost'          => $product[ 'sale_price' ],
+            'taxable_price' => round( $product[ 'taxable_price' ], 2 ),
+            'status'        => 'Sold',
+            'date'          => $request->date
+          ] );
+        }
       }
-    }
-    
-    Account::create( [
-      'party_type' => Customer::class,
-      'party_id'   => $order->customer->id,
-      'debit'      => $total,
-      'bank_id'    => 0,
-      'comments'   => 'Updated Order No.' . $order->id,
-    ] );
-    
-    if( $paid > 0 ) {
-      Account::create( [
-        'party_type' => Customer::class,
-        'party_id'   => $order->customer->id,
-        'credit'     => $paid,
-        'bank_id'    => 0,
-        'comments'   => 'Updated Order No.' . $order->id,
-      ] );
-    }
+
+      $bank = Account::forOrder( $order->id )->where( 'credit', '>', 0 )->value( 'bank_id' ) ?? 0;
+      Account::forOrder( $order->id )->delete();
+      Account::postOrder( $order, $total, $paid, $bank );
+    } );
     
     $this->cartService->setCustomerId( $order->id );
     $this->cartService->trash();

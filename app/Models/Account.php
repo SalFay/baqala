@@ -31,4 +31,41 @@ class Account extends Model
     {
         return $this->belongsTo( Bank::class );
     }
+
+    /**
+     * Ledger rows of one sale. They are linked to the order only by their comment
+     * (older rows may say "Updated Order No.X" or "Order No.X Deleted").
+     */
+    public function scopeForOrder( $query, int $orderId )
+    {
+        return $query->where( 'party_type', Customer::class )->whereIn( 'comments', [
+            'Order No.' . $orderId,
+            'Updated Order No.' . $orderId,
+            'Order No.' . $orderId . ' Deleted',
+        ] );
+    }
+
+    /**
+     * Post a sale to its customer's ledger: the total as debit, the amount paid as credit.
+     */
+    public static function postOrder( Order $order, $total, $paid, $bankId = 0 ) : void
+    {
+        self::create( [
+            'party_type' => Customer::class,
+            'party_id'   => $order->customer_id,
+            'debit'      => $total,
+            'bank_id'    => 0,
+            'comments'   => 'Order No.' . $order->id,
+        ] );
+
+        if( $paid > 0 ) {
+            self::create( [
+                'party_type' => Customer::class,
+                'party_id'   => $order->customer_id,
+                'credit'     => $paid,
+                'bank_id'    => $bankId,
+                'comments'   => 'Order No.' . $order->id,
+            ] );
+        }
+    }
 }

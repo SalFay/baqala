@@ -15,6 +15,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Option;
 
 class OrderController extends Controller
@@ -188,72 +189,61 @@ class OrderController extends Controller
       'cashier_name'     => $request->cashier_name
     ];
 
-    $order = Order::create( $data );
+    // All or nothing: a failure half-way used to leave orders without items or ledger rows.
+    $order = DB::transaction( function() use ( $request, $data, $total, $paid, $bank ) {
+      $order = Order::create( $data );
 
-    foreach( $request->products as $product ) {
+      foreach( $request->products as $product ) {
 
-      for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
+        for( $i = 1; $i <= $product[ 'stock' ]; $i++ ) {
 
-        $prod = Inventory::where( 'product_id', $product[ 'id' ] )
-                         ->where( 'status', 'Available' )->first();
-        if( $prod ) {
-          $prod->update( [
-            'status'   => 'Sold',
-            'order_id' => $order->id
-          ] );
-        } else {
-          Inventory::create( [
-            'stock_id'   => 0,
-            'order_id'   => $order->id,
-            'product_id' => $product[ 'id' ],
-            'cost'       => $product[ 'purchase_price' ],
-            'status'     => 'Sold',
-            'date'       => $request->date
-          ] );
+          $prod = Inventory::where( 'product_id', $product[ 'id' ] )
+                           ->where( 'status', 'Available' )->first();
+          if( $prod ) {
+            $prod->update( [
+              'status'   => 'Sold',
+              'order_id' => $order->id
+            ] );
+          } else {
+            Inventory::create( [
+              'stock_id'   => 0,
+              'order_id'   => $order->id,
+              'product_id' => $product[ 'id' ],
+              'cost'       => $product[ 'purchase_price' ],
+              'status'     => 'Sold',
+              'date'       => $request->date
+            ] );
+          }
+
         }
+        OrderItem::create( [
+          'order_type'     => Order::class,
+          'order_id'       => $order->id,
+          'product_id'     => $product[ 'id' ],
+          'stock'          => $product[ 'stock' ],
+          'purchase_price' => $product[ 'purchase_price' ],
+          'sale_price'     => $product[ 'sale_price' ],
+          'taxable_price'  => round( $product[ 'taxable_price' ], 2 ),
+          'status'         => 'Delivered',
+          'date'           => $request->date
+        ] );
 
+        InventoryLog::create( [
+          'order_type'    => Order::class,
+          'order_id'      => $order->id,
+          'product_id'    => $product[ 'id' ],
+          'stock'         => $product[ 'stock' ],
+          'cost'          => $product[ 'sale_price' ],
+          'taxable_price' => round( $product[ 'taxable_price' ], 2 ),
+          'status'        => 'Sold',
+          'date'          => $request->date
+        ] );
       }
-      OrderItem::create( [
-        'order_type'     => Order::class,
-        'order_id'       => $order->id,
-        'product_id'     => $product[ 'id' ],
-        'stock'          => $product[ 'stock' ],
-        'purchase_price' => $product[ 'purchase_price' ],
-        'sale_price'     => $product[ 'sale_price' ],
-        'taxable_price'  => round( $product[ 'taxable_price' ], 2 ),
-        'status'         => 'Delivered',
-        'date'           => $request->date
-      ] );
 
-      InventoryLog::create( [
-        'order_type'    => Order::class,
-        'order_id'      => $order->id,
-        'product_id'    => $product[ 'id' ],
-        'stock'         => $product[ 'stock' ],
-        'cost'          => $product[ 'sale_price' ],
-        'taxable_price' => round( $product[ 'taxable_price' ], 2 ),
-        'status'        => 'Sold',
-        'date'          => $request->date
-      ] );
-    }
+      Account::postOrder( $order, $total, $paid, $bank );
 
-    Account::create( [
-      'party_type' => Customer::class,
-      'party_id'   => $customer->id,
-      'debit'      => $total,
-      'bank_id'    => 0,
-      'comments'   => 'Order No.' . $order->id,
-    ] );
-
-    if( $paid > 0 ) {
-      Account::create( [
-        'party_type' => Customer::class,
-        'party_id'   => $customer->id,
-        'credit'     => $paid,
-        'bank_id'    => $bank,
-        'comments'   => 'Order No.' . $order->id,
-      ] );
-    }
+      return $order;
+    } );
 
     /* } else {
          $installment = $request->installment;
@@ -292,34 +282,28 @@ class OrderController extends Controller
    */
   public function destroy( Order $order ) : array
   {
-    foreach( $order->items as $item ) {
+    DB::transaction( function() use ( $order ) {
+      foreach( $order->items as $item ) {
+        // Put back the units this order took (some old orders hold fewer rows than
+        // their quantity; that used to crash half-way through the delete).
+        Inventory::where( 'product_id', $item->product_id )
+                 ->where( 'order_id', $order->id )
+                 ->where( 'status', 'Sold' )
+                 ->limit( $item->stock )
+                 ->update( [ 'status' => 'Available', 'order_id' => 0 ] );
 
-      for( $i = 1; $i <= $item->stock; $i++ ) {
-        $prod = Inventory::where( 'product_id', $item->product_id )
-                         ->where( 'order_id', $order->id )
-                         ->where( 'status', 'Sold' )->first();
-
-        $prod->update( [
-          'status'   => 'Available',
-          'order_id' => 0
-        ] );
-
+        $item->delete();
       }
 
       InventoryLog::where( 'order_id', $order->id )
                   ->where( 'order_type', Order::class )->delete();
 
-      $item->delete();
-    }
+      // Remove the sale from the ledger. Posting only a credit for the total left
+      // the payment in place, so every deleted paid order showed as owed to the customer.
+      Account::forOrder( $order->id )->delete();
 
-    Account::create( [
-      'party_type' => Customer::class,
-      'party_id'   => $order->customer->id,
-      'credit'     => $order->total,
-      'comments'   => 'Order No.' . $order->id . ' Deleted',
-    ] );
-
-    $order->delete();
+      $order->delete();
+    } );
     return [ 'status' => 'ok', 'message' => 'Order Deleted' ];
   }
 }
