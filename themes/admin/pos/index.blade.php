@@ -401,84 +401,7 @@
         });
         ui.$body.on('click', '[data-action="save"]', function (e) {
             e.preventDefault()
-            let products = []
-            $('#table-cart tr').each(function (row, tr) {
-                    if ($(tr).find('td:eq(0)').text() == '') {
-                    } else {
-                        let sub = {
-                            'id': $(tr).find('td:eq(0)').text(),
-                            'sale_price': $(tr).find(':input').eq(0).val(),
-                            'stock': $(tr).find('td:eq(2)').find('input').val(),
-                            'taxable_price': $(tr).find('td:eq(3)').find('input').val(),
-                            'purchase_price': $(tr).find('input[type=hidden]').val(),
-                        }
-                        products.push(sub)
-                    }
-                }
-            )
-
-            $.confirm({
-                title: 'Are you sure?',
-                content: 'You won\'t be able to revert this!',
-                type: 'warning',
-                buttons: {
-                    confirm: function () {
-                        let price = $('#price').val()
-                        let delivery_charges = $('#delivery').val()
-                        let discount = $('#discount').val()
-                        let netAmount = $('#netAmount').val()
-                        let date = $('#date').val()
-                        let amount = $('#paid').val()
-                        let payment_id = $('#payments').val()
-                        let payment_type = 'Cash'
-                        if (products.length > 0) {
-                            $.ajax({
-                                url: '{{route('order.add',1)}}',
-                                type: 'post',
-                                dataType: 'json',
-                                data: {
-                                    products: products,
-                                    sub_total: price,
-                                    total: netAmount,
-                                    discount_type: $('#disc').val(),
-                                    discount: discount,
-                                    date: date,
-                                    payment_id: payment_id,
-                                    payment: price,
-                                    delivery_charges: delivery_charges,
-                                    amount: amount,
-                                    payment_type: payment_type,
-                                    customer_name: $('#customer_name').val(),
-                                    cashier_name: $('#cashier_name').val(),
-                                    printer: $('#printer').val()
-                                },
-                                success: function (res) {
-                                    if (res.status === 'ok') {
-                                        $('#discount').val(0)
-                                        $('#delivery').val(0)
-                                        ui.successMessage(res.message)
-                                        refreshCart()
-                                        window.location = res.url
-                                        return true
-                                    }
-                                    ui.errorMessage(res.message)
-                                },
-                                error: function (res) {
-                                    ui.ajaxError(res)
-                                }
-                            })
-
-                        } else {
-                            ui.errorMessage('Enter Stock to Proceed')
-                        }
-
-                    },
-                    cancel: function () {
-
-                    }
-                }
-            })
-
+            posOrder.save('{{route('order.add',1)}}', true)
         })
 
         function refreshCart() {
@@ -494,72 +417,8 @@
         }
 
         key('s', function () {
-                refreshCart()
-                let products = []
-                $('#table-cart tr').each(function (row, tr) {
-                        if ($(tr).find('td:eq(0)').text() == '') {
-                        } else {
-                            let sub = {
-                                'id': $(tr).find('td:eq(0)').text(),
-                                'sale_price': $(tr).find(':input').eq(0).val(),
-                                'stock': $(tr).find('td:eq(2)').find('input').val(),
-                                'taxable_price': $(tr).find('td:eq(3)').find('input').val(),
-                                'purchase_price': $(tr).find('input[type=hidden]').val(),
-                            }
-                            products.push(sub)
-                        }
-                    }
-                )
-
-                let price = $('#price').val()
-                let delivery_charges = $('#delivery').val()
-                let discount = $('#discount').val()
-                let netAmount = $('#netAmount').val()
-                let date = $('#date').val()
-                let amount = $('#paid').val()
-                let payment_id = $('#payments').val()
-                let payment_type = 'Cash'
-                if (products.length > 0) {
-                    $.ajax({
-                        url: '{{route('order.add',1)}}',
-                        type: 'post',
-                        dataType: 'json',
-                        data: {
-                            products: products,
-                            sub_total: price,
-                            total: netAmount,
-                            discount_type: $('#disc').val(),
-                            discount: discount,
-                            date: date,
-                            payment_id: payment_id,
-                            payment: price,
-                            delivery_charges: delivery_charges,
-                            amount: amount,
-                            payment_type: payment_type,
-                            customer_name: $('#customer_name').val(),
-                            cashier_name: $('#cashier_name').val(),
-                            printer: $('#printer').val()
-                        },
-                        success: function (res) {
-                            if (res.status === 'ok') {
-                                $('#discount').val(0)
-                                $('#delivery').val(0)
-                                ui.successMessage(res.message)
-                                refreshCart()
-                                document.location.href = res.url
-                                return
-                            }
-                            ui.errorMessage(res.message)
-                        },
-                        error: function (res) {
-                            ui.ajaxError(res)
-                        }
-                    })
-                } else {
-                    ui.errorMessage('Enter Stock to Proceed')
-                }
-            }
-        )
+            posOrder.save('{{route('order.add',1)}}', false)
+        })
 
     </script>
 @endpush()

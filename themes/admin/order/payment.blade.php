@@ -41,7 +41,7 @@
         <div class="form-group row">
             <label for="date" class="col-sm-5 col-form-label">Date:</label>
             <div class="col-sm-7">
-                <input type="date" name="date" value="{{date('Y-m-d')}}" id="date" required class="form-control"/>
+                <input type="text" name="date" value="{{date('Y-m-d')}}" id="date" required autocomplete="off" class="form-control"/>
             </div>
         </div>
         <div class="form-group row">
@@ -125,3 +125,134 @@
     </style>
 @endpush
 
+
+@push('head')
+    <link rel="stylesheet" href="{{asset('plugins/js/pickers/flatpickr/flatpickr.min.css')}}">
+@endpush
+
+@push('footer')
+    <script src="{{asset('plugins/js/pickers/flatpickr/flatpickr.min.js')}}"></script>
+    <script>
+        // One save routine for both POS screens (Save button and "S" key).
+        // - Ignores repeat presses while a save is in flight or its dialog is open
+        //   (a held/double "S" made duplicate orders).
+        // - Asks first when the sale date isn't today, so a mistyped date is noticed.
+        window.posOrder = (function () {
+            let busy = false
+            const DISPLAY = 'd-M-Y' // 09-Nov-2026
+            // Shows 09-Nov-2026 whatever the PC's region is; still submits 2026-11-09.
+            const picker = flatpickr('#date', {dateFormat: 'Y-m-d', altInput: true, altFormat: DISPLAY})
+
+            function today() {
+                return flatpickr.formatDate(new Date(), 'Y-m-d')
+            }
+
+            function pretty(ymd) {
+                return flatpickr.formatDate(flatpickr.parseDate(ymd, 'Y-m-d'), DISPLAY)
+            }
+
+            // Coming Back from the receipt, the browser restores the old form values, which
+            // carried one wrong date into every following sale. Always start from today.
+            // The restored page also keeps `busy` from the save that opened the receipt.
+            window.addEventListener('pageshow', function () {
+                picker.setDate(today())
+                busy = false
+            })
+
+            function cartProducts() {
+                const products = []
+                $('#table-cart tr').each(function (row, tr) {
+                    if ($(tr).find('td:eq(0)').text() === '') {
+                        return
+                    }
+                    products.push({
+                        'id': $(tr).find('td:eq(0)').text(),
+                        'sale_price': $(tr).find(':input').eq(0).val(),
+                        'stock': $(tr).find('td:eq(2)').find('input').val(),
+                        'taxable_price': $(tr).find('td:eq(3)').find('input').val(),
+                        'purchase_price': $(tr).find('input[type=hidden]').val(),
+                    })
+                })
+                return products
+            }
+
+            function send(url, products) {
+                busy = true
+                $.ajax({
+                    url: url,
+                    type: 'post',
+                    dataType: 'json',
+                    data: {
+                        products: products,
+                        sub_total: $('#price').val(),
+                        total: $('#netAmount').val(),
+                        discount_type: $('#disc').val(),
+                        discount: $('#discount').val(),
+                        date: $('#date').val(),
+                        payment_id: $('#payments').val(),
+                        payment: $('#price').val(),
+                        delivery_charges: $('#delivery').val(),
+                        amount: $('#paid').val(),
+                        payment_type: 'Cash',
+                        customer_name: $('#customer_name').val(),
+                        cashier_name: $('#cashier_name').val(),
+                        printer: $('#printer').val()
+                    },
+                    success: function (res) {
+                        if (res.status === 'ok') {
+                            $('#discount').val(0)
+                            $('#delivery').val(0)
+                            ui.successMessage(res.message)
+                            refreshCart()
+                            window.location = res.url // stay busy until the receipt opens
+                            return
+                        }
+                        busy = false
+                        ui.errorMessage(res.message)
+                    },
+                    error: function (res) {
+                        busy = false
+                        ui.ajaxError(res)
+                    }
+                })
+            }
+
+            function save(url, askFirst) {
+                if (busy) {
+                    return
+                }
+                const products = cartProducts()
+                if (products.length === 0) {
+                    ui.errorMessage('Enter Stock to Proceed')
+                    return
+                }
+
+                const date = $('#date').val()
+                const notToday = date !== today()
+                if (!askFirst && !notToday) {
+                    send(url, products)
+                    return
+                }
+
+                busy = true // one dialog at a time
+                $.confirm({
+                    title: notToday ? 'Sale date is not today' : 'Are you sure?',
+                    content: notToday
+                        ? 'This sale will be saved on <strong>' + pretty(date) + '</strong>, but today is <strong>' + pretty(today()) + '</strong>.<br>Save it with this date?'
+                        : 'You won\'t be able to revert this!',
+                    type: notToday ? 'red' : 'warning',
+                    buttons: {
+                        confirm: function () {
+                            send(url, products)
+                        },
+                        cancel: function () {
+                            busy = false
+                        }
+                    }
+                })
+            }
+
+            return {save: save}
+        })()
+    </script>
+@endpush
