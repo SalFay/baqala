@@ -41,11 +41,37 @@ class ReportController extends Controller
 
     }
 
-    public function ordersItem()
+    public function ordersItem(Request $request)
     {
-        $orders = OrderItem::all();
-        return view('admin.reports.ordersItem', compact('orders'));
+        // One date range (default: this month) instead of every order line ever (35k+ rows).
+        $range = $request->input('date') ?: now()->startOfMonth()->toDateString() . ' to ' . now()->toDateString();
+        $from = substr(startDate($range), 0, 10);
+        $to = substr(endDate($range), 0, 10);
 
+        $orders = Order::query()->without(['customer', 'items'])
+            ->whereBetween('date', [$from, $to])
+            ->get(['id', 'date', 'sub_total', 'delivery_charges', 'total'])
+            ->keyBy('id');
+
+        $items = OrderItem::where('order_type', Order::class)
+            ->whereIn('order_id', $orders->keys())
+            ->orderByDesc('order_id')
+            ->get();
+
+        // Share each order's discount across its lines by sale value, so line discounts add
+        // up to the order's real discount (it used to repeat the whole discount of an
+        // unrelated order - looked up by item id - on every line).
+        $lineSales = $items->groupBy('order_id')->map(fn ($lines) => $lines->sum(fn ($l) => $l->stock * $l->sale_price));
+        foreach ($items as $item) {
+            $order = $orders[$item->order_id];
+            $sale = $item->stock * $item->sale_price;
+            $item->discount_share = $lineSales[$item->order_id] > 0
+                ? round($order->discount_amount * $sale / $lineSales[$item->order_id], 2)
+                : 0;
+            $item->order_date = $order->date;
+        }
+
+        return view('admin.reports.ordersItem', ['orders' => $items, 'range' => $range]);
     }
 
     public function stock()

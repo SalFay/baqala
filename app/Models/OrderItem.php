@@ -41,6 +41,7 @@ class OrderItem extends Model
   
   public function product()
   {
-    return $this->belongsTo( Product::class );
+    // Include deleted products: old receipts and reports still list them.
+    return $this->belongsTo( Product::class )->withTrashed();
   }
 }

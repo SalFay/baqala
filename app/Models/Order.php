@@ -46,4 +46,15 @@ class Order extends Model
   {
     return $this->hasMany( OrderItem::class );
   }
+
+  /**
+   * SQL for the discount actually given, in rupees. Taken from the order's own totals
+   * so it is right whether the cashier entered Rs or % (discount_type 'rupee' / 'per').
+   */
+  public const DISCOUNT_SQL = 'GREATEST(0, sub_total + COALESCE(delivery_charges, 0) - total)';
+
+  public function getDiscountAmountAttribute() : float
+  {
+    return max( 0, round( $this->sub_total + ( $this->delivery_charges ?? 0 ) - $this->total, 2 ) );
+  }
 }

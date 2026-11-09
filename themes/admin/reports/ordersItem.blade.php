@@ -12,6 +12,10 @@
 		</div>
 
 		<div class="card-body">
+			<form method="get" class="form-inline mb-3">
+				<input type="text" name="date" id="profit-range" value="{{ $range }}" class="form-control mr-2" style="min-width: 260px" autocomplete="off">
+				<button type="submit" class="btn btn-sm btn-primary">Filter</button>
+			</form>
 			<div class="table-responsive">
 				<table id="orderItemTable" class="table table-bordered table-striped table-hover">
 					<thead>
@@ -35,7 +39,7 @@
 					<tbody>
 					@foreach($orders as $order)
        <?php
-       $discount = \App\Models\Order::where( 'id', $order->id )->sum( 'discount' );
+       $discount = $order->discount_share;
        $profit = ( $order->sale_price - $order->purchase_price ) * $order->stock;
        ?>
 							<tr>
@@ -60,7 +64,7 @@
 									<td><span class="badge bg-danger">Return</span></td>
 
 								@endif
-								<td>{{date_format($order->created_at, 'j F, Y, g:i a')}}</td>
+								<td>{{ \Carbon\Carbon::parse($order->order_date)->format('d-M-Y') }}</td>
 
 							</tr>
 					@endforeach
@@ -91,10 +95,15 @@
 @endsection
 
 @include('plugins.DataTables')
+@push('head')
+	<link rel="stylesheet" href="{{asset('plugins/js/pickers/flatpickr/flatpickr.min.css')}}">
+@endpush
 @push('footer')
+	<script src="{{asset('plugins/js/pickers/flatpickr/flatpickr.min.js')}}"></script>
 	<script>
 	 let table
 	 $(document).ready(function () {
+		 flatpickr('#profit-range', {mode: 'range', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd-M-Y'})
 
 		 table = $('#orderItemTable').dataTable({
 			 'footerCallback': function (row, data, start, end, display) {
