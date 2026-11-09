@@ -306,6 +306,9 @@
 				Route::get( '/backups', [ SettingController::class, 'backups' ] )
 				     ->name( 'setup.backups' )->middleware( 'can:access settings' );
 
+				Route::post( '/backups/run', [ SettingController::class, 'runBackup' ] )
+				     ->name( 'setup.backups.run' )->middleware( 'can:access settings' );
+
 				Route::get( '/download/{file}', [ SettingController::class, 'download' ] )
 				     ->name( 'setup.backups.download' )->middleware( 'can:access settings' );
 

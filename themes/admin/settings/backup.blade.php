@@ -35,7 +35,7 @@
 			<h6 class="card-title">Backup</h6>
 			<div class="header-elements">
 				<div class="list-icons">
-					<a href="#" data-action="{{route('backup')}}" id="backup" class="btn btn-success btn-xs">
+					<a href="#" data-action="{{route('setup.backups.run')}}" id="backup" class="btn btn-success btn-xs">
 						<i class="fas fa-database"></i>
 						<span>Backup Manually</span>
 					</a>
@@ -82,13 +82,15 @@
 
 		<script>
 
-		$('#backup').on('click', function () {
+		$('#backup').on('click', function (e) {
+			e.preventDefault()
 			$.ajax({
 				url: $(this).data('action'),
-				type: 'get',
+				type: 'post',
+				data: {_token: '{{ csrf_token() }}'},
 				success: function (res) {
-					ui.successMessage(res)
-					return true
+					ui.successMessage(res.message)
+					setTimeout(() => location.reload(), 800)
 				},
 				error: function (res) {
 					ui.ajaxError(res, 0)

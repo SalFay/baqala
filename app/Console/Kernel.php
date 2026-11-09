@@ -22,7 +22,9 @@ class Kernel extends ConsoleKernel
    */
   protected function schedule( Schedule $schedule )
   {
-    // $schedule->command('inspire')->hourly();
+    // Needs the server cron: * * * * * php artisan schedule:run
+    $schedule->command( 'backup:run', [ '--only-db', '--disable-notifications' ] )->dailyAt( '03:00' );
+    $schedule->command( 'backup:clean', [ '--disable-notifications' ] )->dailyAt( '03:30' );
   }
   
   /**

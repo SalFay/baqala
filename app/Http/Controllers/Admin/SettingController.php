@@ -33,28 +33,53 @@ class SettingController extends Controller
    */
   public function backups()
   {
-    $files = [];
-    $path = storage_path( 'app/POS' );
-    $filesInFolder = File::files( $path );
-    
-    foreach( $filesInFolder as $path ) {
-      $files[] = pathinfo( $path );
-    }
-    
+    $path = $this->backupDirectory();
+    $files = File::isDirectory( $path )
+      ? collect( File::files( $path ) )->sortByDesc( fn( $f ) => $f->getMTime() )->map( fn( $f ) => pathinfo( $f ) )->values()->all()
+      : [];
+
     return view( 'admin.settings.backup', compact( 'files' ) );
   }
-  
+
+  public function runBackup() : array
+  {
+    $exitCode = Artisan::call( 'backup:run', [ '--only-db' => true, '--disable-notifications' => true ] );
+
+    if( $exitCode !== 0 ) {
+      abort( 500, 'Backup failed: ' . trim( Artisan::output() ) );
+    }
+
+    return [ 'status' => 'ok', 'message' => 'Database backup created' ];
+  }
+
   public function download( $file )
   {
-    $file_path = storage_path( 'app/POS/' . $file );
-    return response()->download( $file_path );
+    return response()->download( $this->backupFile( $file ) );
   }
-  
+
   public function delete( $file )
   {
-    $file_path = storage_path( 'app/POS/' . $file );
-    unlink( $file_path );
-    return \Illuminate\Support\Facades\Redirect::back();
+    File::delete( $this->backupFile( $file ) );
+    return Redirect::back();
+  }
+
+  /**
+   * Folder spatie/laravel-backup writes to: storage/app/{backup.name}.
+   */
+  private function backupDirectory() : string
+  {
+    return storage_path( 'app/' . config( 'backup.backup.name' ) );
+  }
+
+  /**
+   * Resolve a backup file name to its path, refusing anything outside the backup folder.
+   */
+  private function backupFile( string $file ) : string
+  {
+    $path = $this->backupDirectory() . DIRECTORY_SEPARATOR . basename( $file );
+    abort_unless( File::isFile( $path ), 404 );
+
+    return $path;
   }
   
   /**
@@ -118,7 +143,8 @@ class SettingController extends Controller
   
   public function generalUpdate( Request $request ) : array
   {
-    
+    $request->validate( [ 'file' => 'nullable|image|mimes:png,jpg,jpeg,gif,webp|max:2048' ] );
+
     Option::set( 'title', $request->title );
     Option::set( 'address', $request->address );
     Option::set( 'mobile', $request->mobile );
@@ -127,7 +153,7 @@ class SettingController extends Controller
     Option::set( 'printer', $request->printer );
     if( $request->hasFile( 'file' ) ) {
       $destinationDir = public_path( 'assets' );
-      $filename = $request->file->getClientOriginalName();
+      $filename = $request->file->hashName();
       $request->file->move( $destinationDir, $filename );
       Option::set( 'logo', $filename );
     }

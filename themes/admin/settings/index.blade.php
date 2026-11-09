@@ -61,14 +61,30 @@
 
 				<div class="box">
 					<div class="box-header with-border">
-						<h3 class="box-title">Website Backup</h3>
+						<h3 class="box-title">Database &amp; System</h3>
 					</div>
 					<table class="table">
 						<tbody>
 
 						<tr>
 							<td>
-								<a href="{{route('setup.backups')}}"><strong>Click Here</strong></a>
+								<a href="{{route('setup.backups')}}"><strong>Backups</strong></a>
+								<br/>
+								<p>Create, download and delete database backups</p>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<a href="{{route('adminer::index')}}" target="_blank"><strong>Database Manager (Adminer)</strong></a>
+								<br/>
+								<p>Browse tables and export the full database</p>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<a href="{{url(config('log-viewer.route_path'))}}" target="_blank"><strong>Log Viewer</strong></a>
+								<br/>
+								<p>Read application error logs</p>
 							</td>
 						</tr>
 

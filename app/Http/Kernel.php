@@ -42,6 +42,16 @@ class Kernel extends HttpKernel
       'throttle:api',
       \Illuminate\Routing\Middleware\SubstituteBindings::class,
     ],
+
+    // Adminer needs the session to see the logged-in user. Laravel's CSRF check is left
+    // out on purpose: Adminer posts its own token, so VerifyCsrfToken would 419 every write.
+    'adminer' => [
+      \App\Http\Middleware\EncryptCookies::class,
+      \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+      \Illuminate\Session\Middleware\StartSession::class,
+      'auth',
+      'can:access settings',
+    ],
   ];
   
   /**
