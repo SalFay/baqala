@@ -119,20 +119,60 @@ body:not(.is-plain) .content .card {
 	box-shadow: none;
 	overflow: hidden;
 }
-body:not(.is-plain) .content .card-header {
-	background: var(--card) !important;
-	color: var(--ink) !important;
-	border-bottom: 1px solid var(--line);
-	padding: .85rem 1.1rem;
-}
+body:not(.is-plain) .content .card-header { padding: .85rem 1.1rem; }
 body:not(.is-plain) .content .card-header .card-title,
 body:not(.is-plain) .content .card-header h5,
-body:not(.is-plain) .content .card-header h6 {
-	font-size: 1rem; font-weight: 600; color: var(--ink); margin: 0;
-}
-body:not(.is-plain) .content .card-header a:not(.btn) { color: var(--accent); }
+body:not(.is-plain) .content .card-header h6 { font-size: 1rem; font-weight: 600; margin: 0; }
 body:not(.is-plain) .content .card-header .btn { margin-left: .35rem; }
 body:not(.is-plain) .content .card-body { padding: 1rem 1.1rem; }
+
+/* ---------- Colours: the sidebar's teal everywhere, the POS included ---------- */
+/* Card headers (old teal, dark, brown, orange, green) take the sidebar colour. */
+.content .card-header:not(.bg-transparent) {
+	background: var(--side) !important;
+	color: #fff !important;
+	border-bottom: 0;
+}
+.content .card-header:not(.bg-transparent) .card-title,
+.content .card-header:not(.bg-transparent) h5,
+.content .card-header:not(.bg-transparent) h6 { color: #fff !important; }
+.content .card-header:not(.bg-transparent) a:not(.btn) { color: #9fe3d6; }
+/* Buttons on a teal header: white with teal text, so they stand out. */
+.content .card-header:not(.bg-transparent) .btn:not(.btn-danger) {
+	background: #fff !important; border-color: #fff !important; color: var(--side) !important; font-weight: 600;
+}
+.content .card-header:not(.bg-transparent) .btn:not(.btn-danger):hover { background: var(--accent-soft) !important; border-color: var(--accent-soft) !important; }
+
+.content .btn { border-radius: 6px; box-shadow: none; }
+.content .btn-primary, .content .btn-success, .content .btn-info {
+	background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important;
+}
+.content .btn-primary:hover, .content .btn-primary:focus,
+.content .btn-success:hover, .content .btn-success:focus,
+.content .btn-info:hover, .content .btn-info:focus {
+	background: var(--accent-2) !important; border-color: var(--accent-2) !important; color: #fff !important;
+}
+.content .btn-secondary, .content .btn-dark { background: var(--side) !important; border-color: var(--side) !important; color: #fff !important; }
+.content .btn-warning {
+	background: var(--accent-soft) !important; border-color: #bfe3dc !important; color: var(--accent-2) !important;
+}
+.content .btn-warning:hover { background: #cdebe5 !important; color: var(--side) !important; }
+
+.content .badge.bg-success, .content .badge-success { background: var(--accent) !important; color: #fff; }
+.content .badge.bg-primary, .content .badge-primary { background: var(--side) !important; color: #fff; }
+.content .text-primary, .content .text-success { color: var(--accent) !important; }
+.content .bg-teal-400:not(.card-header), .content .bg-primary:not(.badge) { background: var(--accent) !important; }
+
+/* POS: prices and the selected product in the same teal. */
+.content .product-price { color: var(--accent) !important; font-weight: 600; }
+.content .product-card:hover { border-color: var(--accent) !important; }
+.content #table-cart thead th { background: var(--accent-soft); color: var(--side); }
+
+/* DataTables pager everywhere */
+.content .dataTables_paginate .paginate_button.current,
+.content .dataTables_paginate .paginate_button.current:hover {
+	background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important;
+}
 
 body:not(.is-plain) .content .form-control,
 body:not(.is-plain) .content .custom-select,
@@ -147,15 +187,6 @@ body:not(.is-plain) .content .custom-select:focus {
 }
 body:not(.is-plain) .content label, body:not(.is-plain) .content .col-form-label { color: var(--ink); }
 
-body:not(.is-plain) .content .btn { border-radius: 6px; box-shadow: none; }
-body:not(.is-plain) .content .btn-primary,
-body:not(.is-plain) .content .btn-success:not(.btn-xs) {
-	background: var(--accent); border-color: var(--accent); color: #fff;
-}
-body:not(.is-plain) .content .btn-primary:hover, body:not(.is-plain) .content .btn-primary:focus,
-body:not(.is-plain) .content .btn-success:not(.btn-xs):hover {
-	background: var(--accent-2); border-color: var(--accent-2); color: #fff;
-}
 body:not(.is-plain) .content .btn-light, body:not(.is-plain) .content .btn-default {
 	background: #fff; border: 1px solid #d6dbe1; color: var(--ink);
 }
