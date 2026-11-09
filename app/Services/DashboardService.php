@@ -103,12 +103,17 @@ class DashboardService
         $cDay = $cFrom ? $cFrom->copy() : null;
         foreach( CarbonPeriod::create( $from, $to ) as $day ) {
             $key = $day->toDateString();
+            $r = $cur[ $key ] ?? null;
             $rows[] = [
-                'date'    => $key,
-                'label'   => $day->format( 'd-M' ),
-                'sales'   => (float) ( $cur[ $key ]->sales ?? 0 ),
-                'orders'  => (int) ( $cur[ $key ]->orders ?? 0 ),
-                'compare' => $cDay && $cDay->lte( $cTo ) ? (float) ( $cmp[ $cDay->toDateString() ]->sales ?? 0 ) : null,
+                'date'       => $key,
+                'label'      => $day->format( 'd-M' ),
+                'day'        => $day->format( 'D d-M-Y' ),
+                'orders'     => (int) ( $r->orders ?? 0 ),
+                'item_sales' => (float) ( $r->item_sales ?? 0 ),
+                'discount'   => (float) ( $r->discount ?? 0 ),
+                'delivery'   => (float) ( $r->delivery ?? 0 ),
+                'sales'      => (float) ( $r->sales ?? 0 ),
+                'compare'    => $cDay && $cDay->lte( $cTo ) ? (float) ( $cmp[ $cDay->toDateString() ]->sales ?? 0 ) : null,
             ];
             $cDay?->addDay();
         }
@@ -118,7 +123,9 @@ class DashboardService
     private function salesByDay( Carbon $from, Carbon $to ) : Collection
     {
         return DB::table( 'orders' )->whereNull( 'deleted_at' )->whereBetween( 'date', $this->dates( $from, $to ) )
-                 ->groupBy( 'date' )->selectRaw( 'date, SUM(total) AS sales, COUNT(*) AS orders' )
+                 ->groupBy( 'date' )
+                 ->selectRaw( 'date, COUNT(*) AS orders, SUM(sub_total) AS item_sales, SUM(' . Order::DISCOUNT_SQL . ') AS discount,
+                    SUM(delivery_charges) AS delivery, SUM(total) AS sales' )
                  ->get()->keyBy( fn( $r ) => (string) $r->date );
     }
 

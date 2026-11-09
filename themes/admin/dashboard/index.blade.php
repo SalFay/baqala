@@ -120,6 +120,52 @@
 				<div class="dash-card__head"><h3>Daily sales</h3>
 					<span class="dash-muted">{{ number_format( $cur['orders'] ) }} orders</span></div>
 				<div id="chart-daily"></div>
+				<div class="dash-scroll">
+					<table class="dash-table dash-table--lined">
+						<thead><tr><th>Day</th><th class="num">Orders</th><th class="num">Item sales</th>
+							<th class="num">Discount</th><th class="num">Delivery</th><th class="num">Net sales</th>
+							@if($cmp)<th class="num">Compared</th><th class="num">Change</th>@endif</tr></thead>
+						<tbody>
+						@foreach(array_reverse($daily) as $d)
+							@php $c = $cmp ? app( \App\Services\DashboardService::class )->change( $d['sales'], $d['compare'] ) : null; @endphp
+							<tr>
+								<td>{{ $d['day'] }}@if($d['date'] === now()->toDateString()) <span class="dash-muted">· so far</span>@endif</td>
+								<td class="num">{{ number_format( $d['orders'] ) }}</td>
+								<td class="num">{{ $money( $d['item_sales'] ) }}</td>
+								<td class="num">{{ $money( $d['discount'] ) }}</td>
+								<td class="num">{{ $money( $d['delivery'] ) }}</td>
+								<td class="num"><b>{{ $money( $d['sales'] ) }}</b></td>
+								@if($cmp)
+									<td class="num dash-muted">{{ $d['compare'] === null ? '—' : $money( $d['compare'] ) }}</td>
+									<td class="num">
+										@if($c !== null)
+											<span class="dash-delta {{ $c >= 0 ? 'is-good' : 'is-bad' }}">{{ $c >= 0 ? '▲' : '▼' }} {{ $pct( abs( $c ) ) }}</span>
+										@endif
+									</td>
+								@endif
+							</tr>
+						@endforeach
+						</tbody>
+						<tfoot>
+							<tr>
+								<th>Total</th>
+								<th class="num">{{ number_format( $cur['orders'] ) }}</th>
+								<th class="num">{{ $money( $cur['item_sales'] ) }}</th>
+								<th class="num">{{ $money( $cur['discount'] ) }}</th>
+								<th class="num">{{ $money( $cur['delivery'] ) }}</th>
+								<th class="num">{{ $money( $cur['net_sales'] ) }}</th>
+								@if($cmp)
+									<th class="num">{{ $money( $cmp['net_sales'] ) }}</th>
+									<th class="num">
+										@if(($tc = $change( 'net_sales' )) !== null)
+											<span class="dash-delta {{ $tc >= 0 ? 'is-good' : 'is-bad' }}">{{ $tc >= 0 ? '▲' : '▼' }} {{ $pct( abs( $tc ) ) }}</span>
+										@endif
+									</th>
+								@endif
+							</tr>
+						</tfoot>
+					</table>
+				</div>
 			</div>
 		</div>
 		<div class="col-xl-4">
@@ -295,6 +341,10 @@
 		.dash-table td, .dash-table th { padding: .35rem .25rem; text-align: left; }
 		.dash-table th { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; }
 		.dash-table--lined tr + tr td, .dash-table--lined tbody tr td { border-top: 1px solid var(--line); }
+		.dash-scroll { max-height: 420px; overflow-y: auto; margin-top: .5rem; }
+		.dash-scroll thead th, .dash-scroll tfoot th { position: sticky; background: var(--card); z-index: 1; }
+		.dash-scroll thead th { top: 0; }
+		.dash-scroll tfoot th { bottom: 0; border-top: 2px solid var(--line); color: var(--ink); }
 		.dash-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 		@media (max-width: 1399px) { .dash-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 		@media (max-width: 767px) {
