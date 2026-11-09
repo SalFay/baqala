@@ -222,10 +222,12 @@ function logCauserDetail( $subjectId )
  */
 function capDataTablesLength( Request $request, int $max = 1000 ) : void
 {
+  // Always set both: without them the DataTables library doesn't page at all.
   $length = (int) $request->input( 'length', $max );
-  if( $length <= 0 || $length > $max ) {
-    $request->merge( [ 'length' => $max ] );
-  }
+  $request->merge( [
+    'length' => $length <= 0 || $length > $max ? $max : $length,
+    'start'  => max( 0, (int) $request->input( 'start', 0 ) ),
+  ] );
 }
 
 function startDate( $date )
